@@ -24,7 +24,6 @@ Loop
    Break
   Sleep, TargetFrameRate - (A_TickCount - PreviousTime)
  }
- MsgBox
  Gui, Destroy
 }
 MsgBox, Game complete!
@@ -33,50 +32,16 @@ ExitApp
 Initialize()
 {
  global
+ local LevelDefinition
  Health := 100
 
- Levels := [Object("Blocks" ;level 1
-             ,[Block(310,580,480,30)
-              ,Block(42,440,350,40)
-              ,Block(170,180,40,260)
-              ,Block(70,180,100,30)
-              ,Block(160,80,280,20)
-              ,Block(440,130,100,20)
-              ,Block(560,80,100,30)
-              ,Block(700,240,100,30)
-              ,Block(510,250,100,30)]
-            ,"Player",Entity(740,420,30,40,-50,100)
-            ,"Goal",Block(512,190,60,60)
-            ,"Enemies"
-             ,[Entity(350,520,30,40,0,0)
-              ,Entity(550,220,30,40,0,0)
-              ,Entity(500,70,30,40,0,0)
-              ,Entity(330,420,30,40,0,0)])
-   
-           ,Object("Blocks" ;level 2
-             ,[Block(390,50,20,460)
-              ,Block(10,580,110,30)
-              ,Block(150,500,160,30)
-              ,Block(10,420,170,20)
-              ,Block(220,330,170,30)
-              ,Block(380,0,340,20)
-              ,Block(580,70,20,500)
-              ,Block(600,70,330,20)
-              ,Block(410,230,130,20)
-              ,Block(550,600,180,20)
-              ,Block(680,530,100,30)]
-            ,"Player",Entity(20,500,30,40)
-            ,"Goal",Block(700,450,60,80)
-            ,"Enemies"
-             ,[Entity(30,350,30,40)
-              ,Entity(340,250,30,40)
-              ,Entity(420,150,30,40)
-              ,Entity(630,20,30,40)
-              ,Entity(720,450,30,40)])]
-
- If !ObjHasKey(Levels,LevelIndex)
+ LevelFile := A_ScriptDir . "\Levels\Level " . LevelIndex . ".txt"
+ If !FileExist(LevelFile)
   Return, 1
- Level := Levels[LevelIndex]
+ FileRead, LevelDefinition, %LevelFile%
+ If ErrorLevel
+  Return, 1
+ Level := ParseLevel(LevelDefinition)
 
  ;create window
  Gui, Color, Black
@@ -113,7 +78,7 @@ Step(Delta)
   Delta /= 2
  If Input()
   Return, 1
- If Physics(Delta) || 
+ If Physics(Delta)
   Return, 1
  If Logic(Delta)
   Return, 1
@@ -308,6 +273,47 @@ Update()
  For Index, Rectangle In Level.Enemies
   GuiControl, Move, EnemyRectangle%Index%, % "x" . Rectangle.X . " y" . Rectangle.Y . " w" . Rectangle.W . " h" . Rectangle.H
  Return, 0
+}
+
+ParseLevel(LevelDefinition)
+{
+ Level := Object()
+
+ Level.Blocks := []
+ If RegExMatch(LevelDefinition,"iS)Blocks\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
+ {
+  Loop, Parse, Property, `n, `r `t
+  {
+   StringSplit, Entry, A_LoopField, `,, %A_Space%`t
+   ObjInsert(Level.Blocks,Block(Entry1,Entry2,Entry3,Entry4))
+  }
+ }
+
+ If RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
+ {
+  Entry5 := 0, Entry6 := 0
+  StringSplit, Entry, Property, `,, %A_Space%`t
+  Level.Player := Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6)
+ }
+
+ If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
+ {
+  StringSplit, Entry, Property, `,, %A_Space%`t
+  Level.Goal := Block(Entry1,Entry2,Entry3,Entry4)
+ }
+
+ Level.Enemies := []
+ If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
+ {
+  Loop, Parse, Property, `n, `r `t
+  {
+   Entry5 := 0, Entry6 := 0
+   StringSplit, Entry, A_LoopField, `,, %A_Space%`t
+   ObjInsert(Level.Enemies,Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
+  }
+ }
+
+ Return, Level
 }
 
 Entity(X,Y,W,H,SpeedX = 0,SpeedY = 0)
