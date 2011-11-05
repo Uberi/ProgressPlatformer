@@ -282,7 +282,13 @@ ParseLevel(LevelDefinition)
  Level.Blocks := []
  If RegExMatch(LevelDefinition,"iS)Blocks\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
  {
-  Loop, Parse, Property, `n, `r `t
+  StringReplace, Property, Property, `r,, All
+  StringReplace, Property, Property, %A_Space%,, All
+  StringReplace, Property, Property, %A_Tab%,, All
+  While, InStr(Property,"`n`n")
+   StringReplace, Property, Property, `n`n, `n, All
+  Property := Trim(Property,"`n")
+  Loop, Parse, Property, `n
   {
    StringSplit, Entry, A_LoopField, `,, %A_Space%`t
    ObjInsert(Level.Blocks,Block(Entry1,Entry2,Entry3,Entry4))
@@ -292,19 +298,25 @@ ParseLevel(LevelDefinition)
  If RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
  {
   Entry5 := 0, Entry6 := 0
-  StringSplit, Entry, Property, `,, %A_Space%`t
+  StringSplit, Entry, Property, `,, %A_Space%`t`r`n
   Level.Player := Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6)
  }
 
  If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
  {
-  StringSplit, Entry, Property, `,, %A_Space%`t
+  StringSplit, Entry, Property, `,, %A_Space%`t`r`n
   Level.Goal := Block(Entry1,Entry2,Entry3,Entry4)
  }
 
  Level.Enemies := []
  If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
  {
+  StringReplace, Property, Property, `r,, All
+  StringReplace, Property, Property, %A_Space%,, All
+  StringReplace, Property, Property, %A_Tab%,, All
+  While, InStr(Property,"`n`n")
+   StringReplace, Property, Property, `n`n, `n, All
+  Property := Trim(Property,"`n")
   Loop, Parse, Property, `n, `r `t
   {
    Entry5 := 0, Entry6 := 0
