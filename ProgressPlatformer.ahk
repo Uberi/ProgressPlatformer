@@ -18,7 +18,7 @@
 return
 
 F5::
-GameInit: ;fall through on init
+GameInit:
     If Initialize()
     {
         MsgBox, Game complete!
@@ -117,7 +117,7 @@ HideProgresses() {
 Step(Delta)
 {
     Gui, +LastFound
-    If !WinActive() ;pause game if window is not active
+    If !WinActive() || GetKeyState("LButton", "P") || GetKeyState("RButton", "P") ;pause game if window is not active or mouse is held down
         Return, 0
     If GetKeyState("Tab","P") ;slow motion
         Delta /= 2
