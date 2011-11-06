@@ -17,8 +17,6 @@
     GoSub GameInit
 return
 
-S::
-    LevelIndex++
 F5::
 GameInit: ;fall through on init
     If Initialize()
