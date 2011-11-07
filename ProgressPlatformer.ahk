@@ -5,11 +5,12 @@
 
     Gravity := -981
     Friction := 0.01
-    Restitution := 0.6
+    Restitution := .6
 
     LevelIndex := 1
 
     SetBatchLines, -1
+    SetWinDelay, -1
 
     TargetFrameMs := 1000 / TargetFrameRate
 
@@ -17,6 +18,8 @@
     GoSub GameInit
 return
 
+^s::
+    LevelIndex++
 F5::
 GameInit:
     If Initialize()
@@ -25,18 +28,20 @@ GameInit:
         ExitApp
     }
     PreviousTime := A_TickCount
-    SetTimer StepThrough, -0
+    SetTimer StepThrough, % TargetFrameMs
 return
 
 StepThrough:
     Temp1 := (A_TickCount - PreviousTime) / 1000
     PreviousTime := A_TickCount
-    if Step(Temp1)
+    stepret := Step(Temp1)
+    if (stepret == -1)
+        PreviousTime := A_TickCount
+    else if (stepret) 
+    {
+        SetTimer, %A_ThisLabel%, Off
         SetTimer GameInit, -0
-    else if (TargetFrameMs - (A_TickCount - PreviousTime) > 15)
-        SetTimer, %A_ThisLabel%, % -Abs(TargetFrameMs - (A_TickCount - PreviousTime))
-    else
-        SetTimer, %A_ThisLabel%, -0
+    }
 return
 
 global GameGui
@@ -96,10 +101,12 @@ Initialize()
 PutProgress(x, y, w, h, name, i, options) {
     global
     pos := "x" x " y" y " w" w " h" h
+    local hwnd
     if (i > GameGui.count[name] || GameGui.count[name] == 0)
     {
         GameGui.count[name]++
-        Gui, Add, Progress, v%name%%i% %pos% %options%, 0
+        Gui, Add, Progress, v%name%%i% %pos% %options% hwndhwnd, 0
+        Control, ExStyle, -0x20000, , ahk_id%hwnd% ; WS_EX_STATICEDGE
     }
     else {
         GuiControl, Show, %name%%i%
@@ -118,7 +125,7 @@ Step(Delta)
 {
     Gui, +LastFound
     If !WinActive() || GetKeyState("LButton", "P") || GetKeyState("RButton", "P") ;pause game if window is not active or mouse is held down
-        Return, 0
+        Return, -1
     If GetKeyState("Tab","P") ;slow motion
         Delta /= 2
     If Input()
