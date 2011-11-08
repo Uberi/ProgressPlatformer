@@ -18,8 +18,6 @@
     GoSub GameInit
 return
 
-^s::
-    LevelIndex++
 F5::
 GameInit:
     If Initialize()
@@ -343,7 +341,7 @@ ParseLevel(LevelDefinition)
         Loop, Parse, Property, `n
         {
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Level.Blocks.Insert(new Block(Entry1,Entry2,Entry3,Entry4))
+            Level.Blocks.Insert(new _Rectangle(Entry1,Entry2,Entry3,Entry4))
         }
     }
 
@@ -351,15 +349,15 @@ ParseLevel(LevelDefinition)
     {
         Entry5 := 0, Entry6 := 0
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Level.Player := new Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6)
+        Level.Player := new _Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6)
     }
 
     If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
     {
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Level.Goal := new Block(Entry1,Entry2,Entry3,Entry4)
+        Level.Goal := new _Rectangle(Entry1,Entry2,Entry3,Entry4)
     }
-
+    
     Level.Enemies := []
     If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
     {
@@ -373,13 +371,13 @@ ParseLevel(LevelDefinition)
         {
             Entry5 := 0, Entry6 := 0
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Level.Enemies.insert(new Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
+            Level.Enemies.insert(new _Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
         }
     }
     return, Level
 }
 
-class Block {
+class _Rectangle {
     __new(X,Y,W,H){
         this.X := X
         this.Y := Y
@@ -393,31 +391,40 @@ class Block {
     }
     
     ; Distance between the *centers* of two blocks
-    CenterDistance( block ) {
+    CenterDistance( rect ) {
         a := this.Center()
-        b := block.Center()
+        b := rect.Center()
         return Sqrt( Abs(a.X - b.X)**2 + Abs(a.Y - b.Y)**2 )
     }
     
     ; calculates the closest distace between two blocks (*not* the centers)
-    Distance() {
-        ; this one will be a doozy
+    Distance(rect) {
+        X := this.IntersectsX(rect) ? 0 : min(Abs(this.X - (rect.X+rect.W)), Abs(rect.X - (this.X+this.W)))
+        Y := this.IntersectsY(rect) ? 0 : min(Abs(this.Y - (rect.Y+rect.H)), Abs(rect.Y - (this.Y+this.H)))
+        return Sqrt(X**2 + Y**2)
     }
     
-    ; returns true if this is completely inside blk
-    Inside( blk ) {
-        return (this.X >= blk.X) && (this.Y >= blk.Y) && (this.X + this.W <= blk.X + blk.W) && (this.Y + this.H <= blk.Y + blk.H)
+    ; returns true if this is completely inside rect
+    Inside( rect ) {
+        return (this.X >= rect.X) && (this.Y >= rect.Y) && (this.X + this.W <= rect.X + rect.W) && (this.Y + this.H <= rect.Y + rect.H)
     }
     
-    ; returns true if this intersects blk at all
-    Intersect( blk ) {
+    ; returns true if this intersects rect at all
+    Intersects( rect ) {
+        return this.IntersectsX(rect) && this.IntersectsY(rect)
+    }
+    
+    IntersectsX( rect ) {
         ; this could be optimized
-        return (Between(this.X+this.W, blk.X, blk.X+blk.W) || Between(blk.X+blk.W, this.X, this.X+this.W))
-            && (Between(this.Y+this.H, blk.Y, blk.Y+blk.H) || Between(blk.Y+blk.H, this.Y, this.Y+this.H))
+        return Between(this.X, rect.X, rect.X+rect.W) || Between(rect.X, this.X, this.X+this.W)
+    }
+    
+    IntersectsY( rect ) {
+        return Between(this.Y, rect.Y, rect.Y+rect.H) || Between(rect.Y, this.Y, this.Y+this.H)
     }
 }
 
-class Entity extends Block {
+class _Entity extends _Rectangle {
     __new(X,Y,W,H,SpeedX = 0,SpeedY = 0) {
         this.X := X
         this.Y := Y
@@ -432,6 +439,17 @@ class Entity extends Block {
 
 Between( x, a, b ) {
     return (a >= x && x >= b)
+}
+
+; min that accepts either an array or args
+min( x* ) {
+    if (ObjMaxIndex(x) == 1 && IsObject(x[1]))
+        x := x[1]
+    r := x[1]
+    loop % ObjMaxIndex(x)
+        if (x[1] < r)
+            r := x[1]
+    return r
 }
 
 Collide(Rectangle1,Rectangle2,ByRef IntersectX = "",ByRef IntersectY = "")
