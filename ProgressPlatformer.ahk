@@ -343,7 +343,7 @@ ParseLevel(LevelDefinition)
         Loop, Parse, Property, `n
         {
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            ObjInsert(Level.Blocks,Block(Entry1,Entry2,Entry3,Entry4))
+            Level.Blocks.Insert(new Block(Entry1,Entry2,Entry3,Entry4))
         }
     }
 
@@ -351,13 +351,13 @@ ParseLevel(LevelDefinition)
     {
         Entry5 := 0, Entry6 := 0
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Level.Player := Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6)
+        Level.Player := new Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6)
     }
 
     If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
     {
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Level.Goal := Block(Entry1,Entry2,Entry3,Entry4)
+        Level.Goal := new Block(Entry1,Entry2,Entry3,Entry4)
     }
 
     Level.Enemies := []
@@ -373,21 +373,65 @@ ParseLevel(LevelDefinition)
         {
             Entry5 := 0, Entry6 := 0
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            ObjInsert(Level.Enemies,Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
+            Level.Enemies.insert(new Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
         }
     }
-
-    Return, Level
+    return, Level
 }
 
-Entity(X,Y,W,H,SpeedX = 0,SpeedY = 0)
-{
-    Return, Object("X",X,"Y",Y,"W",W,"H",H,"SpeedX",SpeedX,"SpeedY",SpeedY,"LastContact",0,"IntersectX",0,"IntersectY",0)
+class Block {
+    __new(X,Y,W,H){
+        this.X := X
+        this.Y := Y
+        this.W := W
+        this.H := H
+        this.fixed := true
+    }
+    
+    Center() {
+        return { X: this.X + this.W / 2, Y: this.Y + this.H / 2 }
+    }
+    
+    ; Distance between the *centers* of two blocks
+    CenterDistance( block ) {
+        a := this.Center()
+        b := block.Center()
+        return Sqrt( Abs(a.X - b.X)**2 + Abs(a.Y - b.Y)**2 )
+    }
+    
+    ; calculates the closest distace between two blocks (*not* the centers)
+    Distance() {
+        ; this one will be a doozy
+    }
+    
+    ; returns true if this is completely inside blk
+    Inside( blk ) {
+        return (this.X >= blk.X) && (this.Y >= blk.Y) && (this.X + this.W <= blk.X + blk.W) && (this.Y + this.H <= blk.Y + blk.H)
+    }
+    
+    ; returns true if this intersects blk at all
+    Intersect( blk ) {
+        ; this could be optimized
+        return (Between(this.X+this.W, blk.X, blk.X+blk.W) || Between(blk.X+blk.W, this.X, this.X+this.W))
+            && (Between(this.Y+this.H, blk.Y, blk.Y+blk.H) || Between(blk.Y+blk.H, this.Y, this.Y+this.H))
+    }
 }
 
-Block(X,Y,W,H)
-{
-    Return, Object("X",X,"Y",Y,"W",W,"H",H)
+class Entity extends Block {
+    __new(X,Y,W,H,SpeedX = 0,SpeedY = 0) {
+        this.X := X
+        this.Y := Y
+        this.W := W
+        this.H := H
+        this.mass := W * H ; * density
+        this.fixed := false
+        this.SpeedX := SpeedX
+        this.SpeedY := SpeedY
+    }
+}
+
+Between( x, a, b ) {
+    return (a >= x && x >= b)
 }
 
 Collide(Rectangle1,Rectangle2,ByRef IntersectX = "",ByRef IntersectY = "")
