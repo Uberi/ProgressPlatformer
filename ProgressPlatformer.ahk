@@ -71,9 +71,17 @@ Initialize()
     If ErrorLevel
         Return, 1
     Level := ParseLevel(LevelDefinition)
-    
-    HideRectangles()
-    
+
+    Gui, +LastFound
+    hWindow := WinExist()
+    PreventRedraw(hWindow)
+
+    For Name, Count In GameGUI.Count
+    {
+        Loop, %Count%
+            GuiControl, Hide, %Name%%A_Index%
+    }
+
     ;create level
     For Index, rect In Level.Blocks
         PutProgress(rect.X, rect.Y, rect.W, rect.H, "LevelRectangle", Index, "BackgroundRed")
@@ -88,6 +96,9 @@ Initialize()
     For Index, rect In Level.Enemies
         PutProgress(rect.X, rect.Y, rect.W, rect.H, "EnemyRectangle", Index, "BackgroundBlue")
 
+    AllowRedraw(hWindow)
+    WinSet, Redraw
+
     Gui, Show, AutoSize, ProgressPlatformer
 }
 
@@ -101,28 +112,33 @@ PutProgress(X,Y,W,H,Name,Index,Options)
         Gui, Add, Progress, x%X% y%Y% w%W% h%H% v%Name%%Index% %Options% hwndhwnd, 0
         Control, ExStyle, -0x20000, , ahk_id%hwnd% ;remove WS_EX_STATICEDGE extended style
     }
-    else
+    Else
     {
         GuiControl, Show, %Name%%Index%
         GuiControl, Move, %Name%%Index%, x%X% y%Y% w%W% h%H%
     }
 }
 
-HideRectangles()
+PreventRedraw(hWnd)
 {
-    global GameGUI
-    For Name, Count in GameGUI.Count
-    {
-        Loop, %Count%
-            GuiControl, Hide, %Name%%A_Index%
-    }
+ DetectHidden := A_DetectHiddenWindows
+ DetectHiddenWindows, On
+ SendMessage, 0xB, 0, 0,, ahk_id %hWnd% ;WM_SETREDRAW
+ DetectHiddenWindows, %DetectHidden%
+}
+
+AllowRedraw(hWnd)
+{
+ DetectHidden := A_DetectHiddenWindows
+ DetectHiddenWindows, On
+ SendMessage, 0xB, 1, 0,, ahk_id %hWnd% ;WM_SETREDRAW
+ DetectHiddenWindows, %DetectHidden%
 }
 
 Step(Delta)
 {
-    Gui, +LastFound
     If GetKeyState("Tab","P") ;slow motion
-        Delta *= 0.1
+        Delta *= 0.3
     If Input()
         Return, 1
     If Physics(Delta)
