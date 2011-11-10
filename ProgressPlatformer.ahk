@@ -1,63 +1,58 @@
 #NoEnv
-#SingleInstance, Force
+#SingleInstance Force
 
-    TargetFrameRate := 40
-    DeltaLimit := 0.1
+TargetFrameRate := 40
+DeltaLimit := 0.1
 
-    Gravity := -981
-    Friction := 0.01
-    Restitution := .6
+Gravity := -981
+Friction := 0.01
+Restitution := 0.6
 
-    LevelIndex := 1
+LevelIndex := 1
 
-    SetBatchLines, -1
-    SetWinDelay, -1
+SetBatchLines, -1
+SetWinDelay, -1
 
-    TargetFrameMs := 1000 / TargetFrameRate
+global GameGUI
+GoSub MakeGuis
 
-    GoSub MakeGuis
-    GoSub GameInit
-return
-
-F5::
-GameInit:
+TargetFrameDelay := 1000 / TargetFrameRate
+TickFrequency := 0, DllCall("QueryPerformanceFrequency","Int64*",TickFrequency) ;obtain ticks per second
+PreviousTicks := 0, CurrentTicks := 0
+Loop
+{
     If Initialize()
+        Break
+    DllCall("QueryPerformanceCounter","Int64*",PreviousTicks)
+    Loop
     {
-        MsgBox, Game complete!
-        ExitApp
+        DllCall("QueryPerformanceCounter","Int64*",CurrentTicks)
+        Delta := Round((CurrentTicks - PreviousTicks) / TickFrequency,4)
+        DllCall("QueryPerformanceCounter","Int64*",PreviousTicks)
+        If (Delta > DeltaLimit)
+            Delta := DeltaLimit
+        Sleep, % Round(TargetFrameDelay - (Delta * 1000))
+        If Step(Delta)
+            Break
     }
-    PreviousTime := A_TickCount
-    SetTimer StepThrough, % TargetFrameMs
-return
-
-StepThrough:
-    Delta := (A_TickCount - PreviousTime) / 1000
-    If (Delta > DeltaLimit)
-        Delta := DeltaLimit
-    PreviousTime := A_TickCount
-    if Step(Delta)
-    {
-        SetTimer, %A_ThisLabel%, Off
-        SetTimer GameInit, -0
-    }
-return
-
-global GameGui
+}
+MsgBox, Game complete!
+ExitApp
 
 MakeGuis:
     ;create game window
     Gui, Color, Black
     Gui, +OwnDialogs +LastFound
     
-    GameGui := []
-    GameGui.hwnd := WinExist()
+    GameGUI := {}
+    GameGUI.hwnd := WinExist()
     
-    GameGui.count := []
-    GameGui.count.LevelRectangle  := 0
-    GameGui.count.PlayerRectangle := 0
-    GameGui.count.GoalRectangle   := 0
-    GameGui.count.EnemyRectangle  := 0
-return
+    GameGUI.Count := {}
+    GameGUI.Count.LevelRectangle  := 0
+    GameGUI.Count.PlayerRectangle := 0
+    GameGUI.Count.GoalRectangle   := 0
+    GameGUI.Count.EnemyRectangle  := 0
+Return
 
 GuiEscape:
 GuiClose:
@@ -77,7 +72,7 @@ Initialize()
         Return, 1
     Level := ParseLevel(LevelDefinition)
     
-    HideProgresses()
+    HideRectangles()
     
     ;create level
     For Index, rect In Level.Blocks
@@ -96,34 +91,38 @@ Initialize()
     Gui, Show, AutoSize, ProgressPlatformer
 }
 
-PutProgress(x, y, w, h, name, i, options) {
+PutProgress(X,Y,W,H,Name,Index,Options)
+{
     global
-    pos := "x" x " y" y " w" w " h" h
     local hwnd
-    if (i > GameGui.count[name] || GameGui.count[name] == 0)
+    If (GameGUI.Count[Name] < Index || GameGUI.Count[Name] == 0)
     {
-        GameGui.count[name]++
-        Gui, Add, Progress, v%name%%i% %pos% %options% hwndhwnd, 0
-        Control, ExStyle, -0x20000, , ahk_id%hwnd% ; WS_EX_STATICEDGE
+        GameGUI.Count[Name] ++
+        Gui, Add, Progress, x%X% y%Y% w%W% h%H% v%Name%%Index% %Options% hwndhwnd, 0
+        Control, ExStyle, -0x20000, , ahk_id%hwnd% ;remove WS_EX_STATICEDGE extended style
     }
-    else {
-        GuiControl, Show, %name%%i%
-        GuiControl, Move, %name%%i%, %pos%
+    else
+    {
+        GuiControl, Show, %Name%%Index%
+        GuiControl, Move, %Name%%Index%, x%X% y%Y% w%W% h%H%
     }
 }
 
-HideProgresses() {
-    global
-    for name, count in GameGui.count
-        loop % count
-            GuiControl, Hide, %name%%A_Index%
+HideRectangles()
+{
+    global GameGUI
+    For Name, Count in GameGUI.Count
+    {
+        Loop, %Count%
+            GuiControl, Hide, %Name%%A_Index%
+    }
 }
 
 Step(Delta)
 {
     Gui, +LastFound
     If GetKeyState("Tab","P") ;slow motion
-        Delta /= 2
+        Delta *= 0.1
     If Input()
         Return, 1
     If Physics(Delta)
@@ -147,13 +146,13 @@ Input()
 
 Logic(Delta)
 {
-    global LevelIndex, Left, Right, Jump, Duck, Level, Health, Gravity, EnemyX, EnemyY
+    global GameGUI, LevelIndex, Left, Right, Jump, Duck, Level, Health, Gravity, EnemyX, EnemyY
     MoveSpeed := 800
     JumpSpeed := 200
     JumpInterval := 250
 
     Padding := 100
-    WinGetPos,,, Width, Height, % "ahk_id" GameGui.hwnd
+    WinGetPos,,, Width, Height, % "ahk_id" . GameGUI.hwnd
     If (Level.Player.X < -Padding || Level.Player.X > (Width + Padding) || Level.Player.Y > (Height + Padding)) ;out of bounds
         Return, 1
     If (Health <= 0) ;out of health
@@ -263,7 +262,7 @@ Physics(Delta)
             Level.Player.SpeedX := -Temp1 ;reflect the speed and apply damping
         }
         If EnemyY
-        Rectangle.SpeedX *= (Friction * Abs(IntersectX)) ** Delta ;apply friction
+            Rectangle.SpeedX *= (Friction * Abs(IntersectX)) ** Delta ;apply friction
         If EnemyX
             Rectangle.SpeedY *= (Friction * Abs(IntersectY)) ** Delta ;apply friction
     }
@@ -325,6 +324,8 @@ Update()
 
 ParseLevel(LevelDefinition)
 {
+    LevelDefinition := RegExReplace(LevelDefinition,"S)#[^\r\n]*")
+
     Level := Object()
 
     Level.Blocks := []
@@ -372,11 +373,12 @@ ParseLevel(LevelDefinition)
             Level.Enemies.insert(new _Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
         }
     }
-    return, Level
+    Return, Level
 }
 
 class _Rectangle {
-    __new(X,Y,W,H){
+    __new(X,Y,W,H)
+    {
         this.X := X
         this.Y := Y
         this.W := W
@@ -384,41 +386,49 @@ class _Rectangle {
         this.fixed := true
     }
     
-    Center() {
-        return { X: this.X + this.W / 2, Y: this.Y + this.H / 2 }
+    Center()
+    {
+        Return, {X: this.X + (this.W / 2),Y: this.Y + (this.H / 2)}
     }
     
     ; Distance between the *centers* of two blocks
-    CenterDistance( rect ) {
+    CenterDistance(rect)
+    {
         a := this.Center()
         b := rect.Center()
-        return Sqrt( Abs(a.X - b.X)**2 + Abs(a.Y - b.Y)**2 )
+        Return, Sqrt((Abs(a.X - b.X) ** 2) + (Abs(a.Y - b.Y) ** 2))
     }
     
-    ; calculates the closest distace between two blocks (*not* the centers)
-    Distance(rect) {
-        X := this.IntersectsX(rect) ? 0 : min(Abs(this.X - (rect.X+rect.W)), Abs(rect.X - (this.X+this.W)))
-        Y := this.IntersectsY(rect) ? 0 : min(Abs(this.Y - (rect.Y+rect.H)), Abs(rect.Y - (this.Y+this.H)))
-        return Sqrt(X**2 + Y**2)
+    ; calculates the closest distance between two blocks (*not* the centers)
+    Distance(rect)
+    {
+        X := this.IntersectsX(rect) ? 0 : min(Abs(this.X - (rect.X + rect.W)),Abs(rect.X - (this.X + this.W)))
+        Y := this.IntersectsY(rect) ? 0 : min(Abs(this.Y - (rect.Y + rect.H)),Abs(rect.Y - (this.Y + this.H)))
+        Return, Sqrt((X ** 2) + (Y ** 2))
     }
     
-    ; returns true if this is completely inside rect
-    Inside( rect ) {
-        return (this.X >= rect.X) && (this.Y >= rect.Y) && (this.X + this.W <= rect.X + rect.W) && (this.Y + this.H <= rect.Y + rect.H)
+    ; Returns true if this is completely inside rect
+    Inside(rect)
+    {
+        Return, (this.X >= rect.X) && (this.Y >= rect.Y) && (this.X + this.W <= rect.X + rect.W) && (this.Y + this.H <= rect.Y + rect.H)
     }
     
-    ; returns true if this intersects rect at all
-    Intersects( rect ) {
-        return this.IntersectsX(rect) && this.IntersectsY(rect)
+    ; Returns true if this intersects rect at all
+    Intersects(rect)
+    {
+        Return, this.IntersectsX(rect) && this.IntersectsY(rect)
     }
     
-    IntersectsX( rect ) {
+    IntersectsX(rect)
+    {
         ; this could be optimized
-        return Between(this.X, rect.X, rect.X+rect.W) || Between(rect.X, this.X, this.X+this.W)
+        Return, Between(this.X,rect.X,rect.X + rect.W)
+            || Between(rect.X, this.X, this.X+this.W)
     }
     
-    IntersectsY( rect ) {
-        return Between(this.Y, rect.Y, rect.Y+rect.H) || Between(rect.Y, this.Y, this.Y+this.H)
+    IntersectsY(rect)
+    {
+        Return, Between(this.Y,rect.Y,rect.Y + rect.H) || Between(rect.Y,this.Y,this.Y + this.H)
     }
 }
 
@@ -432,31 +442,22 @@ class _Entity extends _Rectangle {
         this.fixed := false
         this.SpeedX := SpeedX
         this.SpeedY := SpeedY
+        this.LastContact := 0
     }
-}
-
-Between( x, a, b ) {
-    return (a >= x && x >= b)
-}
-
-; min that accepts either an array or args
-min( x* ) {
-    if (ObjMaxIndex(x) == 1 && IsObject(x[1]))
-        x := x[1]
-    r := x[1]
-    loop % ObjMaxIndex(x)
-        if (x[1] < r)
-            r := x[1]
-    return r
 }
 
 Collide(Rectangle1,Rectangle2,ByRef IntersectX = "",ByRef IntersectY = "")
 {
-    Left1 := Rectangle1.X, Left2 := Rectangle2.X, Right1 := Left1 + Rectangle1.W, Right2 := Left2 + Rectangle2.W
-    Top1 := Rectangle1.Y, Top2 := Rectangle2.Y, Bottom1 := Top1 + Rectangle1.H, Bottom2 := Top2 + Rectangle2.H
+    Left1 := Rectangle1.X, Left2 := Rectangle2.X
+    Right1 := Left1 + Rectangle1.W, Right2 := Left2 + Rectangle2.W
+    Top1 := Rectangle1.Y, Top2 := Rectangle2.Y
+    Bottom1 := Top1 + Rectangle1.H, Bottom2 := Top2 + Rectangle2.H
 
     ;check for collision
-    If (Right1 < Left2 || Right2 < Left1 || Bottom1 < Top2 || Bottom2 < Top1)
+    If (Right1 < Left2
+       || Right2 < Left1
+       || Bottom1 < Top2
+       || Bottom2 < Top1)
     {
         IntersectX := 0, IntersectY := 0
         Return, 0 ;no collision occurred
@@ -478,5 +479,23 @@ Collide(Rectangle1,Rectangle2,ByRef IntersectX = "",ByRef IntersectY = "")
 
 Inside(Rectangle1,Rectangle2)
 {
-    Return, Rectangle1.X >= Rectangle2.X && (Rectangle1.X + Rectangle1.W) <= (Rectangle2.X + Rectangle2.W) && Rectangle1.Y >= Rectangle2.Y && (Rectangle1.Y + Rectangle1.H) <= (Rectangle2.Y + Rectangle2.H)
+    Return, Rectangle1.X >= Rectangle2.X
+            && (Rectangle1.X + Rectangle1.W) <= (Rectangle2.X + Rectangle2.W)
+            && Rectangle1.Y >= Rectangle2.Y
+            && (Rectangle1.Y + Rectangle1.H) <= (Rectangle2.Y + Rectangle2.H)
+}
+
+Between( x, a, b ) {
+    Return, (a >= x && x >= b)
+}
+
+; min that accepts either an array or args
+min( x* ) {
+    if (ObjMaxIndex(x) == 1 && IsObject(x[1]))
+        x := x[1]
+    r := x[1]
+    loop % ObjMaxIndex(x)
+        if (x[1] < r)
+            r := x[1]
+    Return, r
 }
