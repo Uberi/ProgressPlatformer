@@ -1,8 +1,11 @@
 #NoEnv
 #SingleInstance Force
 
+;wip: moving platforms and elevators
+;wip: level editor
+
 TargetFrameRate := 40
-DeltaLimit := 0.1
+DeltaLimit := 0.05
 
 Gravity := -981
 Friction := 0.01
@@ -83,8 +86,8 @@ Initialize()
     }
 
     ;create level
-    For Index, rect In Level.Blocks
-        PutProgress(rect.X, rect.Y, rect.W, rect.H, "LevelRectangle", Index, "BackgroundRed")
+    For Index, Rectangle In Level.Blocks
+        PutProgress(Rectangle.X, Rectangle.Y, Rectangle.W, Rectangle.H, "LevelRectangle", Index, "BackgroundRed")
 
     ;create player
     PutProgress(Level.Player.X, Level.Player.Y, Level.Player.W, Level.Player.H, "PlayerRectangle", "", "-Smooth Vertical")
@@ -93,8 +96,8 @@ Initialize()
     PutProgress(Level.Goal.X, Level.Goal.Y, Level.Goal.W, Level.Goal.H, "GoalRectangle", "", "Disabled -VScroll")
 
     ;create enemies
-    For Index, rect In Level.Enemies
-        PutProgress(rect.X, rect.Y, rect.W, rect.H, "EnemyRectangle", Index, "BackgroundBlue")
+    For Index, Rectangle In Level.Enemies
+        PutProgress(Rectangle.X, Rectangle.Y, Rectangle.W, Rectangle.H, "EnemyRectangle", Index, "BackgroundBlue")
 
     AllowRedraw(hWindow)
     WinSet, Redraw
@@ -188,9 +191,10 @@ Logic(Delta)
 
     If (Level.Player.IntersectX && (Left || Right))
     {
+        Level.Player.SpeedX *= 0.01
         Level.Player.SpeedY -= Gravity * Delta
         If Jump
-                Level.Player.SpeedY += MoveSpeed * Delta
+            Level.Player.SpeedY += MoveSpeed * Delta
     }
     Else If (Jump && Level.Player.LastContact < JumpInterval)
         Level.Player.SpeedY += JumpSpeed - (Gravity * Delta), Level.Player.LastContact := JumpInterval
@@ -408,43 +412,43 @@ class _Rectangle {
     }
     
     ; Distance between the *centers* of two blocks
-    CenterDistance(rect)
+    CenterDistance(Rectangle)
     {
         a := this.Center()
-        b := rect.Center()
+        b := Rectangle.Center()
         Return, Sqrt((Abs(a.X - b.X) ** 2) + (Abs(a.Y - b.Y) ** 2))
     }
     
     ; calculates the closest distance between two blocks (*not* the centers)
-    Distance(rect)
+    Distance(Rectangle)
     {
-        X := this.IntersectsX(rect) ? 0 : min(Abs(this.X - (rect.X + rect.W)),Abs(rect.X - (this.X + this.W)))
-        Y := this.IntersectsY(rect) ? 0 : min(Abs(this.Y - (rect.Y + rect.H)),Abs(rect.Y - (this.Y + this.H)))
+        X := this.IntersectsX(Rectangle) ? 0 : min(Abs(this.X - (Rectangle.X + Rectangle.W)),Abs(Rectangle.X - (this.X + this.W)))
+        Y := this.IntersectsY(Rectangle) ? 0 : min(Abs(this.Y - (Rectangle.Y + Rectangle.H)),Abs(Rectangle.Y - (this.Y + this.H)))
         Return, Sqrt((X ** 2) + (Y ** 2))
     }
     
-    ; Returns true if this is completely inside rect
-    Inside(rect)
+    ; Returns true if this is completely inside Rectangle
+    Inside(Rectangle)
     {
-        Return, (this.X >= rect.X) && (this.Y >= rect.Y) && (this.X + this.W <= rect.X + rect.W) && (this.Y + this.H <= rect.Y + rect.H)
+        Return, (this.X >= Rectangle.X) && (this.Y >= Rectangle.Y) && (this.X + this.W <= Rectangle.X + Rectangle.W) && (this.Y + this.H <= Rectangle.Y + Rectangle.H)
     }
     
-    ; Returns true if this intersects rect at all
-    Intersects(rect)
+    ; Returns true if this intersects Rectangle at all
+    Intersects(Rectangle)
     {
-        Return, this.IntersectsX(rect) && this.IntersectsY(rect)
+        Return, this.IntersectsX(Rectangle) && this.IntersectsY(Rectangle)
     }
     
-    IntersectsX(rect)
+    IntersectsX(Rectangle)
     {
         ; this could be optimized
-        Return, Between(this.X,rect.X,rect.X + rect.W)
-            || Between(rect.X, this.X, this.X+this.W)
+        Return, Between(this.X,Rectangle.X,Rectangle.X + Rectangle.W)
+                || Between(Rectangle.X, this.X, this.X+this.W)
     }
     
-    IntersectsY(rect)
+    IntersectsY(Rectangle)
     {
-        Return, Between(this.Y,rect.Y,rect.Y + rect.H) || Between(rect.Y,this.Y,this.Y + this.H)
+        Return, Between(this.Y,Rectangle.Y,Rectangle.Y + Rectangle.H) || Between(Rectangle.Y,this.Y,this.Y + this.H)
     }
 }
 
