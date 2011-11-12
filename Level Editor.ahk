@@ -67,6 +67,7 @@ Return
 Select:
 RegExMatch(A_GuiControl,"S)([a-zA-Z]+)(\d+)",Output)
 SelectRectangle(Output1,Output2)
+WinSet, Redraw
 Return
 
 MoveRectangle(Name,Index,PosX,PosY)
@@ -89,14 +90,16 @@ SelectRectangle(Name,Index)
 PlaceRectangle(Name,Index,X,Y,W = 0,H = 0,Options = "")
 {
     global
-    static ControlCount := 0
+    static ControlCount := Object()
     If (W && H)
         Dimensions := "w" . W . " h" . H
     Else
         Dimensions := ""
-    If (Index > ControlCount)
+    If !ObjHasKey(ControlCount,Name)
+        ControlCount[Name] := 0
+    If (Index > ControlCount[Name])
     {
-        ControlCount ++
+        ControlCount[Name] ++
         Gui, 1:Add, Text, x%X% y%Y% %Dimensions% v%Name%%Index%HitArea gSelect
         Gui, 1:Add, Progress, x%X% y%Y% %Dimensions% v%Name%%Index% %Options% hwndhWnd
         Control, ExStyle, -0x20000,, ahk_id %hWnd% ;remove WS_EX_STATICEDGE extended style
