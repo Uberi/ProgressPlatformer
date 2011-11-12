@@ -46,7 +46,7 @@ Return
 
 AddEnemy:
 EnemyCount ++
-PlaceRectangle(EnemyRectangle,"EnemyCount",10,10,30,40,BackgroundBlue)
+PlaceRectangle("EnemyRectangle",EnemyCount,10,10,30,40,"BackgroundBlue")
 SelectRectangle("EnemyRectangle",EnemyCount)
 Return
 
