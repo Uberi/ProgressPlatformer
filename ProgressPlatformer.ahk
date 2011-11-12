@@ -93,7 +93,7 @@ Initialize()
     PutProgress(Level.Player.X, Level.Player.Y, Level.Player.W, Level.Player.H, "PlayerRectangle", "", "-Smooth Vertical")
 
     ;create goal
-    PutProgress(Level.Goal.X, Level.Goal.Y, Level.Goal.W, Level.Goal.H, "GoalRectangle", "", "Disabled -VScroll")
+    PutProgress(Level.Goal.X, Level.Goal.Y, Level.Goal.W, Level.Goal.H, "GoalRectangle", "", "BackgroundWhite")
 
     ;create enemies
     For Index, Rectangle In Level.Enemies
@@ -108,12 +108,12 @@ Initialize()
 PutProgress(X,Y,W,H,Name,Index,Options)
 {
     global
-    local hwnd
+    local hWnd
     If (GameGUI.Count[Name] < Index || GameGUI.Count[Name] == 0)
     {
         GameGUI.Count[Name] ++
-        Gui, Add, Progress, x%X% y%Y% w%W% h%H% v%Name%%Index% %Options% hwndhwnd, 0
-        Control, ExStyle, -0x20000, , ahk_id%hwnd% ;remove WS_EX_STATICEDGE extended style
+        Gui, Add, Progress, x%X% y%Y% w%W% h%H% v%Name%%Index% %Options% hwndhWnd, 0
+        Control, ExStyle, -0x20000,, ahk_id %hWnd% ;remove WS_EX_STATICEDGE extended style
     }
     Else
     {
