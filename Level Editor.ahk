@@ -2,6 +2,8 @@
 
 Width := 800, Height := 600
 
+CoordMode, Mouse, Client
+
 BlockCount := 0, EnemyCount := 0
 SelectedRectangleName := "", SelectedRectangleIndex := 0
 
@@ -45,6 +47,7 @@ SelectRectangle("LevelRectangle",BlockCount)
 Return
 
 AddEnemy:
+
 EnemyCount ++
 PlaceRectangle("EnemyRectangle",EnemyCount,10,10,30,40,"BackgroundBlue")
 SelectRectangle("EnemyRectangle",EnemyCount)
@@ -54,10 +57,33 @@ MoveRectangle:
 GuiControlGet, Rectangle, 1:Pos, %SelectedRectangleName%%SelectedRectangleIndex%
 MouseGetPos, OffsetX, OffsetY
 OffsetX -= RectangleX, OffsetY -= RectangleY
+BorderSize := 3
+ResizeLeft := (OffsetX >= -BorderSize && OffsetX <= BorderSize)
+ResizeTop := (OffsetY >= -BorderSize && OffsetY <= BorderSize)
+ResizeRight := ((OffsetX - RectangleW) >= -BorderSize && (OffsetX - RectangleW) <= BorderSize)
+ResizeBottom := ((OffsetY - RectangleH) >= -BorderSize && (OffsetY - RectangleH) <= BorderSize)
 While, GetKeyState("LButton","P")
 {
     MouseGetPos, PosX, PosY
-    PlaceRectangle(SelectedRectangleName,SelectedRectangleIndex,PosX - OffsetX,PosY - OffsetY)
+    PosX -= OffsetX, PosY -= OffsetY
+    ValueX := PosX, ValueY := PosY, ValueW := "", ValueH := ""
+    If ResizeTop
+        ValueH := (RectangleY - PosY) + RectangleH
+    If ResizeBottom
+        ValueY := "", ValueH := (PosY - RectangleY) + RectangleH
+    If ResizeLeft
+        ValueW := (RectangleX - PosX) + RectangleW
+    If ResizeRight
+        ValueX := "", ValueW := (PosX - RectangleX) + RectangleW
+    If ((ResizeTop || ResizeBottom) && !(ResizeLeft || ResizeRight))
+        ValueX := ""
+    Else If ((ResizeLeft || ResizeRight) && !(ResizeTop || ResizeBottom))
+        ValueY := ""
+    If (ValueW != "" && ValueW < 40)
+        ValueW := 40
+    If (ValueH != "" && ValueH < 20)
+        ValueH := 20
+    PlaceRectangle(SelectedRectangleName,SelectedRectangleIndex,ValueX,ValueY,ValueW,ValueH)
     SelectRectangle(SelectedRectangleName,SelectedRectangleIndex)
     WinSet, Redraw
     Sleep, 50
@@ -87,27 +113,25 @@ SelectRectangle(Name,Index)
     SelectedRectangleName := Name, SelectedRectangleIndex := Index
 }
 
-PlaceRectangle(Name,Index,X,Y,W = 0,H = 0,Options = "")
+PlaceRectangle(Name,Index,X = "",Y = "",W = "",H = "",Options = "")
 {
     global
     static ControlCount := Object()
-    If (W && H)
-        Dimensions := "w" . W . " h" . H
-    Else
-        Dimensions := ""
+    Dimensions := ((X = "") ? "" : (" x" . X)) . ((Y = "") ? "" : (" y" . Y)) . ((W = "") ? "" : (" w" . W)) . ((H = "") ? "" : (" h" . H))
+    ToolTip % Dimensions
     If !ObjHasKey(ControlCount,Name)
         ControlCount[Name] := 0
     If (Index > ControlCount[Name])
     {
         ControlCount[Name] ++
-        Gui, 1:Add, Text, x%X% y%Y% %Dimensions% v%Name%%Index%HitArea gSelect
-        Gui, 1:Add, Progress, x%X% y%Y% %Dimensions% v%Name%%Index% %Options% hwndhWnd
+        Gui, 1:Add, Text, %Dimensions% v%Name%%Index%HitArea gSelect
+        Gui, 1:Add, Progress, %Dimensions% v%Name%%Index% %Options% hwndhWnd
         Control, ExStyle, -0x20000,, ahk_id %hWnd% ;remove WS_EX_STATICEDGE extended style
     }
     Else
     {
         GuiControl, 1:Show, %Name%%Index%
-        GuiControl, 1:Move, %Name%%Index%, x%X% y%Y% %Dimensions%
-        GuiControl, 1:Move, %Name%%Index%HitArea, x%X% y%Y% %Dimensions%
+        GuiControl, 1:Move, %Name%%Index%, %Dimensions%
+        GuiControl, 1:Move, %Name%%Index%HitArea, %Dimensions%
     }
 }
