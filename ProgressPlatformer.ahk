@@ -2,9 +2,8 @@
 #SingleInstance Force
 
 ;wip: moving platforms and elevators
-;wip: level editor
 
-TargetFrameRate := 40
+TargetFrameRate := 30
 DeltaLimit := 0.05
 
 Gravity := -981
@@ -16,8 +15,7 @@ LevelIndex := 1
 SetBatchLines, -1
 SetWinDelay, -1
 
-global GameGUI
-GoSub MakeGuis
+GoSub, MakeGuis
 
 TargetFrameDelay := 1000 / TargetFrameRate
 TickFrequency := 0, DllCall("QueryPerformanceFrequency","Int64*",TickFrequency) ;obtain ticks per second
@@ -63,7 +61,7 @@ ExitApp
 
 Initialize()
 {
-    global Health, Level, LevelIndex
+    global Health, Level, LevelIndex, GameGUI
     
     Health := 100
 
@@ -247,6 +245,7 @@ Physics(Delta)
     Level.Player.SpeedY += Gravity * Delta ;process gravity
     Level.Player.X += Level.Player.SpeedX * Delta
     Level.Player.Y -= Level.Player.SpeedY * Delta ;process momentum
+    Level.Player.IntersectX := 0, Level.Player.IntersectY := 0
     EntityPhysics(Delta,Level.Player,Level.Blocks) ;process collision with level
 
     EnemyX := 0, EnemyY := 0
@@ -255,6 +254,7 @@ Physics(Delta)
         ;process enemy
         Rectangle.SpeedY += Gravity * Delta ;process gravity
         Rectangle.X += Rectangle.SpeedX * Delta, Rectangle.Y -= Rectangle.SpeedY * Delta ;process momentum
+        Rectangle.IntersectX := 0, Rectangle.IntersectY := 0
         EntityPhysics(Delta,Rectangle,Level.Blocks) ;process collision with level
         Temp1 := ObjClone(Level.Enemies), ObjRemove(Temp1,Index,"") ;create an array of enemies excluding the current one
         EntityPhysics(Delta,Rectangle,Temp1) ;process collision with other enemies
@@ -312,15 +312,15 @@ EntityPhysics(Delta,Entity,Rectangles)
             TotalIntersectX += Abs(IntersectX)
         }
     }
-    Entity.IntersectX := TotalIntersectX, Entity.IntersectY := TotalIntersectY
     If CollisionY
     {
         Entity.LastContact := 0
+        Entity.IntersectY := TotalIntersectY
         Entity.SpeedX *= (Friction * TotalIntersectY) ** Delta ;apply friction
     }
     If CollisionX
     {
-        Entity.IntersectY := TotalIntersectY
+        Entity.IntersectX := TotalIntersectX
         Entity.SpeedY *= (Friction * TotalIntersectX) ** Delta ;apply friction
     }
 }
@@ -330,15 +330,15 @@ Update()
     global Level, Health
     ;update level
     For Index, Rectangle In Level.Blocks
-        GuiControl, Move, LevelRectangle%Index%, % "x" . Rectangle.X . " y" . Rectangle.Y . " w" . Rectangle.W . " h" . Rectangle.H
+        GuiControl, Move, LevelRectangle%Index%, % "x" . Round(Rectangle.X) . " y" . Round(Rectangle.Y) . " w" . Round(Rectangle.W) . " h" . Round(Rectangle.H)
 
     ;update player
     GuiControl,, PlayerRectangle, %Health%
-    GuiControl, Move, PlayerRectangle, % "x" . Level.Player.X . " y" . Level.Player.Y . " w" . Level.Player.W . " h" . Level.Player.H
+    GuiControl, Move, PlayerRectangle, % "x" . Round(Level.Player.X) . " y" . Round(Level.Player.Y) . " w" . Round(Level.Player.W) . " h" . Round(Level.Player.H)
 
     ;update enemies
     For Index, Rectangle In Level.Enemies
-        GuiControl, Move, EnemyRectangle%Index%, % "x" . Rectangle.X . " y" . Rectangle.Y . " w" . Rectangle.W . " h" . Rectangle.H
+        GuiControl, Move, EnemyRectangle%Index%, % "x" . Round(Rectangle.X) . " y" . Round(Rectangle.Y) . " w" . Round(Rectangle.W) . " h" . Round(Rectangle.H)
     Return, 0
 }
 
