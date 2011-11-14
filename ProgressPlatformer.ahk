@@ -44,15 +44,9 @@ MakeGuis:
     ;create game window
     Gui, Color, Black
     Gui, +OwnDialogs +LastFound
-    
+
     GameGUI := {}
     GameGUI.hwnd := WinExist()
-    
-    GameGUI.Count := {}
-    GameGUI.Count.LevelRectangle  := 0
-    GameGUI.Count.PlayerRectangle := 0
-    GameGUI.Count.GoalRectangle   := 0
-    GameGUI.Count.EnemyRectangle  := 0
 Return
 
 GuiEscape:
@@ -61,7 +55,7 @@ ExitApp
 
 Initialize()
 {
-    global Health, Level, LevelIndex, GameGUI
+    global Health, Level, LevelIndex
     
     Health := 100
 
@@ -71,31 +65,55 @@ Initialize()
     FileRead, LevelDefinition, %LevelFile%
     If ErrorLevel
         Return, 1
+
+    ;hide all controls
+    If ObjHasKey(Level,"Blocks")
+    {
+        For Index In Level.Blocks
+            GuiControl, Hide, LevelRectangle%Index%
+    }
+    If ObjHasKey(Level,"Platforms")
+    {
+        For Index In Level.Platforms
+            GuiControl, Hide, PlatformRectangle%Index%
+    }
+    If ObjHasKey(Level,"Player")
+        GuiControl, Hide, PlayerRectangle
+    If ObjHasKey(Level,"Goal")
+        GuiControl, Hide, GoalRectangle
+    If ObjHasKey(Level,"Enemies")
+    {
+        For Index, Rectangle In Level.Enemies
+            GuiControl, Hide, EnemyRectangle%Index%
+    }
+
     Level := ParseLevel(LevelDefinition)
+
+    ;wip
+    Level.Platforms := Object()
+    ObjInsert(Level.Platforms,new _Platform(50,50,200,30,100,0,20))
 
     Gui, +LastFound
     hWindow := WinExist()
     PreventRedraw(hWindow)
 
-    For Name, Count In GameGUI.Count
-    {
-        Loop, %Count%
-            GuiControl, Hide, %Name%%A_Index%
-    }
-
     ;create level
     For Index, Rectangle In Level.Blocks
-        PutProgress(Rectangle.X, Rectangle.Y, Rectangle.W, Rectangle.H, "LevelRectangle", Index, "BackgroundRed")
+        PlaceRectangle(Rectangle.X,Rectangle.Y,Rectangle.W,Rectangle.H,"LevelRectangle",Index,"BackgroundRed")
+
+    ;create platforms
+    For Index, Rectangle In Level.Platforms
+        PlaceRectangle(Rectangle.X,Rectangle.Y,Rectangle.W,Rectangle.H,"PlatformRectangle",Index,"BackgroundLime")
 
     ;create player
-    PutProgress(Level.Player.X, Level.Player.Y, Level.Player.W, Level.Player.H, "PlayerRectangle", "", "-Smooth Vertical")
+    PlaceRectangle(Level.Player.X,Level.Player.Y,Level.Player.W,Level.Player.H,"PlayerRectangle","","-Smooth Vertical")
 
     ;create goal
-    PutProgress(Level.Goal.X, Level.Goal.Y, Level.Goal.W, Level.Goal.H, "GoalRectangle", "", "BackgroundWhite")
+    PlaceRectangle(Level.Goal.X,Level.Goal.Y,Level.Goal.W,Level.Goal.H,"GoalRectangle","","BackgroundWhite")
 
     ;create enemies
     For Index, Rectangle In Level.Enemies
-        PutProgress(Rectangle.X, Rectangle.Y, Rectangle.W, Rectangle.H, "EnemyRectangle", Index, "BackgroundBlue")
+        PlaceRectangle(Rectangle.X,Rectangle.Y,Rectangle.W,Rectangle.H,"EnemyRectangle",Index,"BackgroundBlue")
 
     AllowRedraw(hWindow)
     WinSet, Redraw
@@ -103,13 +121,16 @@ Initialize()
     Gui, Show, AutoSize, ProgressPlatformer
 }
 
-PutProgress(X,Y,W,H,Name,Index,Options)
+PlaceRectangle(X,Y,W,H,Name,Index = "",Options = "")
 {
     global
+    static NameCount := Object()
     local hWnd
-    If (GameGUI.Count[Name] < Index || GameGUI.Count[Name] == 0)
+    If !ObjHasKey(NameCount,Name)
+        NameCount[Name] := 0
+    If ((Index = "") ? (NameCount[Name] = 0) : (NameCount[Name] < Index)) ;control does not yet exist
     {
-        GameGUI.Count[Name] ++
+        NameCount[Name] ++
         Gui, Add, Progress, x%X% y%Y% w%W% h%H% v%Name%%Index% %Options% hwndhWnd, 0
         Control, ExStyle, -0x20000,, ahk_id %hWnd% ;remove WS_EX_STATICEDGE extended style
     }
@@ -332,6 +353,10 @@ Update()
     For Index, Rectangle In Level.Blocks
         GuiControl, Move, LevelRectangle%Index%, % "x" . Round(Rectangle.X) . " y" . Round(Rectangle.Y) . " w" . Round(Rectangle.W) . " h" . Round(Rectangle.H)
 
+    ;update platforms
+    For Index, Rectangle In Level.Platforms
+        GuiControl, Move, PlatformRectangle%Index%, % "x" . Round(Rectangle.X) . " y" . Round(Rectangle.Y) . " w" . Round(Rectangle.W) . " h" . Round(Rectangle.H)
+
     ;update player
     GuiControl,, PlayerRectangle, %Health%
     GuiControl, Move, PlayerRectangle, % "x" . Round(Level.Player.X) . " y" . Round(Level.Player.Y) . " w" . Round(Level.Player.W) . " h" . Round(Level.Player.H)
@@ -396,14 +421,14 @@ ParseLevel(LevelDefinition)
     Return, Level
 }
 
-class _Rectangle {
+class _Rectangle
+{
     __new(X,Y,W,H)
     {
         this.X := X
         this.Y := Y
         this.W := W
         this.H := H
-        this.fixed := true
     }
     
     Center()
@@ -452,14 +477,30 @@ class _Rectangle {
     }
 }
 
-class _Entity extends _Rectangle {
-    __new(X,Y,W,H,SpeedX = 0,SpeedY = 0) {
+class _Entity extends _Rectangle
+{
+    __new(X,Y,W,H,SpeedX = 0,SpeedY = 0)
+    {
         this.X := X
         this.Y := Y
         this.W := W
         this.H := H
-        this.mass := W * H ; * density
-        this.fixed := false
+        this.SpeedX := SpeedX
+        this.SpeedY := SpeedY
+        this.LastContact := 0
+    }
+}
+
+class _Platform extends _Rectangle
+{
+    __new(X,Y,W,H,RangeX,RangeY,SpeedX = 0,SpeedY = 0)
+    {
+        this.X := X
+        this.Y := Y
+        this.W := W
+        this.H := H
+        this.RangeX := RangeX
+        this.RangeY := RangeY
         this.SpeedX := SpeedX
         this.SpeedY := SpeedY
         this.LastContact := 0
