@@ -89,9 +89,7 @@ Initialize()
 
     Level := ParseLevel(LevelDefinition)
 
-    ;wip
-    Level.Platforms := Object()
-    ObjInsert(Level.Platforms,new _Platform(50,50,200,30,100,0,20))
+    Level.Platforms[1] := new _Platform(50,50,100,20,30,50,1,20) ;wip
 
     Gui, +LastFound
     hWindow := WinExist()
@@ -184,11 +182,7 @@ Input()
 
 Logic(Delta)
 {
-    global GameGUI, LevelIndex, Left, Right, Jump, Duck, Level, Health, Gravity, EnemyX, EnemyY
-    MoveSpeed := 800
-    JumpSpeed := 200
-    JumpInterval := 250
-
+    global GameGUI, LevelIndex, Level, Health, EnemyX, EnemyY
     Padding := 100
     WinGetPos,,, Width, Height, % "ahk_id" . GameGUI.hwnd
     If (Level.Player.X < -Padding || Level.Player.X > (Width + Padding) || Level.Player.Y > (Height + Padding)) ;out of bounds
@@ -203,6 +197,38 @@ Logic(Delta)
         Return, 3
     }
 
+    PlayerLogic(Delta)
+
+    If (EnemyX || EnemyY > 0)
+        Health -= 200 * Delta
+    Else If EnemyY
+    {
+        EnemyY := Abs(EnemyY)
+        ObjRemove(Level.Enemies,EnemyY,"")
+        GuiControl, Hide, EnemyRectangle%EnemyY%
+        Health += 50
+    }
+
+    EnemyLogic(Delta)
+
+    For Index, Rectangle In Level.Platforms
+    {
+        If (Rectangle.X < Rectangle.RangeX || Rectangle.X > (Rectangle.RangeX + Rectangle.RangeW))
+            Rectangle.SpeedX *= -1
+        If (Rectangle.Y < Rectangle.RangeY || Rectangle.Y > (Rectangle.RangeY + Rectangle.RangeH))
+            Rectangle.SpeedY *= -1
+        Rectangle.X += Rectangle.SpeedX * Delta
+        Rectangle.Y += Rectangle.SpeedY * Delta
+    }
+    Return, 0
+}
+
+PlayerLogic(Delta)
+{
+    global Left, Right, Jump, Duck, Level, Gravity
+    MoveSpeed := 800
+    JumpSpeed := 200
+    JumpInterval := 250
     If Left
         Level.Player.SpeedX -= MoveSpeed * Delta
     If Right
@@ -220,19 +246,6 @@ Logic(Delta)
     Level.Player.LastContact += Delta
 
     Level.Player.H := Duck ? 30 : 40
-
-    If (EnemyX || EnemyY > 0)
-        Health -= 200 * Delta
-    Else If EnemyY
-    {
-        EnemyY := Abs(EnemyY)
-        ObjRemove(Level.Enemies,EnemyY,"")
-        GuiControl, Hide, EnemyRectangle%EnemyY%
-        Health += 50
-    }
-
-    EnemyLogic(Delta)
-    Return, 0
 }
 
 EnemyLogic(Delta)
@@ -268,6 +281,7 @@ Physics(Delta)
     Level.Player.Y -= Level.Player.SpeedY * Delta ;process momentum
     Level.Player.IntersectX := 0, Level.Player.IntersectY := 0
     EntityPhysics(Delta,Level.Player,Level.Blocks) ;process collision with level
+    EntityPhysics(Delta,Level.Player,Level.Platforms) ;process collision with platforms
 
     EnemyX := 0, EnemyY := 0
     For Index, Rectangle In Level.Enemies
@@ -349,21 +363,17 @@ EntityPhysics(Delta,Entity,Rectangles)
 Update()
 {
     global Level, Health
-    ;update level
-    For Index, Rectangle In Level.Blocks
-        GuiControl, Move, LevelRectangle%Index%, % "x" . Round(Rectangle.X) . " y" . Round(Rectangle.Y) . " w" . Round(Rectangle.W) . " h" . Round(Rectangle.H)
-
     ;update platforms
     For Index, Rectangle In Level.Platforms
-        GuiControl, Move, PlatformRectangle%Index%, % "x" . Round(Rectangle.X) . " y" . Round(Rectangle.Y) . " w" . Round(Rectangle.W) . " h" . Round(Rectangle.H)
+        PlaceRectangle(Round(Rectangle.X),Round(Rectangle.Y),Round(Rectangle.W),Round(Rectangle.H),"PlatformRectangle",Index)
 
     ;update player
     GuiControl,, PlayerRectangle, %Health%
-    GuiControl, Move, PlayerRectangle, % "x" . Round(Level.Player.X) . " y" . Round(Level.Player.Y) . " w" . Round(Level.Player.W) . " h" . Round(Level.Player.H)
+    PlaceRectangle(Round(Level.Player.X),Round(Level.Player.Y),Round(Level.Player.W),Round(Level.Player.H),"PlayerRectangle")
 
     ;update enemies
     For Index, Rectangle In Level.Enemies
-        GuiControl, Move, EnemyRectangle%Index%, % "x" . Round(Rectangle.X) . " y" . Round(Rectangle.Y) . " w" . Round(Rectangle.W) . " h" . Round(Rectangle.H)
+        PlaceRectangle(Round(Rectangle.X),Round(Rectangle.Y),Round(Rectangle.W),Round(Rectangle.H),"EnemyRectangle",Index)
     Return, 0
 }
 
@@ -385,7 +395,24 @@ ParseLevel(LevelDefinition)
         Loop, Parse, Property, `n
         {
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Level.Blocks.Insert(new _Rectangle(Entry1,Entry2,Entry3,Entry4))
+            ObjInsert(Level.Blocks,new _Rectangle(Entry1,Entry2,Entry3,Entry4))
+        }
+    }
+
+    Level.Platforms := []
+    If RegExMatch(LevelDefinition,"iS)Platforms\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){4,7})*",Property)
+    {
+        StringReplace, Property, Property, `r,, All
+        StringReplace, Property, Property, %A_Space%,, All
+        StringReplace, Property, Property, %A_Tab%,, All
+        While, InStr(Property,"`n`n")
+            StringReplace, Property, Property, `n`n, `n, All
+        Property := Trim(Property,"`n")
+        Loop, Parse, Property, `n
+        {
+            Entry6 := 0, Entry7 := 100
+            StringSplit, Entry, A_LoopField, `,, %A_Space%`t
+            ObjInsert(Level.Platforms,new _Platform(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6,Entry7))
         }
     }
 
@@ -401,7 +428,7 @@ ParseLevel(LevelDefinition)
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
         Level.Goal := new _Rectangle(Entry1,Entry2,Entry3,Entry4)
     }
-    
+
     Level.Enemies := []
     If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
     {
@@ -415,7 +442,7 @@ ParseLevel(LevelDefinition)
         {
             Entry5 := 0, Entry6 := 0
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Level.Enemies.insert(new _Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
+            ObjInsert(Level.Enemies,new _Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
         }
     }
     Return, Level
@@ -493,17 +520,23 @@ class _Entity extends _Rectangle
 
 class _Platform extends _Rectangle
 {
-    __new(X,Y,W,H,RangeX,RangeY,SpeedX = 0,SpeedY = 0)
+    __new(X,Y,W,H,RangeStart,RangeLength = 0,Horizontal = 1,Speed = 0)
     {
         this.X := X
         this.Y := Y
         this.W := W
         this.H := H
-        this.RangeX := RangeX
-        this.RangeY := RangeY
-        this.SpeedX := SpeedX
-        this.SpeedY := SpeedY
-        this.LastContact := 0
+        If Horizontal
+        {
+            this.RangeX := RangeStart, this.RangeY := Y
+            this.RangeW := RangeLength, this.RangeH := 0
+            this.SpeedX := Speed, this.SpeedY := 0
+        }
+        Else
+        {
+            this.RangeX := X, this.RangeY := RangeStart, this.RangeW := 0, this.RangeH := RangeLength
+            this.SpeedX := 0, this.SpeedY := Speed
+        }
     }
 }
 
