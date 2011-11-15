@@ -24,15 +24,22 @@ Gui, 2:Add, Progress, x100 y60 w30 h40 BackgroundBlue
 Gui, 2:Font, s10
 Gui, 2:Add, Text, x10 y130 w160 h20 Center, Modify
 Gui, 2:Font, s8
-Gui, 2:Add, Button, x10 y160 w70 h30, Resize
-Gui, 2:Add, Button, x100 y160 w70 h30, Remove
-Gui, 2:Add, Button, x10 y200 w160 h20, Physics
+Gui, 2:Add, Button, x10 y160 w70 h30, Properties
+Gui, 2:Add, Button, x100 y160 w70 h30, Physics
+Gui, 2:Add, Button, x10 y200 w160 h20, Remove
 Gui, 2:+ToolWindow +AlwaysOnTop +Owner1
 Gui, 2:Show, x10 w180 h230, Tools
+
+PlaceRectangle("PlayerRectangle","",10,10,30,40,"-Smooth Vertical")
+SelectRectangle("PlayerRectangle")
+
+PlaceRectangle("GoalRectangle","",10,90,30,40,"BackgroundWhite")
+GuiControl,, PlayerRectangle, 100
 Return
 
 GuiClose:
 2GuiClose:
+GoSub, Save
 ExitApp
 
 GuiSize:
@@ -47,7 +54,6 @@ SelectRectangle("LevelRectangle",BlockCount)
 Return
 
 AddEnemy:
-
 EnemyCount ++
 PlaceRectangle("EnemyRectangle",EnemyCount,10,10,30,40,"BackgroundBlue")
 SelectRectangle("EnemyRectangle",EnemyCount)
@@ -79,8 +85,8 @@ While, GetKeyState("LButton","P")
         ValueX := ""
     Else If ((ResizeLeft || ResizeRight) && !(ResizeTop || ResizeBottom))
         ValueY := ""
-    If (ValueW != "" && ValueW < 40)
-        ValueW := 40
+    If (ValueW != "" && ValueW < 20)
+        ValueW := 20
     If (ValueH != "" && ValueH < 20)
         ValueH := 20
     PlaceRectangle(SelectedRectangleName,SelectedRectangleIndex,ValueX,ValueY,ValueW,ValueH)
@@ -91,18 +97,32 @@ While, GetKeyState("LButton","P")
 Return
 
 Select:
-RegExMatch(A_GuiControl,"S)([a-zA-Z]+)(\d+)",Output)
+RegExMatch(A_GuiControl,"S)([a-zA-Z]+)(\d*)HitArea",Output)
 SelectRectangle(Output1,Output2)
 WinSet, Redraw
 Return
 
-MoveRectangle(Name,Index,PosX,PosY)
+Save:
+Result := "Blocks:"
+Loop, %BlockCount%
 {
-    GuiControl, 1:Move, %Name%%Index%, x%PosX% y%PosY%
-    GuiControl, 1:Move, %Name%%Index%HitArea, x%PosX% y%PosY%
+    GuiControlGet, Rectangle, Pos, LevelRectangle%A_Index%
+    Result .= "`n" . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
 }
+GuiControlGet, Rectangle, Pos, PlayerRectangle
+Result .= "`n`nPlayer: " . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
+GuiControlGet, Rectangle, Pos, GoalRectangle
+Result .= "`n`nGoal: " . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
+Result .= "`n`nEnemies:"
+Loop, %EnemyCount%
+{
+    GuiControlGet, Rectangle, Pos, EnemyRectangle%A_Index%
+    Result .= "`n" . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
+}
+MsgBox % Result
+Return
 
-SelectRectangle(Name,Index)
+SelectRectangle(Name,Index = "")
 {
     global SelectedRectangleName, SelectedRectangleIndex
     GuiControlGet, Rectangle, 1:Pos, %Name%%Index%
@@ -113,17 +133,16 @@ SelectRectangle(Name,Index)
     SelectedRectangleName := Name, SelectedRectangleIndex := Index
 }
 
-PlaceRectangle(Name,Index,X = "",Y = "",W = "",H = "",Options = "")
+PlaceRectangle(Name,Index = "",X = "",Y = "",W = "",H = "",Options = "")
 {
     global
-    static ControlCount := Object()
+    static NameCount := Object()
     Dimensions := ((X = "") ? "" : (" x" . X)) . ((Y = "") ? "" : (" y" . Y)) . ((W = "") ? "" : (" w" . W)) . ((H = "") ? "" : (" h" . H))
-    ToolTip % Dimensions
-    If !ObjHasKey(ControlCount,Name)
-        ControlCount[Name] := 0
-    If (Index > ControlCount[Name])
+    If !ObjHasKey(NameCount,Name)
+        NameCount[Name] := 0
+    If ((Index = "" && NameCount[Name] = 0) || NameCount[Name] < Index) ;control does not yet exist
     {
-        ControlCount[Name] ++
+        NameCount[Name] ++
         Gui, 1:Add, Text, %Dimensions% v%Name%%Index%HitArea gSelect
         Gui, 1:Add, Progress, %Dimensions% v%Name%%Index% %Options% hwndhWnd
         Control, ExStyle, -0x20000,, ahk_id %hWnd% ;remove WS_EX_STATICEDGE extended style
