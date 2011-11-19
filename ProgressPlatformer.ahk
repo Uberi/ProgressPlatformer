@@ -126,7 +126,7 @@ PlaceRectangle(X,Y,W,H,Name,Index = "",Options = "")
     local hWnd
     If !ObjHasKey(NameCount,Name)
         NameCount[Name] := 0
-    If ((Index = "") ? (NameCount[Name] = 0) : (NameCount[Name] < Index)) ;control does not yet exist
+    If ((Index = "" && NameCount[Name] = 0) || NameCount[Name] < Index) ;control does not yet exist
     {
         NameCount[Name] ++
         Gui, Add, Progress, x%X% y%Y% w%W% h%H% v%Name%%Index% %Options% hwndhWnd, 0

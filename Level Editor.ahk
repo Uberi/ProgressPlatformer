@@ -30,15 +30,17 @@ Gui, 2:Add, Button, x10 y200 w160 h20, Remove
 Gui, 2:+ToolWindow +AlwaysOnTop +Owner1
 Gui, 2:Show, x10 w180 h230, Tools
 
-PlaceRectangle("PlayerRectangle","",10,10,30,40,"-Smooth Vertical")
+PlaceRectangle("PlayerRectangle","",30,30,30,40,"-Smooth Vertical")
 SelectRectangle("PlayerRectangle")
 
-PlaceRectangle("GoalRectangle","",10,90,30,40,"BackgroundWhite")
+PlaceRectangle("GoalRectangle","",100,10,50,70,"BackgroundWhite")
 GuiControl,, PlayerRectangle, 100
 Return
 
 GuiClose:
 2GuiClose:
+Gui, 1:Hide
+Gui, 2:Hide
 GoSub, Save
 ExitApp
 
@@ -103,23 +105,37 @@ WinSet, Redraw
 Return
 
 Save:
-Result := "Blocks:"
-Loop, %BlockCount%
+Result := ""
+If BlockCount
 {
-    GuiControlGet, Rectangle, Pos, LevelRectangle%A_Index%
-    Result .= "`n" . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
+ Result .= "`n`nBlocks:"
+ Loop, %BlockCount%
+ {
+     GuiControlGet, Rectangle, 1:Pos, LevelRectangle%A_Index%
+     Result .= "`n" . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
+ }
 }
-GuiControlGet, Rectangle, Pos, PlayerRectangle
+GuiControlGet, Rectangle, 1:Pos, PlayerRectangle
 Result .= "`n`nPlayer: " . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
-GuiControlGet, Rectangle, Pos, GoalRectangle
+GuiControlGet, Rectangle, 1:Pos, GoalRectangle
 Result .= "`n`nGoal: " . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
-Result .= "`n`nEnemies:"
-Loop, %EnemyCount%
+If EnemyCount
 {
-    GuiControlGet, Rectangle, Pos, EnemyRectangle%A_Index%
-    Result .= "`n" . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
+ Result .= "`n`nEnemies:"
+ Loop, %EnemyCount%
+ {
+     GuiControlGet, Rectangle, 1:Pos, EnemyRectangle%A_Index%
+     Result .= "`n" . RectangleX . ", " . RectangleY . ", " . RectangleW . ", " . RectangleH
+ }
 }
-MsgBox % Result
+Result := Trim(Result,"`n")
+FileSelectFile, Filename, S2, %A_ScriptDir%, Select a location to save the level to:, *.txt
+If !ErrorLevel
+{
+    If FileExist(Filename)
+        FileDelete, %Filename%
+    FileAppend, %Result%, %Filename%
+}
 Return
 
 SelectRectangle(Name,Index = "")
