@@ -1,6 +1,9 @@
 #NoEnv
 #SingleInstance Force
 
+#Include ProgressEngine.ahk
+
+;wip: enemies don't collide with platforms
 ;wip: moving platforms and elevators
 
 TargetFrameRate := 30
@@ -15,11 +18,17 @@ LevelIndex := 1
 SetBatchLines, -1
 SetWinDelay, -1
 
-GoSub, MakeGuis
+;create game window
+Gui, Color, Black
+Gui, +OwnDialogs +LastFound
+
+GameGUI := {}
+GameGUI.hWindow := WinExist()
 
 TargetFrameDelay := 1000 / TargetFrameRate
 TickFrequency := 0, DllCall("QueryPerformanceFrequency","Int64*",TickFrequency) ;obtain ticks per second
 PreviousTicks := 0, CurrentTicks := 0
+Level := Object()
 Loop
 {
     If Initialize()
@@ -40,15 +49,6 @@ Loop
 MsgBox, Game complete!
 ExitApp
 
-MakeGuis:
-    ;create game window
-    Gui, Color, Black
-    Gui, +OwnDialogs +LastFound
-
-    GameGUI := {}
-    GameGUI.hwnd := WinExist()
-Return
-
 GuiEscape:
 GuiClose:
 ExitApp
@@ -56,7 +56,7 @@ ExitApp
 Initialize()
 {
     global Health, Level, LevelIndex
-    
+
     Health := 100
 
     LevelFile := A_ScriptDir . "\Levels\Level " . LevelIndex . ".txt"
@@ -182,32 +182,10 @@ Input()
 
 Logic(Delta)
 {
-    global GameGUI, LevelIndex, Level, Health, EnemyX, EnemyY
-    Padding := 100
-    WinGetPos,,, Width, Height, % "ahk_id" . GameGUI.hwnd
-    If (Level.Player.X < -Padding || Level.Player.X > (Width + Padding) || Level.Player.Y > (Height + Padding)) ;out of bounds
+    global Level
+
+    If PlayerLogic(Delta)
         Return, 1
-    If (Health <= 0) ;out of health
-        Return, 2
-    If Inside(Level.Player,Level.Goal) ;reached goal
-    {
-        Score := Round(Health)
-        MsgBox, You win!`n`nYour score was %Score%.
-        LevelIndex++ ;move to the next level
-        Return, 3
-    }
-
-    PlayerLogic(Delta)
-
-    If (EnemyX || EnemyY > 0)
-        Health -= 200 * Delta
-    Else If EnemyY
-    {
-        EnemyY := Abs(EnemyY)
-        ObjRemove(Level.Enemies,EnemyY,"")
-        GuiControl, Hide, EnemyRectangle%EnemyY%
-        Health += 50
-    }
 
     EnemyLogic(Delta)
 
@@ -225,7 +203,22 @@ Logic(Delta)
 
 PlayerLogic(Delta)
 {
-    global Left, Right, Jump, Duck, Level, Gravity
+    global GameGUI, LevelIndex, Health, EnemyX, EnemyY, Left, Right, Jump, Duck, Level, Gravity
+
+    Padding := 100
+    WinGetPos,,, Width, Height, % "ahk_id" . GameGUI.hWindow
+    If (Level.Player.X < -Padding || Level.Player.X > (Width + Padding) || Level.Player.Y > (Height + Padding)) ;out of bounds
+        Return, 1
+    If (Health <= 0) ;out of health
+        Return, 1
+    If Inside(Level.Player,Level.Goal) ;reached goal
+    {
+        Score := Round(Health)
+        MsgBox, You win!`n`nYour score was %Score%.
+        LevelIndex ++ ;move to the next level
+        Return, 1
+    }
+
     MoveSpeed := 800
     JumpSpeed := 200
     JumpInterval := 250
@@ -246,6 +239,18 @@ PlayerLogic(Delta)
     Level.Player.LastContact += Delta
 
     Level.Player.H := Duck ? 30 : 40
+
+    If (EnemyX || EnemyY > 0)
+        Health -= 200 * Delta
+    Else If EnemyY
+    {
+        EnemyY := Abs(EnemyY)
+        ObjRemove(Level.Enemies,EnemyY,"")
+        GuiControl, Hide, EnemyRectangle%EnemyY%
+        Health += 50
+    }
+
+    Return, 0
 }
 
 EnemyLogic(Delta)
