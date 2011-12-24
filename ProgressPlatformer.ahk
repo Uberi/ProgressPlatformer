@@ -59,13 +59,6 @@ Initialize()
 
     Health := 100
 
-    LevelFile := A_ScriptDir . "\Levels\Level " . LevelIndex . ".txt"
-    If !FileExist(LevelFile)
-        Return, 1
-    FileRead, LevelDefinition, %LevelFile%
-    If ErrorLevel
-        Return, 1
-
     ;hide all controls
     If ObjHasKey(Level,"Blocks")
     {
@@ -87,6 +80,12 @@ Initialize()
             GuiControl, Hide, EnemyRectangle%Index%
     }
 
+    LevelFile := A_ScriptDir . "\Levels\Level " . LevelIndex . ".txt"
+    If !FileExist(LevelFile)
+        Return, 1
+    FileRead, LevelDefinition, %LevelFile%
+    If ErrorLevel
+        Return, 1
     Level := ParseLevel(LevelDefinition)
 
     Level.Platforms[1] := new _Platform(50,50,100,20,30,50,1,20) ;wip
