@@ -68,13 +68,14 @@ InitializeLevel()
     hWindow := WinExist()
     PreventRedraw(hWindow)
 
+    Gui, +Resize
+    Gui, Show, w800 h600, ProgressPlatformer
+
     Game.Update()
 
     ;reenable window redrawing and redraw the window
     AllowRedraw(hWindow)
     WinSet, Redraw
-
-    Gui, Show, AutoSize, ProgressPlatformer
 }
 
 ParseLevel(ByRef Game,LevelDefinition)
@@ -198,12 +199,12 @@ Loop
 }
 Return
 
-SetControlTop(hControl)
+SetControlTop(hControl) ;wip
 {
     DllCall("SetWindowPos","UPtr",hControl,"UPtr",0,"Int",0,"Int",0,"Int",0,"Int",0,"UInt",0x403) ;HWND_TOP, SWP_NOSENDCHANGING | SWP_NOMOVE | SWP_NOSIZE
 }
 
-SetControlBottom(hControl)
+SetControlBottom(hControl) ;wip
 {
     DllCall("SetWindowPos","UPtr",hControl,"UPtr",1,"Int",0,"Int",0,"Int",0,"Int",0,"UInt",0x403) ;HWND_BOTTOM, SWP_NOSENDCHANGING | SWP_NOMOVE | SWP_NOSIZE
 }
@@ -221,6 +222,11 @@ class ProgressEngine
         this.Y := 0
         this.W := 100
         this.H := 100
+        this.W := 1000 ;wip
+        this.H := 1000 ;wip
+
+        Gui, %GUIIndex%:+LastFound
+        this.hWindow := WinExist()
     }
 
     Step(Delta)
@@ -244,16 +250,22 @@ class ProgressEngine
     {
         global ;must be global in order to use GUI variables
         local GUIIndex, CurrentX, CurrentY, CurrentW, CurrentH, EntityIdentifier
-        ;wip: use occlusion culling here
-        ;wip: take window sizing into account
-        ;wip: don't move/show/hide blocks unless the position/visibility has changed
         ;wip: support subcategories in this.entities by checking entity.base.__class and recursing if it is not based on the entity class
         ;wip: use an internal list of controls so that offscreen controls can be reused
         GUIIndex := this.GUIIndex
+
+        WinGetPos,,, Width, Height, % "ahk_id " . this.hWindow ;obtain the window dimensions
+        ScaleX := Width / this.W, ScaleY := Height / this.H
+
         For Index, Entity In this.Entities
         {
-            CurrentX := Round(this.X + Entity.X), CurrentY := Round(this.Y + Entity.Y)
-            CurrentW := Round(Entity.W), CurrentH := Round(Entity.H)
+            If (Entity.X + Entity.W) <= this.X || Entity.X >= (this.X + this.W) || (Entity.Y + Entity.H) <= this.Y || Entity.Y > (this.Y + this.H)
+                Continue
+
+            ;get the screen coordinates of the rectangle
+            CurrentX := Round((this.X + Entity.X) * ScaleX), CurrentY := Round((this.Y + Entity.Y) * ScaleY)
+            CurrentW := Round(Entity.W * ScaleX), CurrentH := Round(Entity.H * ScaleY)
+
             If ObjHasKey(Entity,"Index") ;control already exists
             {
                 EntityIdentifier := "ProgressEngine" . Entity.Index
