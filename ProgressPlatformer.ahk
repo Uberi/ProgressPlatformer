@@ -88,7 +88,7 @@ Initialize()
         Return, 1
     Level := ParseLevel(LevelDefinition)
 
-    Level.Platforms[1] := new _Platform(50,50,100,20,30,50,1,20) ;wip
+    Level.Platforms[1] := new _Platform(50,50,100,20,1,30,50,20) ;wip
 
     Gui, +LastFound
     hWindow := WinExist()
@@ -140,18 +140,18 @@ PlaceRectangle(X,Y,W,H,Name,Index = "",Options = "")
 
 PreventRedraw(hWnd)
 {
- DetectHidden := A_DetectHiddenWindows
- DetectHiddenWindows, On
- SendMessage, 0xB, 0, 0,, ahk_id %hWnd% ;WM_SETREDRAW
- DetectHiddenWindows, %DetectHidden%
+    DetectHidden := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+    SendMessage, 0xB, 0, 0,, ahk_id %hWnd% ;WM_SETREDRAW
+    DetectHiddenWindows, %DetectHidden%
 }
 
 AllowRedraw(hWnd)
 {
- DetectHidden := A_DetectHiddenWindows
- DetectHiddenWindows, On
- SendMessage, 0xB, 1, 0,, ahk_id %hWnd% ;WM_SETREDRAW
- DetectHiddenWindows, %DetectHidden%
+    DetectHidden := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+    SendMessage, 0xB, 1, 0,, ahk_id %hWnd% ;WM_SETREDRAW
+    DetectHiddenWindows, %DetectHidden%
 }
 
 Step(Delta)
@@ -524,7 +524,7 @@ class _Entity extends _Rectangle
 
 class _Platform extends _Rectangle
 {
-    __new(X,Y,W,H,RangeStart,RangeLength = 0,Horizontal = 1,Speed = 0)
+    __new(X,Y,W,H,Horizontal = 1,RangeStart,RangeLength = 0,Speed = 0)
     {
         this.X := X
         this.Y := Y
