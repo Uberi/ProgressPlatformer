@@ -1,11 +1,19 @@
 #NoEnv
 
+SetBatchLines, -1
+
+#Warn All
+#Warn LocalSameAsGlobal, Off
+
 TargetFrameRate := 30
+DeltaLimit := 0.05
 
 Gui, Color, Black
 Gui, +OwnDialogs
 
 Game := new ProgressEngine
+
+LevelIndex := 1
 
 TargetFrameDelay := 1000 / TargetFrameRate
 TickFrequency := 0, DllCall("QueryPerformanceFrequency","Int64*",TickFrequency) ;obtain ticks per second
@@ -22,8 +30,30 @@ GuiEscape:
 GuiClose:
 ExitApp
 
+ShowObject(ShowObject,Padding = "")
+{
+ ListLines, Off
+ If !IsObject(ShowObject)
+ {
+  ListLines, On
+  Return, ShowObject
+ }
+ ObjectContents := ""
+ For Key, Value In ShowObject
+ {
+  If IsObject(Value)
+   Value := "`n" . ShowObject(Value,Padding . A_Tab)
+  ObjectContents .= Padding . Key . ": " . Value . "`n"
+ }
+ ObjectContents := SubStr(ObjectContents,1,-1)
+ If (Padding = "")
+  ListLines, On
+ Return, ObjectContents
+}
+
 InitializeLevel()
 {
+    global Game, LevelIndex
     ;load and parse the level file
     LevelFile := A_ScriptDir . "\Levels\Level " . LevelIndex . ".txt"
     If !FileExist(LevelFile)
@@ -31,34 +61,124 @@ InitializeLevel()
     FileRead, LevelDefinition, %LevelFile%
     If ErrorLevel
         Return, 1
-    Level := ParseLevel(LevelDefinition)
+    ParseLevel(Game,LevelDefinition)
 
     ;prevent window redrawing to avoid flickering while updating the level
     Gui, +LastFound
     hWindow := WinExist()
     PreventRedraw(hWindow)
 
-    ;wip: load level
+    Game.Update()
 
     ;reenable window redrawing and redraw the window
     AllowRedraw(hWindow)
     WinSet, Redraw
+
+    Gui, Show, AutoSize, ProgressPlatformer
+}
+
+ParseLevel(ByRef Game,LevelDefinition)
+{
+    LevelDefinition := RegExReplace(LevelDefinition,"S)#[^\r\n]*")
+
+    If RegExMatch(LevelDefinition,"iS)Blocks\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
+    {
+        StringReplace, Property, Property, `r,, All
+        StringReplace, Property, Property, %A_Space%,, All
+        StringReplace, Property, Property, %A_Tab%,, All
+        While, InStr(Property,"`n`n")
+            StringReplace, Property, Property, `n`n, `n, All
+        Property := Trim(Property,"`n")
+        Loop, Parse, Property, `n
+        {
+            StringSplit, Entry, A_LoopField, `,, %A_Space%`t
+            Entity := new Game.Blocks.Static
+            Entity.X := Entry1, Entity.Y := Entry2, Entity.W := Entry3, Entity.H := Entry4
+            Game.Entities.Insert(Entity)
+        }
+    }
+
+    If RegExMatch(LevelDefinition,"iS)Platforms\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){6,7})*",Property)
+    {
+        StringReplace, Property, Property, `r,, All
+        StringReplace, Property, Property, %A_Space%,, All
+        StringReplace, Property, Property, %A_Tab%,, All
+        While, InStr(Property,"`n`n")
+            StringReplace, Property, Property, `n`n, `n, All
+        Property := Trim(Property,"`n")
+        Loop, Parse, Property, `n
+        {
+            Entry8 := 20 ;wip: tweak this speed
+            StringSplit, Entry, A_LoopField, `,, %A_Space%`t
+            Entity := new CustomBlocks.Platform
+            Entity.X := Entry1, Entity.Y := Entry2, Entity.W := Entry3, Entity.H := Entry4
+            If Entry5 ;horizontal platform
+            {
+                Entity.RangeX := Entry6, Entity.RangeY := Entity.Y
+                Entity.RangeW := Entry7, Entity.RangeH := 0
+            }
+            Else ;vertical platform
+            {
+                Entity.RangeX := Entity.X, Entity.RangeY := Entry6
+                Entity.RangeW := 0, Entity.RangeH := Entry7
+            }
+            Entity.Speed := Entry8
+            Game.Entities.Insert(Entity)
+        }
+    }
+
+    If RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
+    {
+        Entry5 := 0, Entry6 := 0
+        StringSplit, Entry, Property, `,, %A_Space%`t`r`n
+        Entity := new CustomBlocks.Player
+        Entity.X := Entry1, Entity.Y := Entry2, Entity.W := Entry3, Entity.H := Entry4
+        Entity.SpeedX := Entry5, Entity.SpeedY := Entry6
+        Game.Entities.Insert(Entity)
+    }
+
+    If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
+    {
+        StringSplit, Entry, Property, `,, %A_Space%`t`r`n
+        Entity := new CustomBlocks.Goal
+        Entity.X := Entry1, Entity.Y := Entry2, Entity.W := Entry3, Entity.H := Entry4
+        Game.Entities.Insert(Entity)
+    }
+
+    If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
+    {
+        StringReplace, Property, Property, `r,, All
+        StringReplace, Property, Property, %A_Space%,, All
+        StringReplace, Property, Property, %A_Tab%,, All
+        While, InStr(Property,"`n`n")
+            StringReplace, Property, Property, `n`n, `n, All
+        Property := Trim(Property,"`n")
+        Loop, Parse, Property, `n, `r `t
+        {
+            Entry5 := 0, Entry6 := 0
+            StringSplit, Entry, A_LoopField, `,, %A_Space%`t
+            Entity := new CustomBlocks.Enemy
+            Entity.X := Entry1, Entity.Y := Entry2, Entity.W := Entry3, Entity.H := Entry4
+            Entity.SpeedX := Entry5, Entity.SpeedY := Entry6
+            Game.Entities.Insert(Entity)
+        }
+    }
 }
 
 PreventRedraw(hWnd)
 {
- DetectHidden := A_DetectHiddenWindows
- DetectHiddenWindows, On
- SendMessage, 0xB, 0, 0,, ahk_id %hWnd% ;WM_SETREDRAW
- DetectHiddenWindows, %DetectHidden%
+    DetectHidden := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+    SendMessage, 0xB, 0, 0,, ahk_id %hWnd% ;WM_SETREDRAW
+    DetectHiddenWindows, %DetectHidden%
 }
 
 AllowRedraw(hWnd)
 {
- DetectHidden := A_DetectHiddenWindows
- DetectHiddenWindows, On
- SendMessage, 0xB, 1, 0,, ahk_id %hWnd% ;WM_SETREDRAW
- DetectHiddenWindows, %DetectHidden%
+    DetectHidden := A_DetectHiddenWindows
+    DetectHiddenWindows, On
+    SendMessage, 0xB, 1, 0,, ahk_id %hWnd% ;WM_SETREDRAW
+    DetectHiddenWindows, %DetectHidden%
 }
 
 MainLoop:
@@ -74,6 +194,7 @@ Loop
     Sleep, % Round(TargetFrameDelay - (Delta * 1000))
     If Game.Step(Delta)
         Break
+    Game.Update()
 }
 Return
 
@@ -88,12 +209,18 @@ class ProgressEngine
         this.Entities := []
         this.X := 0
         this.Y := 0
+        this.W := 100
+        this.H := 100
     }
 
-    Step()
+    Step(Delta)
     {
-        For Index, Entity In Entities
-            Entity.Step(Entities)
+        For Index, Entity In this.Entities
+        {
+            If Entity.Step(Delta,this.Entities)
+                Return, 1
+        }
+        Return, 0
     }
 
     Delete(EntityKey)
@@ -105,23 +232,18 @@ class ProgressEngine
 
     Update()
     {
+        global ;must be global in order to use GUI variables
+        local GUIIndex, CurrentX, CurrentY, CurrentW, CurrentH, EntityIdentifier
         ;wip: use occlusion culling here
         ;wip: take window sizing into account
-        ;wip: don't move blocks unless the position has changed
+        ;wip: don't move/show/hide blocks unless the position/visibility has changed
         ;wip: support subcategories in this.entities by checking entity.base.__class and recursing if it is not based on the entity class
         GUIIndex := this.GUIIndex
         For Index, Entity In this.Entities
         {
             CurrentX := Round(this.X + Entity.X), CurrentY := Round(this.Y + Entity.Y)
             CurrentW := Round(this.W + Entity.W), CurrentH := Round(this.H + Entity.H)
-            If !ObjHasKey(Entity,"Index") ;control does not yet exist
-            {
-                ProgressEngine.ControlCounter ++
-                Entity.Index := ProgressEngine.ControlCounter
-                Gui, %GUIIndex%:Add, Progress, % "x" . CurrentX . " y" . CurrentY . " w" . CurrentW . " h" . CurrentH . " vProgressEngine" . ProgressEngine.ControlCounter . " hwndhControl", 0
-                Control, ExStyle, -0x20000,, ahk_id %hControl% ;remove WS_EX_STATICEDGE extended style
-            }
-            Else
+            If ObjHasKey(Entity,"Index") ;control already exists
             {
                 EntityIdentifier := "ProgressEngine" . Entity.Index
                 If Entity.Visible
@@ -130,17 +252,19 @@ class ProgressEngine
                     GuiControl, %GUIIndex%:Hide, %EntityIdentifier%
                 GuiControl, %GUIIndex%:Move, %EntityIdentifier%, x%CurrentX% y%CurrentY% w%CurrentW% h%CurrentH%
             }
+            Else ;control does not exist
+            {
+                ProgressEngine.ControlCounter ++
+                Entity.Index := ProgressEngine.ControlCounter
+                Gui, %GUIIndex%:Add, Progress, % "x" . CurrentX . " y" . CurrentY . " w" . CurrentW . " h" . CurrentH . " vProgressEngine" . ProgressEngine.ControlCounter . " hwndhControl", 0
+                Control, ExStyle, -0x20000,, ahk_id %hControl% ;remove WS_EX_STATICEDGE extended style
+            }
         }
     }
 
-    class Entities
+    class Blocks
     {
         class Default
-        {
-            
-        }
-
-        class Nonphysical extends ProgressEngine.Entities.Default
         {
             __New()
             {
@@ -148,13 +272,13 @@ class ProgressEngine
                 this.Physical := 0
             }
 
-            Step()
+            Step(Delta,Entities)
             {
-                MsgBox
+                
             }
         }
 
-        class Physical extends ProgressEngine.Entities.Default
+        class Static extends ProgressEngine.Blocks.Default
         {
             __New()
             {
@@ -162,10 +286,56 @@ class ProgressEngine
                 this.Physical := 1
             }
 
-            Step()
+            Step(Delta,Entities)
             {
-                MsgBox
+                
             }
+        }
+
+        class Dynamic extends ProgressEngine.Blocks.Static
+        {
+            Step(Delta,Entities)
+            {
+                ;wip
+            }
+        }
+    }
+}
+
+class CustomBlocks
+{
+    class Platform extends ProgressEngine.Blocks.Static
+    {
+        Step(Delta,Entities)
+        {
+            ;wip
+        }
+    }
+
+    class Player extends ProgressEngine.Blocks.Dynamic
+    {
+        Step(Delta,Entities)
+        {
+            ;wip
+            MsgBox % this.X
+            this.X --
+            MsgBox % this.X
+        }
+    }
+
+    class Goal extends ProgressEngine.Blocks.Default
+    {
+        Step(Delta,Entities)
+        {
+            
+        }
+    }
+
+    class Enemy extends ProgressEngine.Blocks.Dynamic
+    {
+        Step(Delta,Entities)
+        {
+            ;wip
         }
     }
 }
