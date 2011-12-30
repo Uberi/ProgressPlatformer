@@ -165,19 +165,19 @@ ParseLevel(ByRef Game,LevelDefinition)
     }
 }
 
-PreventRedraw(hWnd)
+PreventRedraw(hWindow)
 {
     DetectHidden := A_DetectHiddenWindows
     DetectHiddenWindows, On
-    SendMessage, 0xB, 0, 0,, ahk_id %hWnd% ;WM_SETREDRAW
+    SendMessage, 0xB, 0, 0,, ahk_id %hWindow% ;WM_SETREDRAW
     DetectHiddenWindows, %DetectHidden%
 }
 
-AllowRedraw(hWnd)
+AllowRedraw(hWindow)
 {
     DetectHidden := A_DetectHiddenWindows
     DetectHiddenWindows, On
-    SendMessage, 0xB, 1, 0,, ahk_id %hWnd% ;WM_SETREDRAW
+    SendMessage, 0xB, 1, 0,, ahk_id %hWindow% ;WM_SETREDRAW
     DetectHiddenWindows, %DetectHidden%
 }
 
@@ -197,6 +197,16 @@ Loop
     Game.Update()
 }
 Return
+
+SetControlTop(hControl)
+{
+    DllCall("SetWindowPos","UPtr",hControl,"UPtr",0,"Int",0,"Int",0,"Int",0,"Int",0,"UInt",0x403) ;HWND_TOP, SWP_NOSENDCHANGING | SWP_NOMOVE | SWP_NOSIZE
+}
+
+SetControlBottom(hControl)
+{
+    DllCall("SetWindowPos","UPtr",hControl,"UPtr",1,"Int",0,"Int",0,"Int",0,"Int",0,"UInt",0x403) ;HWND_BOTTOM, SWP_NOSENDCHANGING | SWP_NOMOVE | SWP_NOSIZE
+}
 
 class ProgressEngine
 {
@@ -238,11 +248,12 @@ class ProgressEngine
         ;wip: take window sizing into account
         ;wip: don't move/show/hide blocks unless the position/visibility has changed
         ;wip: support subcategories in this.entities by checking entity.base.__class and recursing if it is not based on the entity class
+        ;wip: use an internal list of controls so that offscreen controls can be reused
         GUIIndex := this.GUIIndex
         For Index, Entity In this.Entities
         {
             CurrentX := Round(this.X + Entity.X), CurrentY := Round(this.Y + Entity.Y)
-            CurrentW := Round(this.W + Entity.W), CurrentH := Round(this.H + Entity.H)
+            CurrentW := Round(Entity.W), CurrentH := Round(Entity.H)
             If ObjHasKey(Entity,"Index") ;control already exists
             {
                 EntityIdentifier := "ProgressEngine" . Entity.Index
@@ -316,10 +327,7 @@ class CustomBlocks
     {
         Step(Delta,Entities)
         {
-            ;wip
-            MsgBox % this.X
-            this.X --
-            MsgBox % this.X
+            this.X -= 2
         }
     }
 
