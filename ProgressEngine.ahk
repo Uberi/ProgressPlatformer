@@ -101,26 +101,20 @@ class ProgressEngine
             If (CurrentX + CurrentW) < 0 || CurrentX > Width
                 || (CurrentY + CurrentH) < 0 || CurrentY > Height
             {
-                GuiControl, %GUIIndex%:Hide, % "ProgressEngine" . Entity.Index
-                Entity.VisibleState := 0
-                Continue
+                ;wip: hide the rectangle
+                ;Continue
             }
 
-            If ObjHasKey(Entity,"Index") ;control already exists
+            If Entity.Index ;control already exists
             {
                 EntityIdentifier := "ProgressEngine" . Entity.Index
-                If Entity.Visible
+                For Key In Entity.ModifiedProperties
                 {
-                    If !Entity.VisibleState
-                    {
-                        GuiControl, %GUIIndex%:Show, %EntityIdentifier%
-                        Entity.VisibleState := 1
-                    }
-                }
-                Else If Entity.VisibleState
-                {
-                    GuiControl, %GUIIndex%:Hide, %EntityIdentifier%
-                    Entity.VisibleState := 0
+                    If (Key = "Visible")
+                        GuiControl, % GUIIndex . ":Show" . Entity.Visible, %EntityIdentifier%
+                    Else If (Key = "Color")
+                        GuiControl, % GUIIndex . ":+Background" . Entity.Color, %EntityIdentifier%
+                    ObjRemove(Entity.ModifiedProperties,Key)
                 }
                 GuiControl, %GUIIndex%:Move, %EntityIdentifier%, x%CurrentX% y%CurrentY% w%CurrentW% h%CurrentH%
             }
@@ -128,8 +122,8 @@ class ProgressEngine
             {
                 ProgressEngine.ControlCounter ++
                 Entity.Index := ProgressEngine.ControlCounter
-                Entity.VisibleState := Entity.Visible
-                Gui, %GUIIndex%:Add, Progress, % "x" . CurrentX . " y" . CurrentY . " w" . CurrentW . " h" . CurrentH . " vProgressEngine" . ProgressEngine.ControlCounter . " hwndhControl", 0
+                Entity.VisibleState := 1
+                Gui, %GUIIndex%:Add, Progress, % "x" . CurrentX . " y" . CurrentY . " w" . CurrentW . " h" . CurrentH . " vProgressEngine" . ProgressEngine.ControlCounter . " hwndhControl Background" . Entity.Color, 0
                 Control, ExStyle, -0x20000,, ahk_id %hControl% ;remove WS_EX_STATICEDGE extended style
             }
         }
@@ -141,13 +135,31 @@ class ProgressEngine
         {
             __New()
             {
+                ObjInsert(this,"",Object())
+                this.Index := 0
                 this.Visible := 1
+                this.Color := "FF0000"
                 this.Physical := 0
+                this.ModifiedProperties := Object()
             }
 
             Step(Delta,Entities)
             {
                 
+            }
+
+            __Get(Key)
+            {
+                If (Key != "")
+                    Return, this[""][Key]
+            }
+
+            __Set(Key,Value)
+            {
+                If Key In Visible,Color,Physical
+                    ObjInsert(this.ModifiedProperties,Key,"")
+                ObjInsert(this[""],Key,Value)
+                Return, this
             }
         }
 
@@ -155,7 +167,7 @@ class ProgressEngine
         {
             __New()
             {
-                this.Visible := 1
+                base.__New()
                 this.Physical := 1
             }
 
