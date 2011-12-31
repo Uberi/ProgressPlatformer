@@ -524,7 +524,7 @@ class _Entity extends _Rectangle
 
 class _Platform extends _Rectangle
 {
-    __new(X,Y,W,H,Horizontal = 1,RangeStart,RangeLength = 0,Speed = 0)
+    __new(X,Y,W,H,Horizontal = 1,RangeStart = 0,RangeLength = 0,Speed = 0)
     {
         this.X := X
         this.Y := Y
