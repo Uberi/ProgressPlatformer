@@ -98,6 +98,7 @@ ParseLevel(ByRef Game,LevelDefinition)
         }
     }
 
+    RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
     Entry5 := 0, Entry6 := 0
     StringSplit, Entry, Property, `,, %A_Space%`t`r`n
     Entity := new CustomBlocks.Player, Entity.X := Entry1 / 80, Entity.Y := Entry2 / 80, Entity.W := Entry3 / 80, Entity.H := Entry4 / 80, Entity.SpeedX := Entry5 /80, Entity.SpeedY := Entry6 / 80

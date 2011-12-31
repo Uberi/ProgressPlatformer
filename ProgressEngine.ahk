@@ -51,7 +51,8 @@ class ProgressEngine
             DllCall("QueryPerformanceCounter","Int64*",ElapsedTime)
             ElapsedTime := ((ElapsedTime - CurrentTicks) / TickFrequency) * 1000
 
-            If this.FrameRate != 0
+            ;sleep the amount of time required to limit the framerate to the desired value
+            If (this.FrameRate != 0 && ElapsedTime < FrameDelay)
                 Sleep, % Round(FrameDelay - ElapsedTime)
         }
     }
