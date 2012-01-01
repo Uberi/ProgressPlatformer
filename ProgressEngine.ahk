@@ -78,7 +78,7 @@ class ProgressEngine
     {
         global ;must be global in order to use GUI variables
         local GUIIndex, CurrentX, CurrentY, CurrentW, CurrentH, EntityIdentifier
-        ;wip: support subcategories in this.entities by checking entity.base.__class and recursing if it is not based on the entity class
+        ;wip: support layers with game.entities[layer] := []
         ;wip: use an internal list of controls so that offscreen controls can be reused
         GUIIndex := this.GUIIndex
 
@@ -122,7 +122,7 @@ class ProgressEngine
                 ProgressEngine.ControlCounter ++
                 Entity.Index := ProgressEngine.ControlCounter
                 Entity.VisibleState := 1
-                Gui, %GUIIndex%:Add, Progress, % "x" . CurrentX . " y" . CurrentY . " w" . CurrentW . " h" . CurrentH . " vProgressEngine" . ProgressEngine.ControlCounter . " hwndhControl Background" . Entity.Color, 0
+                Gui, %GUIIndex%:Add, Progress, % "x" . CurrentX . " y" . CurrentY . " w" . CurrentW . " h" . CurrentH . " vProgressEngine" . ProgressEngine.ControlCounter . " hwndhControl 0x04000000 Background" . Entity.Color, 0 ;WS_CLIPSIBLINGS
                 Control, ExStyle, -0x20000,, ahk_id %hControl% ;remove WS_EX_STATICEDGE extended style
             }
         }
@@ -145,6 +145,11 @@ class ProgressEngine
             Step(Delta,Entities)
             {
                 
+            }
+
+            NearestEntities(Entities)
+            {
+                ;wip
             }
 
             __Get(Key)
@@ -182,11 +187,9 @@ class ProgressEngine
             {
                 ;wip: use spatial acceleration structure
                 ;set physical constants
-                Gravity := -9.81 ;wip: not sure if this should be a user-implemented thing
                 Friction := 0.01
                 Restitution := 0.6
 
-                this.SpeedY += Gravity * Delta ;process gravity
                 this.X += this.SpeedX * Delta, this.Y -= this.SpeedY * Delta ;process momentum
 
                 CollisionX := 0, CollisionY := 0, TotalIntersectX := 0, TotalIntersectY := 0
@@ -211,16 +214,11 @@ class ProgressEngine
                         TotalIntersectX += Abs(IntersectX)
                     }
                 }
+                this.IntersectX := TotalIntersectX, this.IntersectY := TotalIntersectY
                 If CollisionY
-                {
-                    this.IntersectY := TotalIntersectY
                     this.SpeedX *= (Friction * TotalIntersectY) ** Delta ;apply friction
-                }
                 If CollisionX
-                {
-                    this.IntersectX := TotalIntersectX
                     this.SpeedY *= (Friction * TotalIntersectX) ** Delta ;apply friction
-                }
             }
 
             Collide(Rectangle,ByRef IntersectX,ByRef IntersectY)
