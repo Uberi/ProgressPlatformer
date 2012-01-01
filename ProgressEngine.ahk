@@ -14,8 +14,6 @@ class ProgressEngine
         this.hDC := DllCall("GetDC","UPtr",hWindow)
 
         this.hMemoryDC := DllCall("CreateCompatibleDC","UPtr",this.hDC)
-        this.hBitmap := DllCall("CreateCompatibleBitmap","UPtr",this.hDC,"Int",800,"Int",600,"UPtr")
-        DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hBitmap,"UPtr")
     }
 
     Start(DeltaLimit = 0.05)
@@ -70,6 +68,7 @@ class ProgressEngine
         __New()
         {
             this.Entities := []
+            this.Visible := 1
             this.X := 0
             this.Y := 0
             this.W := 10
@@ -82,19 +81,31 @@ class ProgressEngine
     Update()
     {
         global hBitmap
+        static Width1 := -1, Height1 := -1
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
         DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
         Width := NumGet(ClientRectangle,8,"Int"), Height := NumGet(ClientRectangle,12,"Int")
 
+        If (Width != Width1 || Height != Height1)
+        {
+            If this.hOriginalBitmap
+                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap
+            this.hBitmap := DllCall("CreateCompatibleBitmap","UPtr",this.hDC,"Int",Width,"Int",Height,"UPtr") ;create a new bitmap
+            this.hOriginalBitmap := DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hBitmap,"UPtr")
+        }
+        Width1 := Width, Height1 := Height
+
         For Index, Layer In this.Layers
         {
+            If !Layer.Visible
+                Continue
             ScaleX := (Width / Layer.W) * Layer.ScaleX
             ScaleY := (Height / Layer.H) * Layer.ScaleY
             For Key, Entity In Layer.Entities
             {
                 ;update the color if it has changed
-                If Entity.ColorModified
+                If Entity.ColorModified ;wip: maybe do this in the entity drawing function?
                 {
                     If Entity.hPen
                         DllCall("DeleteObject","UPtr",Entity.hPen)
@@ -105,23 +116,17 @@ class ProgressEngine
                     Entity.ColorModified := 0
                 }
 
-                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",Entity.hPen,"UPtr")
-                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",Entity.hBrush,"UPtr")
+                hOriginalPen := DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",Entity.hPen,"UPtr")
+                hOriginalBrush := DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",Entity.hBrush,"UPtr")
 
                 ;get the screen coordinates of the rectangle
                 CurrentX := Round((Layer.X + Entity.X) * ScaleX), CurrentY := Round((Layer.Y + Entity.Y) * ScaleY)
                 CurrentW := Round(Entity.W * ScaleX), CurrentH := Round(Entity.H * ScaleY)
-                
-                ;check for entity moving out of bounds
-                If (CurrentX + CurrentW) < 0 || CurrentX > Width
-                    || (CurrentY + CurrentH) < 0 || CurrentY > Height
-                {
-                    ;wip: skip drawing the rectangle
-                    ;Continue
-                }
 
-                If Entity.Visible
-                    DllCall("Rectangle","UPtr",this.hMemoryDC,"Int",CurrentX,"Int",CurrentY,"Int",CurrentX + CurrentW,"Int",CurrentY + CurrentH)
+                Entity.Draw(this.hMemoryDC,CurrentX,CurrentY,CurrentW,CurrentH,Width,Height)
+
+                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
+                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
             }
         }
         DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
@@ -148,6 +153,17 @@ class ProgressEngine
             NearestEntities(Layer)
             {
                 ;wip
+            }
+
+            Draw(hDC,PositionX,PositionY,Width,Height,ViewportWidth,ViewportHeight)
+            {
+                ;check for entity moving out of bounds
+                If (PositionX + Width) < 0 || PositionX > ViewportWidth
+                    || (PositionY + Height) < 0 || PositionY > ViewportHeight
+                    Return
+
+                If this.Visible
+                    DllCall("Rectangle","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Int",PositionX + Width,"Int",PositionY + Height)
             }
 
             __Get(Key)
@@ -251,6 +267,19 @@ class ProgressEngine
 
     __Delete()
     {
-        DllCall("ReleaseDC","UPtr",this.hWindow,"UPtr",this.hDC) ;release the device context
+        For Index, Layer In this.Layers
+        {
+            For Key, Entity In Layer.Entities
+            {
+                If Entity.hPen
+                    DllCall("DeleteObject","UPtr",Entity.hPen)
+                If Entity.hBrush
+                    DllCall("DeleteObject","UPtr",Entity.hBrush)
+            }
+        }
+        DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
+        DllCall("DeleteObject","UPtr",this.hBitmap) ;delete the bitmap
+        DllCall("DeleteObject","UPtr",this.hMemoryDC) ;delete the memory device context
+        DllCall("ReleaseDC","UPtr",this.hWindow,"UPtr",this.hDC) ;release the window device context
     }
 }
