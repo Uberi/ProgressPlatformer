@@ -14,6 +14,8 @@ class ProgressEngine
         this.hDC := DllCall("GetDC","UPtr",hWindow)
 
         this.hMemoryDC := DllCall("CreateCompatibleDC","UPtr",this.hDC)
+
+        DllCall("SetBkMode","UPtr",this.hMemoryDC,"Int",1) ;TRANSPARENT
     }
 
     Start(DeltaLimit = 0.05)
@@ -104,29 +106,11 @@ class ProgressEngine
             ScaleY := (Height / Layer.H) * Layer.ScaleY
             For Key, Entity In Layer.Entities
             {
-                ;update the color if it has changed
-                If Entity.ColorModified ;wip: maybe do this in the entity drawing function?
-                {
-                    If Entity.hPen
-                        DllCall("DeleteObject","UPtr",Entity.hPen)
-                    If Entity.hBrush
-                        DllCall("DeleteObject","UPtr",Entity.hBrush)
-                    Entity.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",Entity.Color,"UPtr") ;PS_SOLID
-                    Entity.hBrush := DllCall("CreateSolidBrush","UInt",Entity.Color,"UPtr")
-                    Entity.ColorModified := 0
-                }
-
-                hOriginalPen := DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",Entity.hPen,"UPtr")
-                hOriginalBrush := DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",Entity.hBrush,"UPtr")
-
                 ;get the screen coordinates of the rectangle
                 CurrentX := Round((Layer.X + Entity.X) * ScaleX), CurrentY := Round((Layer.Y + Entity.Y) * ScaleY)
                 CurrentW := Round(Entity.W * ScaleX), CurrentH := Round(Entity.H * ScaleY)
 
                 Entity.Draw(this.hMemoryDC,CurrentX,CurrentY,CurrentW,CurrentH,Width,Height)
-
-                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
-                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
             }
         }
         DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
@@ -139,8 +123,9 @@ class ProgressEngine
             __New()
             {
                 ObjInsert(this,"",Object())
+                this.hPen := 0
+                this.hBrush := 0
                 this.Visible := 1
-                this.ColorModified := 0
                 this.Color := 0xFFFFFF
                 this.Physical := 0
             }
@@ -162,8 +147,36 @@ class ProgressEngine
                     || (PositionY + Height) < 0 || PositionY > ViewportHeight
                     Return
 
+                ;update the color if it has changed
+                If this.ColorModified
+                {
+                    If this.hPen
+                        DllCall("DeleteObject","UPtr",this.hPen)
+                    If this.hBrush
+                        DllCall("DeleteObject","UPtr",this.hBrush)
+                    this.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",this.Color,"UPtr") ;PS_SOLID
+                    this.hBrush := DllCall("CreateSolidBrush","UInt",this.Color,"UPtr")
+                    this.ColorModified := 0
+                }
+
+                hOriginalPen := DllCall("SelectObject","UInt",hDC,"UPtr",this.hPen,"UPtr") ;select the pen
+                hOriginalBrush := DllCall("SelectObject","UInt",hDC,"UPtr",this.hBrush,"UPtr") ;select the brush
+
                 If this.Visible
                     DllCall("Rectangle","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Int",PositionX + Width,"Int",PositionY + Height)
+
+                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
+                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
+            }
+
+            MouseHovering(PositionX,PositionY,Width,Height) ;wip
+            {
+                CoordMode, Mouse, Client
+                MouseGetPos, MouseX, MouseY
+                If (MouseX >= PositionX && MouseX <= (PositionX + Width)
+                    && MouseY >= PositionY && MouseY <= (PositionY + Height))
+                    Return, 1
+                Return, 0
             }
 
             __Get(Key)
@@ -187,11 +200,6 @@ class ProgressEngine
             {
                 base.__New()
                 this.Physical := 1
-            }
-
-            Step(Delta,Layer)
-            {
-                
             }
         }
 
@@ -261,6 +269,66 @@ class ProgressEngine
                 Else
                     IntersectY := Top1 - ((Bottom1 < Bottom2) ? Bottom1 : Bottom2)
                 Return, 1 ;collision occurred
+            }
+        }
+        
+        class Text extends ProgressEngine.Blocks.Default
+        {
+            __New()
+            {
+                base.__New()
+                this.hFont := 0
+                this.Align := "Center"
+                this.Size := 5
+                this.Weight := 500
+                this.Italic := 0
+                this.Underline := 0
+                this.Strikeout := 0
+                this.Typeface := "Verdana"
+                this.Text := "Text"
+            }
+    
+            Draw(hDC,PositionX,PositionY,Width,Height,ViewportWidth,ViewportHeight)
+            {
+                static ViewportWidth1
+                ;check for entity moving out of bounds
+                If (PositionX + Width) < 0 || PositionX > ViewportWidth
+                    || (PositionY + Height) < 0 || PositionY > ViewportHeight
+                    Return
+
+                If (this.Align = "Left")
+                    DllCall("SetTextAlign","UPtr",hDC,"UInt",24) ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
+                Else If (this.Align = "Center")
+                    DllCall("SetTextAlign","UPtr",hDC,"UInt",30) ;TA_CENTER | TA_BASELINE: align text to the center and the baseline
+                Else If (this.Align = "Right")
+                    DllCall("SetTextAlign","UPtr",hDC,"UInt",26) ;TA_RIGHT | TA_BASELINE: align text to the right and the baseline
+    
+                ;update the font if it has changed or if the viewport size has changed
+                If this.FontModified || ViewportWidth != ViewportWidth1
+                {
+                    If this.hFont
+                            DllCall("DeleteObject","UPtr",this.hFont)
+                    this.hFont := DllCall("CreateFont","Int",Round(this.Size * (ViewportWidth / 100)),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
+                    this.FontModified := 0
+                }
+                ViewportWidth1 := ViewportWidth
+    
+                DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color)
+    
+                hOriginalFont := DllCall("SelectObject","UInt",hDC,"UPtr",this.hFont,"UPtr") ;select the font
+    
+                If this.Visible
+                    DllCall("TextOut","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Str",this.Text,"Int",StrLen(this.Text))
+    
+                DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
+            }
+            
+            __Set(Key,Value)
+            {
+                If (Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
+                    this.FontModified := 1
+                ObjInsert(this[""],Key,Value)
+                Return, this
             }
         }
     }
