@@ -76,7 +76,7 @@ ParseLevel(ByRef Game,LevelDefinition)
         Loop, Parse, Property, `n
         {
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entity := new Game.Blocks.Static, Entity.X := Entry1 / 80, Entity.Y := Entry2 / 80, Entity.W := Entry3 / 80, Entity.H := Entry4 / 80
+            Entity := new CustomBlocks.Block, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
             Game.Entities.Insert(Entity)
         }
     }
@@ -88,11 +88,11 @@ ParseLevel(ByRef Game,LevelDefinition)
         {
             Entry8 := 20 ;wip: tweak this speed
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entity := new CustomBlocks.Platform, Entity.X := Entry1 / 80, Entity.Y := Entry2 / 80, Entity.W := Entry3 / 80, Entity.H := Entry4 / 80
+            Entity := new CustomBlocks.Platform, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
             If Entry5 ;horizontal platform
-                Entity.RangeX := Entry6 / 80, Entity.RangeY := Entity.Y, Entity.RangeW := Entry7 / 80, Entity.RangeH := 0
+                Entity.RangeX := Entry6 / 90, Entity.RangeY := Entity.Y, Entity.RangeW := Entry7 / 90, Entity.RangeH := 0
             Else ;vertical platform
-                Entity.RangeX := Entity.X, Entity.RangeY := Entry6 / 80, Entity.RangeW := 0, Entity.RangeH := Entry7 / 80
+                Entity.RangeX := Entity.X, Entity.RangeY := Entry6 / 90, Entity.RangeW := 0, Entity.RangeH := Entry7 / 90
             Entity.Speed := Entry8
             Game.Entities.Insert(Entity)
         }
@@ -101,13 +101,13 @@ ParseLevel(ByRef Game,LevelDefinition)
     RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
     Entry5 := 0, Entry6 := 0
     StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-    Entity := new CustomBlocks.Player, Entity.X := Entry1 / 80, Entity.Y := Entry2 / 80, Entity.W := Entry3 / 80, Entity.H := Entry4 / 80, Entity.SpeedX := Entry5 /80, Entity.SpeedY := Entry6 / 80
+    Entity := new CustomBlocks.Player, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90, Entity.SpeedX := Entry5 /80, Entity.SpeedY := Entry6 / 90
     Game.Entities.Insert(Entity)
 
     If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
     {
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Entity := new CustomBlocks.Goal, Entity.X := Entry1 / 80, Entity.Y := Entry2 / 80, Entity.W := Entry3 / 80, Entity.H := Entry4 / 80
+        Entity := new CustomBlocks.Goal, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
         Game.Entities.Insert(Entity)
     }
 
@@ -118,7 +118,7 @@ ParseLevel(ByRef Game,LevelDefinition)
         {
             Entry5 := 0, Entry6 := 0
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entity := new CustomBlocks.Enemy, Entity.X := Entry1 / 80, Entity.Y := Entry2 / 80, Entity.W := Entry3 / 80, Entity.H := Entry4 / 80, Entity.SpeedX := Entry5 / 80, Entity.SpeedY := Entry6 / 80
+            Entity := new CustomBlocks.Enemy, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90, Entity.SpeedX := Entry5 / 90, Entity.SpeedY := Entry6 / 90
             Game.Entities.Insert(Entity)
         }
     }
@@ -136,8 +136,28 @@ SetControlBottom(hControl) ;wip
 
 class CustomBlocks
 {
+    class Block extends ProgressEngine.Blocks.Static
+    {
+        __New()
+        {
+            base.__New()
+            this.Color := "FF0000"
+        }
+
+        Step()
+        {
+            
+        }
+    }
+
     class Platform extends ProgressEngine.Blocks.Static
     {
+        __New()
+        {
+            base.__New()
+            this.Color := "00FF00"
+        }
+
         Step(Delta,Entities)
         {
             ;wip
@@ -146,6 +166,12 @@ class CustomBlocks
 
     class Player extends ProgressEngine.Blocks.Dynamic
     {
+        __New()
+        {
+            base.__New()
+            this.Color := "FFFFFF"
+        }
+
         Step(Delta,Entities)
         {
             MoveSpeed := 8
@@ -159,6 +185,12 @@ class CustomBlocks
 
     class Goal extends ProgressEngine.Blocks.Default
     {
+        __New()
+        {
+            base.__New()
+            this.Color := "FFFF00"
+        }
+
         Step(Delta,Entities)
         {
             
@@ -167,9 +199,16 @@ class CustomBlocks
 
     class Enemy extends ProgressEngine.Blocks.Dynamic
     {
+        __New()
+        {
+            base.__New()
+            this.Color := "0000FF"
+        }
+
         Step(Delta,Entities)
         {
             ;wip
+            base.Step(Delta,Entities)
         }
     }
 }

@@ -16,8 +16,8 @@ class ProgressEngine
 
         this.FrameRate := 30
 
-        this.ScaleX := 0.9
-        this.ScaleY := 1.1
+        this.ScaleX := 1
+        this.ScaleY := 1
 
         Gui, %GUIIndex%:+LastFound
         this.hWindow := WinExist()
@@ -80,7 +80,6 @@ class ProgressEngine
         local GUIIndex, CurrentX, CurrentY, CurrentW, CurrentH, EntityIdentifier
         ;wip: support subcategories in this.entities by checking entity.base.__class and recursing if it is not based on the entity class
         ;wip: use an internal list of controls so that offscreen controls can be reused
-        ;wip: use modification flags or setters to not update properties like color unnecessarily
         GUIIndex := this.GUIIndex
 
         ;obtain the dimensions of the client area
@@ -138,7 +137,7 @@ class ProgressEngine
                 ObjInsert(this,"",Object())
                 this.Index := 0
                 this.Visible := 1
-                this.Color := "FF0000"
+                this.Color := "FFFFFF"
                 this.Physical := 0
                 this.ModifiedProperties := Object()
             }

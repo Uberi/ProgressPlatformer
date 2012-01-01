@@ -532,8 +532,7 @@ class _Platform extends _Rectangle
         this.H := H
         If Horizontal
         {
-            this.RangeX := RangeStart, this.RangeY := Y
-            this.RangeW := RangeLength, this.RangeH := 0
+            this.RangeX := RangeStart, this.RangeY := Y, this.RangeW := RangeLength, this.RangeH := 0
             this.SpeedX := Speed, this.SpeedY := 0
         }
         Else
