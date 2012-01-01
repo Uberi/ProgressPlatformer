@@ -7,16 +7,18 @@ SetBatchLines, -1
 #Warn All
 #Warn LocalSameAsGlobal, Off
 
-Gui, Color, CCCCCC
 Gui, +OwnDialogs
-
+DetectHiddenWindows, On
 Gui, +Resize +LastFound
-hWindow := WinExist()
-Gui, Show, w800 h600, ProgressPlatformer
 
-Game := new ProgressEngine
+Game := new ProgressEngine(WinExist())
+Game.Layers[1] := new ProgressEngine.Layer
+Game.Layers[2] := new ProgressEngine.Layer
+
 Game.FrameRate := 60
 LevelIndex := 1
+
+Gui, Show, w800 h600, ProgressPlatformer
 
 Loop
 {
@@ -54,7 +56,7 @@ ShowObject(ShowObject,Padding = "") ;wip: debug
 
 InitializeLevel()
 {
-    global Game, LevelIndex, hWindow
+    global Game, LevelIndex
     ;load the level file
     LevelFile := A_ScriptDir . "\Levels\Level " . LevelIndex . ".txt"
     If !FileExist(LevelFile)
@@ -63,7 +65,7 @@ InitializeLevel()
     If ErrorLevel
         Return, 1
 
-    ParseLevel(Game,LevelDefinition) ;parse the level
+    Game.Layers[1].Entities.Insert(new CustomBlocks.Background)
 
     Random, CloudCount, 6, 10
     Loop, %CloudCount%
@@ -77,17 +79,19 @@ InitializeLevel()
         Entity.W := Temp1
         Random, Temp1, 0.5, 1.2
         Entity.H := Temp1
-        Random, Temp1, 0.002, 0.008
+        Random, Temp1, 0.1, 0.4
         Entity.SpeedX := Temp1
         Game.Layers[1].Entities.Insert(Entity)
     }
+
+    ParseLevel(Game,LevelDefinition) ;parse the level
 
     Game.Update()
 }
 
 ParseLevel(ByRef Game,LevelDefinition) ;wip: the divide by 90 thing is really hacky - should replace the actual numbers and add regex to support floats
 {
-    Entities := Game.Layers[1].Entities
+    Entities := Game.Layers[2].Entities
 
     LevelDefinition := RegExReplace(LevelDefinition,"S)#[^\r\n]*")
 
@@ -125,6 +129,13 @@ ParseLevel(ByRef Game,LevelDefinition) ;wip: the divide by 90 thing is really ha
     Entity := new CustomBlocks.Player, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90, Entity.SpeedX := Entry5 /80, Entity.SpeedY := Entry6 / 90
     Entities.Insert(Entity)
 
+    If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
+    {
+        StringSplit, Entry, Property, `,, %A_Space%`t`r`n
+        Entity := new CustomBlocks.Goal, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
+        Entities.Insert(Entity)
+    }
+
     If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
     {
         Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
@@ -136,40 +147,36 @@ ParseLevel(ByRef Game,LevelDefinition) ;wip: the divide by 90 thing is really ha
             Entities.Insert(Entity)
         }
     }
-
-    If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
-    {
-        StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Entity := new CustomBlocks.Goal, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
-        Entities.Insert(Entity)
-    }
-}
-
-SetControlTop(hControl) ;wip
-{
-    DllCall("SetWindowPos","UPtr",hControl,"UPtr",0,"Int",0,"Int",0,"Int",0,"Int",0,"UInt",0x403) ;HWND_TOP, SWP_NOSENDCHANGING | SWP_NOMOVE | SWP_NOSIZE
-}
-
-SetControlBottom(hControl) ;wip
-{
-    DllCall("SetWindowPos","UPtr",hControl,"UPtr",1,"Int",0,"Int",0,"Int",0,"Int",0,"UInt",0x403) ;HWND_BOTTOM, SWP_NOSENDCHANGING | SWP_NOMOVE | SWP_NOSIZE
 }
 
 class CustomBlocks
 {
+    class Background extends ProgressEngine.Blocks.Default
+    {
+        __New()
+        {
+            base.__New()
+            this.Color := 0xCCCCCC
+            this.X := 0
+            this.Y := 0
+            this.W := 10
+            this.H := 10
+        }
+    }
+
     class Cloud extends ProgressEngine.Blocks.Default
     {
         __New()
         {
             base.__New()
-            this.Color := "E8E8E8"
+            this.Color := 0xE8E8E8
         }
 
-        Step()
+        Step(Delta,Layer)
         {
             global Game
-            this.X += this.SpeedX
-            If this.X > Game.W
+            this.X += this.SpeedX * Delta
+            If this.X > Game.Layers[1].W
                 this.X := -this.W
         }
     }
@@ -179,10 +186,10 @@ class CustomBlocks
         __New()
         {
             base.__New()
-            this.Color := "333333"
+            this.Color := 0x333333
         }
 
-        Step()
+        Step(Delta,Layer)
         {
             
         }
@@ -193,7 +200,7 @@ class CustomBlocks
         __New()
         {
             base.__New()
-            this.Color := "333333"
+            this.Color := 0x333333
         }
 
         Step(Delta,Layer)
@@ -207,7 +214,7 @@ class CustomBlocks
         __New()
         {
             base.__New()
-            this.Color := "AFAFAF"
+            this.Color := 0xAFAFAF
             this.LastContact := 0
         }
 
@@ -247,7 +254,7 @@ class CustomBlocks
         __New()
         {
             base.__New()
-            this.Color := "FFFFFF"
+            this.Color := 0xFFFFFF
         }
 
         Step(Delta,Layer)
@@ -261,7 +268,7 @@ class CustomBlocks
         __New()
         {
             base.__New()
-            this.Color := "777777"
+            this.Color := 0x777777
         }
 
         Step(Delta,Layer)

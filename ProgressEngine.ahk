@@ -4,15 +4,18 @@ class ProgressEngine
 {
     static ControlCounter := 0
 
-    __New(GUIIndex = 1)
+    __New(hWindow)
     {
-        this.GUIIndex := GUIIndex
-        this.Layers := [new ProgressEngine.Layer]
+        this.Layers := []
 
         this.FrameRate := 30
 
-        Gui, %GUIIndex%:+LastFound
-        this.hWindow := WinExist()
+        this.hWindow := hWindow
+        this.hDC := DllCall("GetDC","UPtr",hWindow)
+
+        this.hMemoryDC := DllCall("CreateCompatibleDC","UPtr",this.hDC)
+        this.hBitmap := DllCall("CreateCompatibleBitmap","UPtr",this.hDC,"Int",800,"Int",600,"UPtr")
+        DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hBitmap,"UPtr")
     }
 
     Start(DeltaLimit = 0.05)
@@ -74,24 +77,11 @@ class ProgressEngine
             this.ScaleX := 1
             this.ScaleY := 1
         }
-
-        Delete(EntityKey) ;wip
-        {
-            GUIIndex := this.GUIIndex
-            GuiControl, %GUIIndex%:Hide, ProgressEngine%Index%
-            ObjRemove(this,EntityKey)
-        }
     }
 
     Update()
     {
-        global ;must be global in order to use GUI variables
-        local GUIIndex, CurrentX, CurrentY, CurrentW, CurrentH, EntityIdentifier
-        ;wip: use an internal list of controls so that offscreen controls can be reused
-        ;wip: individual layers should be movable: Game.Layers[Index].Entities and .X/Y/ScaleX/ScaleY/etc.
-        ;wip: change z-order of controls so that higher layers get their controls drawn on top
-        GUIIndex := this.GUIIndex
-
+        global hBitmap
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
         DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
@@ -103,40 +93,38 @@ class ProgressEngine
             ScaleY := (Height / Layer.H) * Layer.ScaleY
             For Key, Entity In Layer.Entities
             {
+                ;update the color if it has changed
+                If Entity.ColorModified
+                {
+                    If Entity.hPen
+                        DllCall("DeleteObject","UPtr",Entity.hPen)
+                    If Entity.hBrush
+                        DllCall("DeleteObject","UPtr",Entity.hBrush)
+                    Entity.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",Entity.Color,"UPtr") ;PS_SOLID
+                    Entity.hBrush := DllCall("CreateSolidBrush","UInt",Entity.Color,"UPtr")
+                    Entity.ColorModified := 0
+                }
+
+                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",Entity.hPen,"UPtr")
+                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",Entity.hBrush,"UPtr")
+
                 ;get the screen coordinates of the rectangle
                 CurrentX := Round((Layer.X + Entity.X) * ScaleX), CurrentY := Round((Layer.Y + Entity.Y) * ScaleY)
                 CurrentW := Round(Entity.W * ScaleX), CurrentH := Round(Entity.H * ScaleY)
-
-                ;check for the entity being out of bounds
+                
+                ;check for entity moving out of bounds
                 If (CurrentX + CurrentW) < 0 || CurrentX > Width
                     || (CurrentY + CurrentH) < 0 || CurrentY > Height
                 {
-                    ;wip: hide the rectangle
+                    ;wip: skip drawing the rectangle
                     ;Continue
                 }
 
-                If Entity.Index ;control already exists
-                {
-                    EntityIdentifier := "ProgressEngine" . Entity.Index
-                    For Key In Entity.ModifiedProperties ;wip: split off into the entity itself: Entity.ApplyProperties()
-                    {
-                        If (Key = "Visible")
-                            GuiControl, % GUIIndex . ":Show" . Entity.Visible, %EntityIdentifier%
-                        Else If (Key = "Color")
-                            GuiControl, % GUIIndex . ":+Background" . Entity.Color, %EntityIdentifier%
-                        ObjRemove(Entity.ModifiedProperties,Key)
-                    }
-                    GuiControl, %GUIIndex%:Move, %EntityIdentifier%, x%CurrentX% y%CurrentY% w%CurrentW% h%CurrentH% ;wip: use modifiedproperties for this
-                }
-                Else ;control does not exist
-                {
-                    ProgressEngine.ControlCounter ++
-                    Entity.Index := ProgressEngine.ControlCounter
-                    Gui, %GUIIndex%:Add, Progress, % "x" . CurrentX . " y" . CurrentY . " w" . CurrentW . " h" . CurrentH . " vProgressEngine" . ProgressEngine.ControlCounter . " hwndhControl 0x04000000 Background" . Entity.Color, 0 ;WS_CLIPSIBLINGS
-                    Control, ExStyle, -0x20000,, ahk_id %hControl% ;remove WS_EX_STATICEDGE extended style
-                }
+                If Entity.Visible
+                    DllCall("Rectangle","UPtr",this.hMemoryDC,"Int",CurrentX,"Int",CurrentY,"Int",CurrentX + CurrentW,"Int",CurrentY + CurrentH)
             }
         }
+        DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
     }
 
     class Blocks
@@ -146,11 +134,10 @@ class ProgressEngine
             __New()
             {
                 ObjInsert(this,"",Object())
-                this.Index := 0
                 this.Visible := 1
-                this.Color := "FFFFFF"
+                this.ColorModified := 0
+                this.Color := 0xFFFFFF
                 this.Physical := 0
-                this.ModifiedProperties := Object()
             }
 
             Step(Delta,Layer)
@@ -171,8 +158,8 @@ class ProgressEngine
 
             __Set(Key,Value)
             {
-                If Key In Visible,Color,Physical
-                    ObjInsert(this.ModifiedProperties,Key,"")
+                If (Key = "Color")
+                    this.ColorModified := 1
                 ObjInsert(this[""],Key,Value)
                 Return, this
             }
@@ -260,5 +247,10 @@ class ProgressEngine
                 Return, 1 ;collision occurred
             }
         }
+    }
+
+    __Delete()
+    {
+        DllCall("ReleaseDC","UPtr",this.hWindow,"UPtr",this.hDC) ;release the device context
     }
 }
