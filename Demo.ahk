@@ -79,14 +79,16 @@ InitializeLevel()
         Entity.H := Temp1
         Random, Temp1, 0.002, 0.008
         Entity.SpeedX := Temp1
-        Game.Entities.Insert(Entity)
+        Game.Layers[1].Entities.Insert(Entity)
     }
 
     Game.Update()
 }
 
-ParseLevel(ByRef Game,LevelDefinition)
+ParseLevel(ByRef Game,LevelDefinition) ;wip: the divide by 90 thing is really hacky - should replace the actual numbers and add regex to support floats
 {
+    Entities := Game.Layers[1].Entities
+
     LevelDefinition := RegExReplace(LevelDefinition,"S)#[^\r\n]*")
 
     If RegExMatch(LevelDefinition,"iS)Blocks\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
@@ -96,7 +98,7 @@ ParseLevel(ByRef Game,LevelDefinition)
         {
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
             Entity := new CustomBlocks.Block, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
-            Game.Entities.Insert(Entity)
+            Entities.Insert(Entity)
         }
     }
 
@@ -113,7 +115,7 @@ ParseLevel(ByRef Game,LevelDefinition)
             Else ;vertical platform
                 Entity.RangeX := Entity.X, Entity.RangeY := Entry6 / 90, Entity.RangeW := 0, Entity.RangeH := Entry7 / 90
             Entity.Speed := Entry8
-            Game.Entities.Insert(Entity)
+            Entities.Insert(Entity)
         }
     }
 
@@ -121,7 +123,7 @@ ParseLevel(ByRef Game,LevelDefinition)
     Entry5 := 0, Entry6 := 0
     StringSplit, Entry, Property, `,, %A_Space%`t`r`n
     Entity := new CustomBlocks.Player, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90, Entity.SpeedX := Entry5 /80, Entity.SpeedY := Entry6 / 90
-    Game.Entities.Insert(Entity)
+    Entities.Insert(Entity)
 
     If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
     {
@@ -131,7 +133,7 @@ ParseLevel(ByRef Game,LevelDefinition)
             Entry5 := 0, Entry6 := 0
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
             Entity := new CustomBlocks.Enemy, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90, Entity.SpeedX := Entry5 / 90, Entity.SpeedY := Entry6 / 90
-            Game.Entities.Insert(Entity)
+            Entities.Insert(Entity)
         }
     }
 
@@ -139,7 +141,7 @@ ParseLevel(ByRef Game,LevelDefinition)
     {
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
         Entity := new CustomBlocks.Goal, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
-        Game.Entities.Insert(Entity)
+        Entities.Insert(Entity)
     }
 }
 
@@ -194,7 +196,7 @@ class CustomBlocks
             this.Color := "333333"
         }
 
-        Step(Delta,Entities)
+        Step(Delta,Layer)
         {
             ;wip
         }
@@ -209,7 +211,7 @@ class CustomBlocks
             this.LastContact := 0
         }
 
-        Step(Delta,Entities)
+        Step(Delta,Layer)
         {
             Gravity := -9.81
             MoveSpeed := 8
@@ -236,7 +238,7 @@ class CustomBlocks
             }
             If this.IntersectY
                 this.LastContact := A_TickCount
-            base.Step(Delta,Entities)
+            base.Step(Delta,Layer)
         }
     }
 
@@ -248,7 +250,7 @@ class CustomBlocks
             this.Color := "FFFFFF"
         }
 
-        Step(Delta,Entities)
+        Step(Delta,Layer)
         {
             
         }
@@ -262,10 +264,10 @@ class CustomBlocks
             this.Color := "777777"
         }
 
-        Step(Delta,Entities)
+        Step(Delta,Layer)
         {
             ;wip
-            base.Step(Delta,Entities)
+            base.Step(Delta,Layer)
         }
     }
 }
