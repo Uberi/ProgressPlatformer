@@ -135,7 +135,7 @@ class ProgressEngine
             }
         }
         If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
-            throw Exception("Could not transfer pixel data to destination device context.")
+            throw Exception("Could not transfer pixel data to window device context.")
     }
 
     class Blocks
@@ -267,6 +267,14 @@ class ProgressEngine
                 ObjInsert(this[""],Key,Value)
                 Return, this
             }
+
+            __Delete()
+            {
+                If this.hPen && !DllCall("DeleteObject","UPtr",this.hPen)
+                    throw Exception("Could not delete pen.")
+                If this.hBrush && !DllCall("DeleteObject","UPtr",this.hBrush)
+                    throw Exception("Could not delete brush.")
+            }
         }
 
         class Static extends ProgressEngine.Blocks.Default
@@ -283,7 +291,6 @@ class ProgressEngine
             Step(Delta,Layer)
             {
                 ;wip: use spatial acceleration structure
-                ;set physical constants
                 Friction := 0.01
                 Restitution := 0.6
 
@@ -386,7 +393,7 @@ class ProgressEngine
                 If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
                     throw Exception("Could not deselect font from memory device context.")
             }
-            
+
             __Set(Key,Value)
             {
                 If (Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
@@ -394,24 +401,24 @@ class ProgressEngine
                 ObjInsert(this[""],Key,Value)
                 Return, this
             }
+
+            __Delete()
+            {
+                If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
+                    throw Exception("Could not delete font.")
+            }
         }
     }
 
     __Delete()
     {
-        For Index, Layer In this.Layers ;wip: move this into each entity's __Delete function
-        {
-            For Key, Entity In Layer.Entities
-            {
-                If Entity.hPen && !DllCall("DeleteObject","UPtr",Entity.hPen)
-                    throw Exception("Could not delete pen.")
-                If Entity.hBrush && !DllCall("DeleteObject","UPtr",Entity.hBrush)
-                    throw Exception("Could not delete brush.")
-            }
-        }
-        DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
-        DllCall("DeleteObject","UPtr",this.hBitmap) ;delete the bitmap
-        DllCall("DeleteObject","UPtr",this.hMemoryDC) ;delete the memory device context
-        DllCall("ReleaseDC","UPtr",this.hWindow,"UPtr",this.hDC) ;release the window device context
+        If !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
+            throw Exception("Could not deselect bitmap from memory device context.")
+        If !DllCall("DeleteObject","UPtr",this.hBitmap) ;delete the bitmap
+            throw Exception("Could not delete bitmap.")
+        If !DllCall("DeleteObject","UPtr",this.hMemoryDC) ;delete the memory device context
+            throw Exception("Could not delete memory device context.")
+        If !DllCall("ReleaseDC","UPtr",this.hWindow,"UPtr",this.hDC) ;release the window device context
+            throw Exception("Could not release window device context.")
     }
 }

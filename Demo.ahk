@@ -32,6 +32,7 @@ Loop
         Game.Layers[3] := new ProgressEngine.Layer
         If LoadLevel(Game,LevelIndex)
             Break
+        Game.Layers[2].Entities.Insert(new GameEntities.Platform(2,2,1,0.2,1,1,2,1.5))
         Game.Layers[1].Entities.Insert(new GameEntities.Background)
         Random, CloudCount, 6, 10
         Loop, %CloudCount% ;add clouds
@@ -141,32 +142,58 @@ class GameEntities
 
     class Block extends ProgressEngine.Blocks.Static
     {
-        __New()
+        __New(X,Y,W,H)
         {
             base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
             this.Color := 0x333333
         }
     }
 
     class Platform extends ProgressEngine.Blocks.Static
     {
-        __New()
+        __New(X,Y,W,H,Horizontal,Start,Length,Speed) ;wip: allow custom ranges for diagonal platforms
         {
             base.__New()
-            this.Color := 0x333333
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.Start := Start
+            If Horizontal ;horizontal platform
+                this.RangeX := Start, this.RangeY := Y, this.RangeW := Length, this.RangeH := 0
+            Else ;vertical platform
+                this.RangeX := X, this.RangeY := Start, this.RangeW := 0, this.RangeH := Length
+            this.Speed := Speed
+            this.Direction := 1
+            this.Color := 0x777777
         }
 
         Step(Delta,Layer)
         {
             ;wip
+            If (this.X < this.RangeX)
+                this.Direction := 1
+            Else If (this.X > (this.RangeX + this.RangeW))
+                this.Direction := -1
+            this.X += this.Speed * Delta * this.Direction
         }
     }
 
     class Player extends ProgressEngine.Blocks.Dynamic
     {
-        __New()
+        __New(X,Y,W,H,SpeedX,SpeedY)
         {
             base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.SpeedX := SpeedX
+            this.SpeedY := SpeedY
             this.Color := 0xAFAFAF
             this.LastContact := 0
             this.Health := 100
@@ -190,7 +217,7 @@ class GameEntities
                 {
                     If IntersectX && (this.Y + this.H) < (Entity.Y + Entity.H)
                     {
-                        Layer.Entities.Remove(Key,"")
+                        Layer.Entities.Remove(Key) ;wip: can't do this in a For loop
                         this.Health += 30
                     }
                     Else
@@ -233,18 +260,28 @@ class GameEntities
 
     class Goal extends ProgressEngine.Blocks.Default
     {
-        __New()
+        __New(X,Y,W,H)
         {
             base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
             this.Color := 0xFFFFFF
         }
     }
 
     class Enemy extends ProgressEngine.Blocks.Dynamic
     {
-        __New()
+        __New(X,Y,W,H,SpeedX,SpeedY)
         {
             base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.SpeedX := SpeedX
+            this.SpeedY := SpeedY
             this.Color := 0x777777
         }
 
@@ -277,6 +314,12 @@ class GameEntities
                             this.SpeedX -= MoveSpeed * Delta
                     }
                 }
+                Else If (Entity.__Class = "GameEntities.Enemy" && &this = &Entity)
+                {
+                    Padding := 1
+                    If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding)) ;out of bounds
+                        Layer.Entities.Remove(Key) ;wip: can't do this in a For loop
+                }
             }
 
             If this.IntersectY ;contacting top or bottom of a block
@@ -308,8 +351,7 @@ LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - 
         Loop, Parse, Property, `n
         {
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entity := new GameEntities.Block, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
-            Entities.Insert(Entity)
+            Entities.Insert(new GameEntities.Block(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90))
         }
     }
 
@@ -318,29 +360,21 @@ LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - 
         Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
         Loop, Parse, Property, `n
         {
-            Entry8 := 20 ;wip: tweak this speed
+            Entry8 := 1.5
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entity := new GameEntities.Platform, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
-            If Entry5 ;horizontal platform
-                Entity.RangeX := Entry6 / 90, Entity.RangeY := Entity.Y, Entity.RangeW := Entry7 / 90, Entity.RangeH := 0
-            Else ;vertical platform
-                Entity.RangeX := Entity.X, Entity.RangeY := Entry6 / 90, Entity.RangeW := 0, Entity.RangeH := Entry7 / 90
-            Entity.Speed := Entry8
-            Entities.Insert(Entity)
+            Entities.Insert(new GameEntities.Platform(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90,Entry5 / 90,Entry6 / 90,Entry7 / 90,Entry8 / 90))
         }
     }
 
     RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
     Entry5 := 0, Entry6 := 0
     StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-    Entity := new GameEntities.Player, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90, Entity.SpeedX := Entry5 /80, Entity.SpeedY := Entry6 / 90
-    Entities.Insert(Entity)
+    Entities.Insert(new GameEntities.Player(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90, Entry5 / 90,Entry6 / 90))
 
     If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
     {
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Entity := new GameEntities.Goal, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90
-        Entities.Insert(Entity)
+        Entities.Insert(new GameEntities.Goal(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90))
     }
 
     If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
@@ -350,8 +384,7 @@ LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - 
         {
             Entry5 := 0, Entry6 := 0
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entity := new GameEntities.Enemy, Entity.X := Entry1 / 90, Entity.Y := Entry2 / 90, Entity.W := Entry3 / 90, Entity.H := Entry4 / 90, Entity.SpeedX := Entry5 / 90, Entity.SpeedY := Entry6 / 90
-            Entities.Insert(Entity)
+            Entities.Insert(new GameEntities.Enemy(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90,Entry5 / 90,Entry6 / 90))
         }
     }
 }
