@@ -18,36 +18,43 @@ Gui, Show, w800 h600, ProgressPlatformer
 Game := new ProgressEngine(WinExist())
 
 ;title screen
-MessageScreen(Game,"ProgressPlatformer","Press Space to begin.","Space")
+MessageScreen(Game,"ProgressPlatformer","Press Space to begin.")
 
 ;game screen
 LevelIndex := 1
+StartLevel := 1
 Loop
 {
-    Game.Layers[1] := new ProgressEngine.Layer
-    Game.Layers[2] := new ProgressEngine.Layer
-    Game.Layers[3] := new ProgressEngine.Layer
-    If LoadLevel(Game,LevelIndex)
-        Break
-    Game.Layers[1].Entities.Insert(new GameEntities.Background)
-    Random, CloudCount, 6, 10
-    Loop, %CloudCount% ;add clouds
-        Game.Layers[1].Entities.Insert(new GameEntities.Cloud)
-    Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
+    If StartLevel
+    {
+        Game.Layers[1] := new ProgressEngine.Layer
+        Game.Layers[2] := new ProgressEngine.Layer
+        Game.Layers[3] := new ProgressEngine.Layer
+        If LoadLevel(Game,LevelIndex)
+            Break
+        Game.Layers[1].Entities.Insert(new GameEntities.Background)
+        Random, CloudCount, 6, 10
+        Loop, %CloudCount% ;add clouds
+            Game.Layers[1].Entities.Insert(new GameEntities.Cloud)
+        Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
+    }
     Result := Game.Start()
-    Game.Layers.Remove(1)
-    Game.Layers.Remove(2)
-    Game.Layers.Remove(3)
+    StartLevel := 1
     If Result = 1 ;reached goal
         LevelIndex ++ ;move to the next level
     If Result = 2 ;out of health
-        MessageScreen(Game,"You died!","Press Space to try again.","Space")
+        MessageScreen(Game,"You died","Press Space to try again.")
     Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds!","Press Space to try again.","Space")
+        MessageScreen(Game,"Out of bounds","Press Space to try again.")
+    Else If Result = 4 ;game paused
+        MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
 }
+Game.Layers.Remove(1)
+Game.Layers.Remove(2)
+Game.Layers.Remove(3)
 
 ;completion screen
-MessageScreen(Game,"Game complete!","Press Space to exit.","Space")
+MessageScreen(Game,"Game complete","Press Space to exit.")
 ExitApp
 
 GuiClose:
@@ -70,14 +77,14 @@ class GameEntities
 
         Step(ByRef Delta,Layer)
         {
-            If GetKeyState("Esc","P")
-            {
-                KeyWait, Esc
-                Return, 1
-            }
-
             If GetKeyState("Tab","P") ;slow motion
                 Delta *= 0.25
+
+            If GetKeyState("Space","P")
+            {
+                KeyWait, Space
+                Return, 4 ;paused
+            }
         }
     }
 
@@ -216,7 +223,7 @@ class GameEntities
                 If Jump && (A_TickCount - this.LastContact) < 500 ;jump
                     this.SpeedY += MoveSpeed * 0.25, this.LastContact := 0
             }
-            this.H := Crouch ? 0.3 : 0.5
+            this.H := Crouch ? 0.4 : 0.5
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
@@ -349,15 +356,17 @@ LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - 
     }
 }
 
-MessageScreen(ByRef Game,Title = "",Message = "",DismissKey = "Space")
+MessageScreen(ByRef Game,Title = "",Message = "")
 {
+    PreviousLayers := Game.Layers
+    Game.Layers := []
     Game.Layers[1] := new ProgressEngine.Layer
     Entities := Game.Layers[1].Entities
     Entities.Insert(new MessageScreenEntities.Background)
     Entities.Insert(new MessageScreenEntities.Title(Title))
-    Entities.Insert(new MessageScreenEntities.Message(Message,DismissKey))
+    Entities.Insert(new MessageScreenEntities.Message(Message))
     Game.Start()
-    Game.Layers.Remove(1)
+    Game.Layers := PreviousLayers
 }
 
 class MessageScreenEntities
@@ -392,7 +401,7 @@ class MessageScreenEntities
 
     class Message extends ProgressEngine.Blocks.Text
     {
-        __New(Text,DismissKey)
+        __New(Text)
         {
             base.__New()
             this.X := 5
@@ -402,13 +411,15 @@ class MessageScreenEntities
             this.Weight := 100
             this.Typeface := "Georgia"
             this.Text := Text
-            this.DismissKey := DismissKey
         }
 
         Step()
         {
-            If (this.DismissKey != "" && GetKeyState(this.DismissKey,"P"))
+            If GetKeyState("Space","P")
+            {
+                KeyWait, Space
                 Return, 1
+            }
         }
     }
 }

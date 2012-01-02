@@ -12,10 +12,15 @@ class ProgressEngine
 
         this.hWindow := hWindow
         this.hDC := DllCall("GetDC","UPtr",hWindow)
+        If !this.hDC
+            throw Exception("Could not obtain window device context.")
 
         this.hMemoryDC := DllCall("CreateCompatibleDC","UPtr",this.hDC)
+        If !this.hMemoryDC
+            throw Exception("Could not create memory device context.")
 
-        DllCall("SetBkMode","UPtr",this.hMemoryDC,"Int",1) ;TRANSPARENT
+        If !DllCall("SetBkMode","UPtr",this.hMemoryDC,"Int",1) ;TRANSPARENT
+            throw Exception("Could not set background mode.")
     }
 
     Start(DeltaLimit = 0.05)
@@ -25,12 +30,15 @@ class ProgressEngine
             FrameDelay := 1000 / this.FrameRate
 
         TickFrequency := 0, PreviousTicks := 0, CurrentTicks := 0, ElapsedTime := 0
-        DllCall("QueryPerformanceFrequency","Int64*",TickFrequency) ;obtain ticks per second
-        DllCall("QueryPerformanceCounter","Int64*",PreviousTicks)
+        If !DllCall("QueryPerformanceFrequency","Int64*",TickFrequency) ;obtain ticks per second
+            throw Exception("Could not obtain performance counter frequency.")
+        If !DllCall("QueryPerformanceCounter","Int64*",PreviousTicks) ;obtain the performance counter value
+            throw Exception("Could not obtain performance counter value.")
         Loop
         {
             ;calculate the total time elapsed since the last iteration
-            DllCall("QueryPerformanceCounter","Int64*",CurrentTicks)
+            If !DllCall("QueryPerformanceCounter","Int64*",CurrentTicks)
+                throw Exception("Could not obtain performance counter value.")
             Delta := (CurrentTicks - PreviousTicks) / TickFrequency
             PreviousTicks := CurrentTicks
 
@@ -44,7 +52,8 @@ class ProgressEngine
             this.Update()
 
             ;calculate the time elapsed during stepping in milliseconds
-            DllCall("QueryPerformanceCounter","Int64*",ElapsedTime)
+            If !DllCall("QueryPerformanceCounter","Int64*",ElapsedTime)
+                throw Exception("Could not obtain performance counter value.")
             ElapsedTime := ((ElapsedTime - CurrentTicks) / TickFrequency) * 1000
 
             ;sleep the amount of time required to limit the framerate to the desired value
@@ -88,13 +97,17 @@ class ProgressEngine
         static Width1 := -1, Height1 := -1
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
-        DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
+        If !DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
+            throw Exception("Could not obtain client area dimensions.")
         Width := NumGet(ClientRectangle,8,"Int"), Height := NumGet(ClientRectangle,12,"Int")
 
         If (Width != Width1 || Height != Height1)
         {
             If this.hOriginalBitmap
-                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap
+            {
+                If !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap
+                    throw Exception("Could not select bitmap into the memory device context.")
+            }
             this.hBitmap := DllCall("CreateCompatibleBitmap","UPtr",this.hDC,"Int",Width,"Int",Height,"UPtr") ;create a new bitmap
             this.hOriginalBitmap := DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hBitmap,"UPtr")
         }
