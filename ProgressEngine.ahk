@@ -1,5 +1,7 @@
 #NoEnv
-;wip: error check the DllCall's
+
+;wip: implement __Delete for text and default blocks to free resources
+
 class ProgressEngine
 {
     static ControlCounter := 0
@@ -106,10 +108,14 @@ class ProgressEngine
             If this.hOriginalBitmap
             {
                 If !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap
-                    throw Exception("Could not select bitmap into the memory device context.")
+                    throw Exception("Could not select original bitmap into memory device context.")
             }
             this.hBitmap := DllCall("CreateCompatibleBitmap","UPtr",this.hDC,"Int",Width,"Int",Height,"UPtr") ;create a new bitmap
+            If !this.hBitmap
+                throw Exception("Could not create bitmap.")
             this.hOriginalBitmap := DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hBitmap,"UPtr")
+            If !this.hOriginalBitmap
+                throw Exception("Could not select bitmap into memory device context.")
         }
         Width1 := Width, Height1 := Height
 
@@ -128,7 +134,8 @@ class ProgressEngine
                 Entity.Draw(this.hMemoryDC,CurrentX,CurrentY,CurrentW,CurrentH,Width,Height)
             }
         }
-        DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
+        If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
+            throw Exception("Could not transfer pixel data to destination device context.")
     }
 
     class Blocks
@@ -169,23 +176,36 @@ class ProgressEngine
                 ;update the color if it has changed
                 If this.ColorModified
                 {
-                    If this.hPen
-                        DllCall("DeleteObject","UPtr",this.hPen)
-                    If this.hBrush
-                        DllCall("DeleteObject","UPtr",this.hBrush)
+                    If this.hPen && !DllCall("DeleteObject","UPtr",this.hPen)
+                        throw Exception("Could not delete pen.")
+                    If this.hBrush && !DllCall("DeleteObject","UPtr",this.hBrush)
+                        throw Exception("Could not delete brush.")
                     this.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",this.Color,"UPtr") ;PS_SOLID
+                    If !this.hPen
+                        throw Exception("Could not create pen.")
                     this.hBrush := DllCall("CreateSolidBrush","UInt",this.Color,"UPtr")
+                    If !this.hBrush
+                        throw Exception("Could not create brush.")
                     this.ColorModified := 0
                 }
 
                 hOriginalPen := DllCall("SelectObject","UInt",hDC,"UPtr",this.hPen,"UPtr") ;select the pen
+                If !hOriginalPen
+                    throw Exception("Could not select pen into memory device context.")
                 hOriginalBrush := DllCall("SelectObject","UInt",hDC,"UPtr",this.hBrush,"UPtr") ;select the brush
+                If !hOriginalBrush
+                    throw Exception("Could not select brush into memory device context.")
 
                 If this.Visible
-                    DllCall("Rectangle","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Int",PositionX + Width,"Int",PositionY + Height)
+                {
+                    If !DllCall("Rectangle","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Int",PositionX + Width,"Int",PositionY + Height)
+                        throw Exception("Could not draw rectangle.")
+                }
 
-                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
-                DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
+                If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
+                    throw Exception("Could not deselect pen from the memory device context.")
+                If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
+                    throw Exception("Could not deselect brush from the memory device context.")
             }
 
             MouseHovering(PositionX,PositionY,Width,Height) ;wip
@@ -298,7 +318,7 @@ class ProgressEngine
                     this.SpeedY *= (Friction * TotalIntersectX) ** Delta ;apply friction
             }
         }
-        
+
         class Text extends ProgressEngine.Blocks.Default
         {
             __New()
@@ -315,7 +335,7 @@ class ProgressEngine
                 this.Typeface := "Verdana"
                 this.Text := "Text"
             }
-    
+
             Draw(hDC,PositionX,PositionY,Width,Height,ViewportWidth,ViewportHeight)
             {
                 ;check for entity moving out of bounds
@@ -324,30 +344,47 @@ class ProgressEngine
                     Return
 
                 If (this.Align = "Left")
-                    DllCall("SetTextAlign","UPtr",hDC,"UInt",24) ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
+                    AlignMode := 24 ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
                 Else If (this.Align = "Center")
-                    DllCall("SetTextAlign","UPtr",hDC,"UInt",30) ;TA_CENTER | TA_BASELINE: align text to the center and the baseline
+                    AlignMode := 30 ;TA_CENTER | TA_BASELINE: align text to the center and the baseline
                 Else If (this.Align = "Right")
-                    DllCall("SetTextAlign","UPtr",hDC,"UInt",26) ;TA_RIGHT | TA_BASELINE: align text to the right and the baseline
+                    AlignMode := 26 ;TA_RIGHT | TA_BASELINE: align text to the right and the baseline
+                Else
+                    throw Exception("Invalid text alignment: " . this.Align . ".")
+                DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
     
                 ;update the font if it has changed or if the viewport size has changed
                 If this.FontModified || ViewportWidth != this.PreviousViewportWidth
                 {
-                    If this.hFont
-                            DllCall("DeleteObject","UPtr",this.hFont)
+                    If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
+                        throw Exception("Could not delete font.")
+                    ;wip: doesn't work
+                    ;If this.Size Is Not Number
+                        ;throw Exception("Invalid font size: " . this.Size . ".")
+                    ;If this.Weight Is Not Integer
+                        ;throw Exception("Invalid font weight: " . this.Weight . ".")
                     this.hFont := DllCall("CreateFont","Int",Round(this.Size * (ViewportWidth / 100)),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
+                    If !this.hFont
+                        throw Exception("Could not create font.")
                     this.FontModified := 0
                 }
                 this.PreviousViewportWidth := ViewportWidth
     
-                DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color)
+                If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
+                    throw Exception("Could not set text color.")
     
                 hOriginalFont := DllCall("SelectObject","UInt",hDC,"UPtr",this.hFont,"UPtr") ;select the font
+                If !hOriginalFont
+                    throw Exception("Could not select font into memory device context.")
     
                 If this.Visible
-                    DllCall("TextOut","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Str",this.Text,"Int",StrLen(this.Text))
+                {
+                    If !DllCall("TextOut","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Str",this.Text,"Int",StrLen(this.Text))
+                        throw Exception("Could not draw text.")
+                }
     
-                DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
+                If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
+                    throw Exception("Could not deselect font from memory device context.")
             }
             
             __Set(Key,Value)
@@ -362,14 +399,14 @@ class ProgressEngine
 
     __Delete()
     {
-        For Index, Layer In this.Layers
+        For Index, Layer In this.Layers ;wip: move this into each entity's __Delete function
         {
             For Key, Entity In Layer.Entities
             {
-                If Entity.hPen
-                    DllCall("DeleteObject","UPtr",Entity.hPen)
-                If Entity.hBrush
-                    DllCall("DeleteObject","UPtr",Entity.hBrush)
+                If Entity.hPen && !DllCall("DeleteObject","UPtr",Entity.hPen)
+                    throw Exception("Could not delete pen.")
+                If Entity.hBrush && !DllCall("DeleteObject","UPtr",Entity.hBrush)
+                    throw Exception("Could not delete brush.")
             }
         }
         DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context

@@ -43,9 +43,9 @@ Loop
     If Result = 1 ;reached goal
         LevelIndex ++ ;move to the next level
     If Result = 2 ;out of health
-        MessageScreen(Game,"You died","Press Space to try again.")
+        MessageScreen(Game,"Try again","Press Space to restart the level.")
     Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds","Press Space to try again.")
+        MessageScreen(Game,"Out of bounds","Press Space to restart the level.")
     Else If Result = 4 ;game paused
         MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
 }
