@@ -21,22 +21,30 @@ Game := new ProgressEngine(WinExist())
 MessageScreen(Game,"ProgressPlatformer","Press Space to begin.","Space")
 
 ;game screen
-Game.Layers[1] := new ProgressEngine.Layer
-Game.Layers[2] := new ProgressEngine.Layer
 LevelIndex := 1
 Loop
 {
+    Game.Layers[1] := new ProgressEngine.Layer
+    Game.Layers[2] := new ProgressEngine.Layer
+    Game.Layers[3] := new ProgressEngine.Layer
     If LoadLevel(Game,LevelIndex)
         Break
-    LevelIndex ++
     Game.Layers[1].Entities.Insert(new GameEntities.Background)
     Random, CloudCount, 6, 10
     Loop, %CloudCount% ;add clouds
         Game.Layers[1].Entities.Insert(new GameEntities.Cloud)
-    Game.Start()
+    Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
+    Result := Game.Start()
+    Game.Layers.Remove(1)
+    Game.Layers.Remove(2)
+    Game.Layers.Remove(3)
+    If Result = 1 ;reached goal
+        LevelIndex ++ ;move to the next level
+    If Result = 2 ;out of health
+        MessageScreen(Game,"You died!","Press Space to try again.","Space")
+    Else If Result = 3 ;out of bounds
+        MessageScreen(Game,"Out of bounds!","Press Space to try again.","Space")
 }
-Game.Layers.Remove(1)
-Game.Layers.Remove(2)
 
 ;completion screen
 MessageScreen(Game,"Game complete!","Press Space to exit.","Space")
@@ -60,10 +68,40 @@ class GameEntities
             this.Color := 0xCCCCCC
         }
 
-        Step(Delta,Layer)
+        Step(ByRef Delta,Layer)
         {
             If GetKeyState("Esc","P")
+            {
+                KeyWait, Esc
                 Return, 1
+            }
+
+            If GetKeyState("Tab","P") ;slow motion
+                Delta *= 0.25
+        }
+    }
+
+    class HealthBar extends ProgressEngine.Blocks.Default
+    {
+        __New(Layer)
+        {
+            base.__New()
+            this.Color := 0x555555
+            this.X := 1
+            this.Y := 9.5
+            this.TotalWidth := 8
+            this.W := this.TotalWidth
+            For Key, Entity In Layer.Entities
+            {
+                If Entity.__Class = "GameEntities.Player"
+                    this.Player := Entity
+            }
+        }
+
+        Step(Delta,Layer)
+        {
+            this.W := (Mod(this.Player.Health,100) / 100) * this.TotalWidth
+            this.H := 0.08 * ((this.Player.Health // 100) + 1)
         }
     }
 
@@ -124,16 +162,43 @@ class GameEntities
             base.__New()
             this.Color := 0xAFAFAF
             this.LastContact := 0
+            this.Health := 100
         }
 
         Step(Delta,Layer)
         {
             global Gravity
-            MoveSpeed := 8
+            MoveSpeed := 10
 
             Left := GetKeyState("Left","P")
             Right := GetKeyState("Right","P")
             Jump := GetKeyState("Up","P")
+            Crouch := GetKeyState("Down","P")
+
+            For Key, Entity In Layer.Entities ;wip: use NearestEntities()
+            {
+                If (Entity.__Class = "GameEntities.Goal" && this.Inside(Entity)) ;player is inside the goal
+                    Return, 1 ;reached goal
+                If (Entity.__Class = "GameEntities.Enemy" && this.Collide(Entity,IntersectX,IntersectY))
+                {
+                    If IntersectX && (this.Y + this.H) < (Entity.Y + Entity.H)
+                    {
+                        Layer.Entities.Remove(Key,"")
+                        this.Health += 30
+                    }
+                    Else
+                        this.Health -= 150 * Delta
+                }
+            }
+
+            this.Health -= Delta
+
+            If this.Health <= 0
+                Return, 2 ;out of health
+
+            Padding := 1
+            If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding)) ;out of bounds
+                Return, 3 ;out of bounds
 
             If Left
                 this.SpeedX -= MoveSpeed * Delta ;move left
@@ -141,7 +206,7 @@ class GameEntities
                 this.SpeedX += MoveSpeed * Delta ;move right
             If (Left || Right) && this.IntersectX ;wall grab
             {
-                this.SpeedX *= 0.1
+                this.SpeedX *= 0.05
                 If Jump
                     this.SpeedY += MoveSpeed * Delta
             }
@@ -151,6 +216,7 @@ class GameEntities
                 If Jump && (A_TickCount - this.LastContact) < 500 ;jump
                     this.SpeedY += MoveSpeed * 0.25, this.LastContact := 0
             }
+            this.H := Crouch ? 0.3 : 0.5
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
@@ -178,6 +244,37 @@ class GameEntities
         Step(Delta,Layer)
         {
             global Gravity
+            MoveSpeed := 8
+            JumpSpeed := MoveSpeed * 0.25
+
+            ;move towards the player
+            For Key, Entity In Layer.Entities ;wip: use NearestEntities()
+            {
+                If (Entity.__Class = "GameEntities.Player")
+                {
+                    If (Entity.Y - this.Y) < JumpSpeed && Abs(Entity.X - this.X) < (MoveSpeed / 2)
+                    {
+                        If (this.Y >= Entity.Y)
+                        {
+                            If this.IntersectX
+                            {
+                                this.SpeedY -= Gravity * Delta
+                                this.SpeedY += MoveSpeed * Delta
+                            }
+                            Else If (A_TickCount - this.LastContact) < 500 ;jump
+                                this.SpeedY += JumpSpeed, this.LastContact := 0
+                        }
+                        If this.X < Entity.X
+                            this.SpeedX += MoveSpeed * Delta
+                        Else
+                            this.SpeedX -= MoveSpeed * Delta
+                    }
+                }
+            }
+
+            If this.IntersectY ;contacting top or bottom of a block
+                this.LastContact := A_TickCount
+
             this.SpeedY += Gravity * Delta ;process gravity
             base.Step(Delta,Layer)
         }

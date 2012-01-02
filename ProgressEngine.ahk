@@ -1,5 +1,5 @@
 #NoEnv
-
+;wip: error check the DllCall's
 class ProgressEngine
 {
     static ControlCounter := 0
@@ -38,8 +38,9 @@ class ProgressEngine
             If (Delta > DeltaLimit)
                 Delta := DeltaLimit
 
-            If this.Step(Delta)
-                Break
+            Result := this.Step(Delta)
+            If Result
+                Return, Result
             this.Update()
 
             ;calculate the time elapsed during stepping in milliseconds
@@ -58,8 +59,9 @@ class ProgressEngine
         {
             For Key, Entity In Layer.Entities
             {
-                If Entity.Step(Delta,Layer)
-                    Return, 1
+                Result := Entity.Step(Delta,Layer)
+                If Result
+                    Return, Result
             }
         }
         Return, 0
@@ -123,6 +125,10 @@ class ProgressEngine
             __New()
             {
                 ObjInsert(this,"",Object())
+                this.X := 0
+                this.Y := 0
+                this.W := 10
+                this.H := 10
                 this.hPen := 0
                 this.hBrush := 0
                 this.Visible := 1
@@ -177,6 +183,42 @@ class ProgressEngine
                     && MouseY >= PositionY && MouseY <= (PositionY + Height))
                     Return, 1
                 Return, 0
+            }
+
+            Collide(Rectangle,ByRef IntersectX,ByRef IntersectY)
+            {
+                Left1 := this.X, Left2 := Rectangle.X
+                Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
+                Top1 := this.Y, Top2 := Rectangle.Y
+                Bottom1 := Top1 + this.H, Bottom2 := Top2 + Rectangle.H
+
+                ;check for collision
+                If (Right1 < Left2 || Right2 < Left1 || Bottom1 < Top2 || Bottom2 < Top1)
+                {
+                    IntersectX := 0, IntersectY := 0
+                    Return, 0 ;no collision occurred
+                }
+
+                ;find width of intersection
+                If (Left1 < Left2)
+                    IntersectX := ((Right1 < Right2) ? Right1 : Right2) - Left2
+                Else
+                    IntersectX := Left1 - ((Right1 < Right2) ? Right1 : Right2)
+
+                ;find height of intersection
+                If (Top1 < Top2)
+                    IntersectY := ((Bottom1 < Bottom2) ? Bottom1 : Bottom2) - Top2
+                Else
+                    IntersectY := Top1 - ((Bottom1 < Bottom2) ? Bottom1 : Bottom2)
+                Return, 1 ;collision occurred
+            }
+
+            Inside(Rectangle)
+            {
+                Return, this.X >= Rectangle.X
+                        && (this.X + this.W) <= (Rectangle.X + Rectangle.W)
+                        && this.Y >= Rectangle.Y
+                        && (this.Y + this.H) <= (Rectangle.Y + Rectangle.H)
             }
 
             __Get(Key)
@@ -242,34 +284,6 @@ class ProgressEngine
                 If CollisionX
                     this.SpeedY *= (Friction * TotalIntersectX) ** Delta ;apply friction
             }
-
-            Collide(Rectangle,ByRef IntersectX,ByRef IntersectY)
-            {
-                Left1 := this.X, Left2 := Rectangle.X
-                Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
-                Top1 := this.Y, Top2 := Rectangle.Y
-                Bottom1 := Top1 + this.H, Bottom2 := Top2 + Rectangle.H
-
-                ;check for collision
-                If (Right1 < Left2 || Right2 < Left1 || Bottom1 < Top2 || Bottom2 < Top1)
-                {
-                    IntersectX := 0, IntersectY := 0
-                    Return, 0 ;no collision occurred
-                }
-
-                ;find width of intersection
-                If (Left1 < Left2)
-                    IntersectX := ((Right1 < Right2) ? Right1 : Right2) - Left2
-                Else
-                    IntersectX := Left1 - ((Right1 < Right2) ? Right1 : Right2)
-
-                ;find height of intersection
-                If (Top1 < Top2)
-                    IntersectY := ((Bottom1 < Bottom2) ? Bottom1 : Bottom2) - Top2
-                Else
-                    IntersectY := Top1 - ((Bottom1 < Bottom2) ? Bottom1 : Bottom2)
-                Return, 1 ;collision occurred
-            }
         }
         
         class Text extends ProgressEngine.Blocks.Default
@@ -278,6 +292,7 @@ class ProgressEngine
             {
                 base.__New()
                 this.hFont := 0
+                this.PreviousViewportWidth := -1
                 this.Align := "Center"
                 this.Size := 5
                 this.Weight := 500
@@ -290,7 +305,6 @@ class ProgressEngine
     
             Draw(hDC,PositionX,PositionY,Width,Height,ViewportWidth,ViewportHeight)
             {
-                static ViewportWidth1
                 ;check for entity moving out of bounds
                 If (PositionX + Width) < 0 || PositionX > ViewportWidth
                     || (PositionY + Height) < 0 || PositionY > ViewportHeight
@@ -304,14 +318,14 @@ class ProgressEngine
                     DllCall("SetTextAlign","UPtr",hDC,"UInt",26) ;TA_RIGHT | TA_BASELINE: align text to the right and the baseline
     
                 ;update the font if it has changed or if the viewport size has changed
-                If this.FontModified || ViewportWidth != ViewportWidth1
+                If this.FontModified || ViewportWidth != this.PreviousViewportWidth
                 {
                     If this.hFont
                             DllCall("DeleteObject","UPtr",this.hFont)
                     this.hFont := DllCall("CreateFont","Int",Round(this.Size * (ViewportWidth / 100)),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
                     this.FontModified := 0
                 }
-                ViewportWidth1 := ViewportWidth
+                this.PreviousViewportWidth := ViewportWidth
     
                 DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color)
     
