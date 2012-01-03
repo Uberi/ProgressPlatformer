@@ -78,10 +78,14 @@ class GameEntities
 
         Step(ByRef Delta,Layer)
         {
+            global Game
+            If !WinActive("ahk_id " . Game.hWindow)
+                Return, 4 ;paused
+
             If GetKeyState("Tab","P") ;slow motion
                 Delta *= 0.25
 
-            If GetKeyState("Space","P")
+            If GetKeyState("Space","P") ;pause
             {
                 KeyWait, Space
                 Return, 4 ;paused
@@ -448,7 +452,8 @@ class MessageScreenEntities
 
         Step()
         {
-            If GetKeyState("Space","P")
+            global Game
+            If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
             {
                 KeyWait, Space
                 Return, 1
