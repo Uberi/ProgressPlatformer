@@ -1,598 +1,463 @@
 #NoEnv
-#SingleInstance Force
 
 #Include ProgressEngine.ahk
 
-;wip: enemies don't collide with platforms
-;wip: moving platforms and elevators
-
-TargetFrameRate := 30
-DeltaLimit := 0.05
-
-Gravity := -981
-Friction := 0.01
-Restitution := 0.6
-
-LevelIndex := 1
+Gravity := -9.81
 
 SetBatchLines, -1
-SetWinDelay, -1
 
-;create game window
-Gui, Color, Black
-Gui, +OwnDialogs +LastFound
+#Warn All
+#Warn LocalSameAsGlobal, Off
 
-GameGUI := {}
-GameGUI.hWindow := WinExist()
+Gui, +OwnDialogs
+DetectHiddenWindows, On
+Gui, +Resize +LastFound
 
-TargetFrameDelay := 1000 / TargetFrameRate
-TickFrequency := 0, DllCall("QueryPerformanceFrequency","Int64*",TickFrequency) ;obtain ticks per second
-PreviousTicks := 0, CurrentTicks := 0
-Level := Object()
+Gui, Show, w800 h600, ProgressPlatformer
+
+Game := new ProgressEngine(WinExist())
+
+;title screen
+MessageScreen(Game,"ProgressPlatformer","Press Space to begin.")
+
+;game screen
+LevelIndex := 1
+StartLevel := 1
 Loop
 {
-    If Initialize()
-        Break
-    DllCall("QueryPerformanceCounter","Int64*",PreviousTicks)
-    Loop
+    If StartLevel
     {
-        DllCall("QueryPerformanceCounter","Int64*",CurrentTicks)
-        Delta := Round((CurrentTicks - PreviousTicks) / TickFrequency,4)
-        DllCall("QueryPerformanceCounter","Int64*",PreviousTicks)
-        If (Delta > DeltaLimit)
-            Delta := DeltaLimit
-        Sleep, % Round(TargetFrameDelay - (Delta * 1000))
-        If Step(Delta)
+        Game.Layers[1] := new ProgressEngine.Layer
+        Game.Layers[2] := new ProgressEngine.Layer
+        Game.Layers[3] := new ProgressEngine.Layer
+        If LoadLevel(Game,LevelIndex)
             Break
+        Game.Layers[2].Entities.Insert(new GameEntities.Platform(2,2,1,0.2,1,1,2,1.5))
+        Game.Layers[1].Entities.Insert(new GameEntities.Background)
+        Random, CloudCount, 6, 10
+        Loop, %CloudCount% ;add clouds
+            Game.Layers[1].Entities.Insert(new GameEntities.Cloud)
+        Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
+    }
+    Result := Game.Start()
+    StartLevel := 1
+    If Result = 1 ;reached goal
+        LevelIndex ++ ;move to the next level
+    If Result = 2 ;out of health
+        MessageScreen(Game,"Try again","Press Space to restart the level.")
+    Else If Result = 3 ;out of bounds
+        MessageScreen(Game,"Out of bounds","Press Space to restart the level.")
+    Else If Result = 4 ;game paused
+        MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
+}
+Game.Layers.Remove(1)
+Game.Layers.Remove(2)
+Game.Layers.Remove(3)
+
+;completion screen
+MessageScreen(Game,"Game complete","Press Space to exit.")
+ExitApp
+
+GuiClose:
+Game.__Delete() ;wip: this shouldn't be needed
+ExitApp
+
+class GameEntities
+{
+    class Background extends ProgressEngine.Blocks.Default
+    {
+        __New()
+        {
+            base.__New()
+            this.X := 0
+            this.Y := 0
+            this.W := 10
+            this.H := 10
+            this.Color := 0xCCCCCC
+        }
+
+        Step(ByRef Delta,Layer)
+        {
+            global Game
+            If !WinActive("ahk_id " . Game.hWindow)
+                Return, 4 ;paused
+
+            If GetKeyState("Tab","P") ;slow motion
+                Delta *= 0.25
+
+            If GetKeyState("Space","P") ;pause
+            {
+                KeyWait, Space
+                Return, 4 ;paused
+            }
+        }
+    }
+
+    class HealthBar extends ProgressEngine.Blocks.Default
+    {
+        __New(Layer)
+        {
+            base.__New()
+            this.Color := 0x555555
+            this.X := 1
+            this.Y := 9.5
+            this.TotalWidth := 8
+            this.W := this.TotalWidth
+            For Key, Entity In Layer.Entities
+            {
+                If Entity.__Class = "GameEntities.Player"
+                    this.Player := Entity
+            }
+        }
+
+        Step(Delta,Layer)
+        {
+            this.W := (Mod(this.Player.Health,100) / 100) * this.TotalWidth
+            this.H := 0.08 * ((this.Player.Health // 100) + 1)
+        }
+    }
+
+    class Cloud extends ProgressEngine.Blocks.Default
+    {
+        __New()
+        {
+            base.__New()
+            this.Color := 0xE8E8E8
+            Random, Temp1, -10.0, 10.0
+            this.X := Temp1
+            Random, Temp1, 0.0, 10.0
+            this.Y := Temp1
+            Random, Temp1, 1.0, 2.5
+            this.W := Temp1
+            Random, Temp1, 0.5, 1.2
+            this.H := Temp1
+            Random, Temp1, 0.1, 0.4
+            this.SpeedX := Temp1
+        }
+
+        Step(Delta,Layer)
+        {
+            global Game
+            this.X += this.SpeedX * Delta
+            If this.X > Game.Layers[1].W
+                this.X := -this.W
+        }
+    }
+
+    class Block extends ProgressEngine.Blocks.Static
+    {
+        __New(X,Y,W,H)
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.Color := 0x333333
+        }
+    }
+
+    class Platform extends ProgressEngine.Blocks.Static
+    {
+        __New(X,Y,W,H,Horizontal,Start,Length,Speed) ;wip: allow custom ranges for diagonal platforms
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.Start := Start
+            If Horizontal ;horizontal platform
+                this.RangeX := Start, this.RangeY := Y, this.RangeW := Length, this.RangeH := 0
+            Else ;vertical platform
+                this.RangeX := X, this.RangeY := Start, this.RangeW := 0, this.RangeH := Length
+            this.Speed := Speed
+            this.Direction := 1
+            this.Color := 0x777777
+        }
+
+        Step(Delta,Layer)
+        {
+            ;wip
+            If (this.X < this.RangeX)
+                this.Direction := 1
+            Else If (this.X > (this.RangeX + this.RangeW))
+                this.Direction := -1
+            this.X += this.Speed * Delta * this.Direction
+        }
+    }
+
+    class Player extends ProgressEngine.Blocks.Dynamic
+    {
+        __New(X,Y,W,H,SpeedX,SpeedY)
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.SpeedX := SpeedX
+            this.SpeedY := SpeedY
+            this.Color := 0xAFAFAF
+            this.LastContact := 0
+            this.Health := 100
+        }
+
+        Step(Delta,Layer)
+        {
+            global Gravity
+            MoveSpeed := 10
+
+            Left := GetKeyState("Left","P")
+            Right := GetKeyState("Right","P")
+            Jump := GetKeyState("Up","P")
+            Crouch := GetKeyState("Down","P")
+
+            For Key, Entity In Layer.Entities ;wip: use NearestEntities()
+            {
+                If (Entity.__Class = "GameEntities.Goal" && this.Inside(Entity)) ;player is inside the goal
+                    Return, 1 ;reached goal
+                If (Entity.__Class = "GameEntities.Enemy" && this.Collide(Entity,IntersectX,IntersectY))
+                {
+                    If IntersectX && (this.Y + this.H) < (Entity.Y + Entity.H)
+                    {
+                        Layer.Entities.Remove(Key) ;wip: can't do this in a For loop
+                        this.Health += 30
+                    }
+                    Else
+                        this.Health -= 150 * Delta
+                }
+            }
+
+            this.Health -= Delta
+
+            If this.Health <= 0
+                Return, 2 ;out of health
+
+            Padding := 1
+            If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding)) ;out of bounds
+                Return, 3 ;out of bounds
+
+            If Left
+                this.SpeedX -= MoveSpeed * Delta ;move left
+            If Right
+                this.SpeedX += MoveSpeed * Delta ;move right
+            If (Left || Right) && this.IntersectX ;wall grab
+            {
+                this.SpeedX *= 0.05
+                If Jump
+                    this.SpeedY += MoveSpeed * Delta
+            }
+            Else
+            {
+                this.SpeedY += Gravity * Delta ;process gravity
+                If Jump && (A_TickCount - this.LastContact) < 500 ;jump
+                    this.SpeedY += MoveSpeed * 0.25, this.LastContact := 0
+            }
+            this.H := Crouch ? 0.4 : 0.5
+            If this.IntersectY ;contacting top or bottom of a block
+                this.LastContact := A_TickCount
+
+            base.Step(Delta,Layer)
+        }
+    }
+
+    class Goal extends ProgressEngine.Blocks.Default
+    {
+        __New(X,Y,W,H)
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.Color := 0xFFFFFF
+        }
+    }
+
+    class Enemy extends ProgressEngine.Blocks.Dynamic
+    {
+        __New(X,Y,W,H,SpeedX,SpeedY)
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.SpeedX := SpeedX
+            this.SpeedY := SpeedY
+            this.Color := 0x777777
+        }
+
+        Step(Delta,Layer)
+        {
+            global Gravity
+            MoveSpeed := 8
+            JumpSpeed := MoveSpeed * 0.25
+
+            ;move towards the player
+            For Key, Entity In Layer.Entities ;wip: use NearestEntities()
+            {
+                If (Entity.__Class = "GameEntities.Player")
+                {
+                    If (Entity.Y - this.Y) < JumpSpeed && Abs(Entity.X - this.X) < (MoveSpeed / 2)
+                    {
+                        If (this.Y >= Entity.Y)
+                        {
+                            If this.IntersectX
+                            {
+                                this.SpeedY -= Gravity * Delta
+                                this.SpeedY += MoveSpeed * Delta
+                            }
+                            Else If (A_TickCount - this.LastContact) < 500 ;jump
+                                this.SpeedY += JumpSpeed, this.LastContact := 0
+                        }
+                        If this.X < Entity.X
+                            this.SpeedX += MoveSpeed * Delta
+                        Else
+                            this.SpeedX -= MoveSpeed * Delta
+                    }
+                }
+                Else If (Entity.__Class = "GameEntities.Enemy" && &this = &Entity)
+                {
+                    Padding := 1
+                    If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding)) ;out of bounds
+                        Layer.Entities.Remove(Key) ;wip: can't do this in a For loop
+                }
+            }
+
+            If this.IntersectY ;contacting top or bottom of a block
+                this.LastContact := A_TickCount
+
+            this.SpeedY += Gravity * Delta ;process gravity
+            base.Step(Delta,Layer)
+        }
     }
 }
-MsgBox, Game complete!
-ExitApp
 
-GuiEscape:
-GuiClose:
-ExitApp
-
-Initialize()
+LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - should replace the actual numbers and add regex to support floats
 {
-    global Health, Level, LevelIndex
-
-    Health := 100
-
-    ;hide all controls
-    If ObjHasKey(Level,"Blocks")
-    {
-        For Index In Level.Blocks
-            GuiControl, Hide, LevelRectangle%Index%
-    }
-    If ObjHasKey(Level,"Platforms")
-    {
-        For Index In Level.Platforms
-            GuiControl, Hide, PlatformRectangle%Index%
-    }
-    If ObjHasKey(Level,"Player")
-        GuiControl, Hide, PlayerRectangle
-    If ObjHasKey(Level,"Goal")
-        GuiControl, Hide, GoalRectangle
-    If ObjHasKey(Level,"Enemies")
-    {
-        For Index, Rectangle In Level.Enemies
-            GuiControl, Hide, EnemyRectangle%Index%
-    }
-
+    ;load the level file
     LevelFile := A_ScriptDir . "\Levels\Level " . LevelIndex . ".txt"
     If !FileExist(LevelFile)
         Return, 1
     FileRead, LevelDefinition, %LevelFile%
     If ErrorLevel
         Return, 1
-    Level := ParseLevel(LevelDefinition)
 
-    Level.Platforms[1] := new _Platform(50,50,100,20,1,30,50,20) ;wip
+    Entities := Game.Layers[2].Entities
 
-    Gui, +LastFound
-    hWindow := WinExist()
-    PreventRedraw(hWindow)
+    LevelDefinition := RegExReplace(LevelDefinition,"S)#[^\r\n]*") ;remove comments
 
-    ;create level
-    For Index, Rectangle In Level.Blocks
-        PlaceRectangle(Rectangle.X,Rectangle.Y,Rectangle.W,Rectangle.H,"LevelRectangle",Index,"BackgroundRed")
-
-    ;create platforms
-    For Index, Rectangle In Level.Platforms
-        PlaceRectangle(Rectangle.X,Rectangle.Y,Rectangle.W,Rectangle.H,"PlatformRectangle",Index,"BackgroundLime")
-
-    ;create player
-    PlaceRectangle(Level.Player.X,Level.Player.Y,Level.Player.W,Level.Player.H,"PlayerRectangle","","-Smooth Vertical")
-
-    ;create goal
-    PlaceRectangle(Level.Goal.X,Level.Goal.Y,Level.Goal.W,Level.Goal.H,"GoalRectangle","","BackgroundWhite")
-
-    ;create enemies
-    For Index, Rectangle In Level.Enemies
-        PlaceRectangle(Rectangle.X,Rectangle.Y,Rectangle.W,Rectangle.H,"EnemyRectangle",Index,"BackgroundBlue")
-
-    AllowRedraw(hWindow)
-    WinSet, Redraw
-
-    Gui, Show, AutoSize, ProgressPlatformer
-}
-
-PlaceRectangle(X,Y,W,H,Name,Index = "",Options = "")
-{
-    global
-    static NameCount := Object()
-    local hWnd
-    If !ObjHasKey(NameCount,Name)
-        NameCount[Name] := 0
-    If ((Index = "" && NameCount[Name] = 0) || NameCount[Name] < Index) ;control does not yet exist
-    {
-        NameCount[Name] ++
-        Gui, Add, Progress, x%X% y%Y% w%W% h%H% v%Name%%Index% %Options% hwndhWnd, 0
-        Control, ExStyle, -0x20000,, ahk_id %hWnd% ;remove WS_EX_STATICEDGE extended style
-    }
-    Else
-    {
-        GuiControl, Show, %Name%%Index%
-        GuiControl, Move, %Name%%Index%, x%X% y%Y% w%W% h%H%
-    }
-}
-
-PreventRedraw(hWnd)
-{
-    DetectHidden := A_DetectHiddenWindows
-    DetectHiddenWindows, On
-    SendMessage, 0xB, 0, 0,, ahk_id %hWnd% ;WM_SETREDRAW
-    DetectHiddenWindows, %DetectHidden%
-}
-
-AllowRedraw(hWnd)
-{
-    DetectHidden := A_DetectHiddenWindows
-    DetectHiddenWindows, On
-    SendMessage, 0xB, 1, 0,, ahk_id %hWnd% ;WM_SETREDRAW
-    DetectHiddenWindows, %DetectHidden%
-}
-
-Step(Delta)
-{
-    If GetKeyState("Tab","P") ;slow motion
-        Delta *= 0.3
-    If Input()
-        Return, 1
-    If Physics(Delta)
-        Return, 2
-    If Logic(Delta)
-        Return, 3
-    If Update()
-        Return, 4
-    Return, 0
-}
-
-Input()
-{
-    global Left, Right, Jump, Duck
-    Left := GetKeyState("Left","P")
-    Right := GetKeyState("Right","P")
-    Jump := GetKeyState("Up","P")
-    Duck := GetKeyState("Down","P")
-    Return, 0
-}
-
-Logic(Delta)
-{
-    global Level
-
-    If PlayerLogic(Delta)
-        Return, 1
-
-    EnemyLogic(Delta)
-
-    For Index, Rectangle In Level.Platforms
-    {
-        If (Rectangle.X < Rectangle.RangeX || Rectangle.X > (Rectangle.RangeX + Rectangle.RangeW))
-            Rectangle.SpeedX *= -1
-        If (Rectangle.Y < Rectangle.RangeY || Rectangle.Y > (Rectangle.RangeY + Rectangle.RangeH))
-            Rectangle.SpeedY *= -1
-        Rectangle.X += Rectangle.SpeedX * Delta
-        Rectangle.Y += Rectangle.SpeedY * Delta
-    }
-    Return, 0
-}
-
-PlayerLogic(Delta)
-{
-    global GameGUI, LevelIndex, Health, EnemyX, EnemyY, Left, Right, Jump, Duck, Level, Gravity
-
-    Padding := 100
-    WinGetPos,,, Width, Height, % "ahk_id" . GameGUI.hWindow
-    If (Level.Player.X < -Padding || Level.Player.X > (Width + Padding) || Level.Player.Y > (Height + Padding)) ;out of bounds
-        Return, 1
-    If (Health <= 0) ;out of health
-        Return, 1
-    If Inside(Level.Player,Level.Goal) ;reached goal
-    {
-        Score := Round(Health)
-        MsgBox, You win!`n`nYour score was %Score%.
-        LevelIndex ++ ;move to the next level
-        Return, 1
-    }
-
-    MoveSpeed := 800
-    JumpSpeed := 200
-    JumpInterval := 250
-    If Left
-        Level.Player.SpeedX -= MoveSpeed * Delta
-    If Right
-        Level.Player.SpeedX += MoveSpeed * Delta
-
-    If (Level.Player.IntersectX && (Left || Right))
-    {
-        Level.Player.SpeedX *= 0.01
-        Level.Player.SpeedY -= Gravity * Delta
-        If Jump
-            Level.Player.SpeedY += MoveSpeed * Delta
-    }
-    Else If (Jump && Level.Player.LastContact < JumpInterval)
-        Level.Player.SpeedY += JumpSpeed - (Gravity * Delta), Level.Player.LastContact := JumpInterval
-    Level.Player.LastContact += Delta
-
-    Level.Player.H := Duck ? 30 : 40
-
-    If (EnemyX || EnemyY > 0)
-        Health -= 200 * Delta
-    Else If EnemyY
-    {
-        EnemyY := Abs(EnemyY)
-        ObjRemove(Level.Enemies,EnemyY,"")
-        GuiControl, Hide, EnemyRectangle%EnemyY%
-        Health += 50
-    }
-
-    Return, 0
-}
-
-EnemyLogic(Delta)
-{
-    global Gravity, Level
-    MoveSpeed := 600, JumpSpeed := 150, JumpInterval := 200
-    For Index, Rectangle In Level.Enemies
-    {
-        If ((Level.Player.Y - Rectangle.Y) < JumpSpeed && Abs(Level.Player.X - Rectangle.X) < (MoveSpeed / 2))
-        {
-            If (Rectangle.Y >= Level.Player.Y)
-            {
-                If Rectangle.IntersectX
-                    Rectangle.SpeedY += (MoveSpeed - Gravity) * Delta
-                Else If (Rectangle.LastContact < JumpInterval)
-                    Rectangle.SpeedY += JumpSpeed - (Gravity * Delta), Rectangle.LastContact := JumpInterval
-            }
-            If (Rectangle.X > Level.Player.X)
-                Rectangle.SpeedX -= MoveSpeed * Delta
-            Else
-                Rectangle.SpeedX += MoveSpeed * Delta
-        }
-        Rectangle.LastContact += Delta
-    }
-}
-
-Physics(Delta)
-{
-    global Gravity, Friction, Restitution, Level, EnemyX, EnemyY
-    ;process player
-    Level.Player.SpeedY += Gravity * Delta ;process gravity
-    Level.Player.X += Level.Player.SpeedX * Delta
-    Level.Player.Y -= Level.Player.SpeedY * Delta ;process momentum
-    Level.Player.IntersectX := 0, Level.Player.IntersectY := 0
-    EntityPhysics(Delta,Level.Player,Level.Blocks) ;process collision with level
-    EntityPhysics(Delta,Level.Player,Level.Platforms) ;process collision with platforms
-
-    EnemyX := 0, EnemyY := 0
-    For Index, Rectangle In Level.Enemies
-    {
-        ;process enemy
-        Rectangle.SpeedY += Gravity * Delta ;process gravity
-        Rectangle.X += Rectangle.SpeedX * Delta, Rectangle.Y -= Rectangle.SpeedY * Delta ;process momentum
-        Rectangle.IntersectX := 0, Rectangle.IntersectY := 0
-        EntityPhysics(Delta,Rectangle,Level.Blocks) ;process collision with level
-        Temp1 := ObjClone(Level.Enemies), ObjRemove(Temp1,Index,"") ;create an array of enemies excluding the current one
-        EntityPhysics(Delta,Rectangle,Temp1) ;process collision with other enemies
-
-        If !Collide(Rectangle,Level.Player,IntersectX,IntersectY) ;player did not collide with the rectangle
-            Continue
-        If (Abs(IntersectX) > Abs(IntersectY)) ;collision along top or bottom side
-        {
-            EnemyY := (IntersectY < 0) ? -Index : Index
-            Rectangle.Y -= IntersectY ;move the player out of the intersection area
-            Level.Player.Y += IntersectY ;move the player out of the intersection area
-
-            Temp1 := ((Rectangle.SpeedX + Level.Player.SpeedX) / 2) * Restitution
-            Rectangle.SpeedY := Temp1 ;reflect the speed and apply damping
-            Level.Player.SpeedY := -Temp1 ;reflect the speed and apply damping
-        }
-        Else ;collision along left or right side
-        {
-            EnemyX := Index
-            Rectangle.X -= IntersectX ;move the player out of the intersection area
-            Level.Player.X += IntersectX ;move the player out of the intersection area
-
-            Temp1 := ((Rectangle.SpeedX + Level.Player.SpeedX) / 2) * Restitution
-            Rectangle.SpeedX := Temp1 ;reflect the speed and apply damping
-            Level.Player.SpeedX := -Temp1 ;reflect the speed and apply damping
-        }
-        If EnemyY
-            Rectangle.SpeedX *= (Friction * Abs(IntersectX)) ** Delta ;apply friction
-        If EnemyX
-            Rectangle.SpeedY *= (Friction * Abs(IntersectY)) ** Delta ;apply friction
-    }
-    Return, 0
-}
-
-EntityPhysics(Delta,Entity,Rectangles)
-{
-    global Gravity, Friction, Restitution
-    CollisionX := 0, CollisionY := 0, TotalIntersectX := 0, TotalIntersectY := 0
-    For Index, Rectangle In Rectangles
-    {
-        If !Collide(Entity,Rectangle,IntersectX,IntersectY) ;entity did not collide with the rectangle
-            Continue
-        If (Abs(IntersectX) >= Abs(IntersectY)) ;collision along top or bottom side
-        {
-            CollisionY := 1
-            Entity.Y -= IntersectY ;move the entity out of the intersection area
-            Entity.SpeedY *= -Restitution ;reflect the speed and apply damping
-            TotalIntersectY += Abs(IntersectY)
-        }
-        Else ;collision along left or right side
-        {
-            CollisionX := 1
-            Entity.X -= IntersectX ;move the entity out of the intersection area
-            Entity.SpeedX *= -Restitution ;reflect the speed and apply damping
-            TotalIntersectX += Abs(IntersectX)
-        }
-    }
-    If CollisionY
-    {
-        Entity.LastContact := 0
-        Entity.IntersectY := TotalIntersectY
-        Entity.SpeedX *= (Friction * TotalIntersectY) ** Delta ;apply friction
-    }
-    If CollisionX
-    {
-        Entity.IntersectX := TotalIntersectX
-        Entity.SpeedY *= (Friction * TotalIntersectX) ** Delta ;apply friction
-    }
-}
-
-Update()
-{
-    global Level, Health
-    ;update platforms
-    For Index, Rectangle In Level.Platforms
-        PlaceRectangle(Round(Rectangle.X),Round(Rectangle.Y),Round(Rectangle.W),Round(Rectangle.H),"PlatformRectangle",Index)
-
-    ;update player
-    GuiControl,, PlayerRectangle, %Health%
-    PlaceRectangle(Round(Level.Player.X),Round(Level.Player.Y),Round(Level.Player.W),Round(Level.Player.H),"PlayerRectangle")
-
-    ;update enemies
-    For Index, Rectangle In Level.Enemies
-        PlaceRectangle(Round(Rectangle.X),Round(Rectangle.Y),Round(Rectangle.W),Round(Rectangle.H),"EnemyRectangle",Index)
-    Return, 0
-}
-
-ParseLevel(LevelDefinition)
-{
-    LevelDefinition := RegExReplace(LevelDefinition,"S)#[^\r\n]*")
-
-    Level := Object()
-
-    Level.Blocks := []
     If RegExMatch(LevelDefinition,"iS)Blocks\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
     {
-        StringReplace, Property, Property, `r,, All
-        StringReplace, Property, Property, %A_Space%,, All
-        StringReplace, Property, Property, %A_Tab%,, All
-        While, InStr(Property,"`n`n")
-            StringReplace, Property, Property, `n`n, `n, All
-        Property := Trim(Property,"`n")
+        Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
         Loop, Parse, Property, `n
         {
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            ObjInsert(Level.Blocks,new _Rectangle(Entry1,Entry2,Entry3,Entry4))
+            Entities.Insert(new GameEntities.Block(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90))
         }
     }
 
-    Level.Platforms := []
-    If RegExMatch(LevelDefinition,"iS)Platforms\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){4,7})*",Property)
+    If RegExMatch(LevelDefinition,"iS)Platforms\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){6,7})*",Property)
     {
-        StringReplace, Property, Property, `r,, All
-        StringReplace, Property, Property, %A_Space%,, All
-        StringReplace, Property, Property, %A_Tab%,, All
-        While, InStr(Property,"`n`n")
-            StringReplace, Property, Property, `n`n, `n, All
-        Property := Trim(Property,"`n")
+        Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
         Loop, Parse, Property, `n
         {
-            Entry6 := 0, Entry7 := 100
+            Entry8 := 1.5
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            ObjInsert(Level.Platforms,new _Platform(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6,Entry7))
+            Entities.Insert(new GameEntities.Platform(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90,Entry5 / 90,Entry6 / 90,Entry7 / 90,Entry8 / 90))
         }
     }
 
-    If RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
-    {
-        Entry5 := 0, Entry6 := 0
-        StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Level.Player := new _Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6)
-    }
+    RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
+    Entry5 := 0, Entry6 := 0
+    StringSplit, Entry, Property, `,, %A_Space%`t`r`n
+    Entities.Insert(new GameEntities.Player(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90, Entry5 / 90,Entry6 / 90))
 
     If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
     {
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Level.Goal := new _Rectangle(Entry1,Entry2,Entry3,Entry4)
+        Entities.Insert(new GameEntities.Goal(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90))
     }
 
-    Level.Enemies := []
     If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
     {
-        StringReplace, Property, Property, `r,, All
-        StringReplace, Property, Property, %A_Space%,, All
-        StringReplace, Property, Property, %A_Tab%,, All
-        While, InStr(Property,"`n`n")
-            StringReplace, Property, Property, `n`n, `n, All
-        Property := Trim(Property,"`n")
+        Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
         Loop, Parse, Property, `n, `r `t
         {
             Entry5 := 0, Entry6 := 0
             StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            ObjInsert(Level.Enemies,new _Entity(Entry1,Entry2,Entry3,Entry4,Entry5,Entry6))
+            Entities.Insert(new GameEntities.Enemy(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90,Entry5 / 90,Entry6 / 90))
         }
     }
-    Return, Level
 }
 
-class _Rectangle
+MessageScreen(ByRef Game,Title = "",Message = "")
 {
-    __new(X,Y,W,H)
-    {
-        this.X := X
-        this.Y := Y
-        this.W := W
-        this.H := H
-    }
-    
-    Center()
-    {
-        Return, {X: this.X + (this.W / 2),Y: this.Y + (this.H / 2)}
-    }
-    
-    ; Distance between the *centers* of two blocks
-    CenterDistance(Rectangle)
-    {
-        a := this.Center()
-        b := Rectangle.Center()
-        Return, Sqrt((Abs(a.X - b.X) ** 2) + (Abs(a.Y - b.Y) ** 2))
-    }
-    
-    ; calculates the closest distance between two blocks (*not* the centers)
-    Distance(Rectangle)
-    {
-        X := this.IntersectsX(Rectangle) ? 0 : min(Abs(this.X - (Rectangle.X + Rectangle.W)),Abs(Rectangle.X - (this.X + this.W)))
-        Y := this.IntersectsY(Rectangle) ? 0 : min(Abs(this.Y - (Rectangle.Y + Rectangle.H)),Abs(Rectangle.Y - (this.Y + this.H)))
-        Return, Sqrt((X ** 2) + (Y ** 2))
-    }
-    
-    ; Returns true if this is completely inside Rectangle
-    Inside(Rectangle)
-    {
-        Return, (this.X >= Rectangle.X) && (this.Y >= Rectangle.Y) && (this.X + this.W <= Rectangle.X + Rectangle.W) && (this.Y + this.H <= Rectangle.Y + Rectangle.H)
-    }
-    
-    ; Returns true if this intersects Rectangle at all
-    Intersects(Rectangle)
-    {
-        Return, this.IntersectsX(Rectangle) && this.IntersectsY(Rectangle)
-    }
-    
-    IntersectsX(Rectangle)
-    {
-        ; this could be optimized
-        Return, Between(this.X,Rectangle.X,Rectangle.X + Rectangle.W)
-                || Between(Rectangle.X, this.X, this.X+this.W)
-    }
-    
-    IntersectsY(Rectangle)
-    {
-        Return, Between(this.Y,Rectangle.Y,Rectangle.Y + Rectangle.H) || Between(Rectangle.Y,this.Y,this.Y + this.H)
-    }
+    PreviousLayers := Game.Layers
+    Game.Layers := []
+    Game.Layers[1] := new ProgressEngine.Layer
+    Entities := Game.Layers[1].Entities
+    Entities.Insert(new MessageScreenEntities.Background)
+    Entities.Insert(new MessageScreenEntities.Title(Title))
+    Entities.Insert(new MessageScreenEntities.Message(Message))
+    Game.Start()
+    Game.Layers := PreviousLayers
 }
 
-class _Entity extends _Rectangle
+class MessageScreenEntities
 {
-    __new(X,Y,W,H,SpeedX = 0,SpeedY = 0)
+    class Background extends ProgressEngine.Blocks.Default
     {
-        this.X := X
-        this.Y := Y
-        this.W := W
-        this.H := H
-        this.SpeedX := SpeedX
-        this.SpeedY := SpeedY
-        this.LastContact := 0
-    }
-}
-
-class _Platform extends _Rectangle
-{
-    __new(X,Y,W,H,Horizontal = 1,RangeStart = 0,RangeLength = 0,Speed = 0)
-    {
-        this.X := X
-        this.Y := Y
-        this.W := W
-        this.H := H
-        If Horizontal
+        __New()
         {
-            this.RangeX := RangeStart, this.RangeY := Y, this.RangeW := RangeLength, this.RangeH := 0
-            this.SpeedX := Speed, this.SpeedY := 0
-        }
-        Else
-        {
-            this.RangeX := X, this.RangeY := RangeStart, this.RangeW := 0, this.RangeH := RangeLength
-            this.SpeedX := 0, this.SpeedY := Speed
+            base.__New()
+            this.X := 0
+            this.Y := 0
+            this.W := 10
+            this.H := 10
+            this.Color := 0x444444
         }
     }
-}
 
-Collide(Rectangle1,Rectangle2,ByRef IntersectX = "",ByRef IntersectY = "")
-{
-    Left1 := Rectangle1.X, Left2 := Rectangle2.X
-    Right1 := Left1 + Rectangle1.W, Right2 := Left2 + Rectangle2.W
-    Top1 := Rectangle1.Y, Top2 := Rectangle2.Y
-    Bottom1 := Top1 + Rectangle1.H, Bottom2 := Top2 + Rectangle2.H
-
-    ;check for collision
-    If (Right1 < Left2
-       || Right2 < Left1
-       || Bottom1 < Top2
-       || Bottom2 < Top1)
+    class Title extends ProgressEngine.Blocks.Text
     {
-        IntersectX := 0, IntersectY := 0
-        Return, 0 ;no collision occurred
+        __New(Text)
+        {
+            base.__New()
+            this.X := 5
+            this.Y := 4.5
+            this.Size := 8
+            this.Color := 0xD0D0D0
+            this.Weight := 100
+            this.Typeface := "Georgia"
+            this.Text := Text
+        }
     }
 
-    ;find width of intersection
-    If (Left1 < Left2)
-        IntersectX := ((Right1 < Right2) ? Right1 : Right2) - Left2
-    Else
-        IntersectX := Left1 - ((Right1 < Right2) ? Right1 : Right2)
+    class Message extends ProgressEngine.Blocks.Text
+    {
+        __New(Text)
+        {
+            base.__New()
+            this.X := 5
+            this.Y := 6
+            this.Size := 3
+            this.Color := 0xF5F5F5
+            this.Weight := 100
+            this.Typeface := "Georgia"
+            this.Text := Text
+        }
 
-    ;find height of intersection
-    If (Top1 < Top2)
-        IntersectY := ((Bottom1 < Bottom2) ? Bottom1 : Bottom2) - Top2
-    Else
-        IntersectY := Top1 - ((Bottom1 < Bottom2) ? Bottom1 : Bottom2)
-    Return, 1 ;collision occurred
-}
-
-Inside(Rectangle1,Rectangle2)
-{
-    Return, Rectangle1.X >= Rectangle2.X
-            && (Rectangle1.X + Rectangle1.W) <= (Rectangle2.X + Rectangle2.W)
-            && Rectangle1.Y >= Rectangle2.Y
-            && (Rectangle1.Y + Rectangle1.H) <= (Rectangle2.Y + Rectangle2.H)
-}
-
-Between( x, a, b ) {
-    Return, (a >= x && x >= b)
-}
-
-; min that accepts either an array or args
-min( x* ) {
-    if (ObjMaxIndex(x) == 1 && IsObject(x[1]))
-        x := x[1]
-    r := x[1]
-    loop % ObjMaxIndex(x)
-        if (x[1] < r)
-            r := x[1]
-    Return, r
+        Step()
+        {
+            global Game
+            If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
+            {
+                KeyWait, Space
+                Return, 1
+            }
+        }
+    }
 }

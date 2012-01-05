@@ -1,7 +1,5 @@
 #NoEnv
 
-;wip: implement __Delete for text and default blocks to free resources
-
 class ProgressEngine
 {
     static ControlCounter := 0
