@@ -3,9 +3,9 @@
 /*
 Copyright 2011 Anthony Zhang <azhang9@gmail.com>
 
-This file is part of Autonomy. Source code is available at <https://github.com/Uberi/Autonomy>.
+This file is part of ProgressPlatformer. Source code is available at <https://github.com/Uberi/ProgressPlatformer>.
 
-Autonomy is free software: you can redistribute it and/or modify
+ProgressPlatformer is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -97,7 +97,7 @@ class GameEntities
             this.Color := 0xCCCCCC
         }
 
-        Step(ByRef Delta,Layer)
+        Step(ByRef Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         {
             global Game
             If !WinActive("ahk_id " . Game.hWindow)
@@ -131,7 +131,7 @@ class GameEntities
             }
         }
 
-        Step(Delta,Layer)
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         {
             this.W := (Mod(this.Player.Health,100) / 100) * this.TotalWidth
             this.H := 0.08 * ((this.Player.Health // 100) + 1)
@@ -156,7 +156,7 @@ class GameEntities
             this.SpeedX := Temp1
         }
 
-        Step(Delta,Layer)
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         {
             global Game
             this.X += this.SpeedX * Delta
@@ -197,9 +197,9 @@ class GameEntities
             this.Color := 0x777777
         }
 
-        Step(Delta,Layer)
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         {
-            ;wip
+            ;wip: need to push player along direction of platform
             If (this.X < this.RangeX)
                 this.Direction := 1
             Else If (this.X > (this.RangeX + this.RangeW))
@@ -224,7 +224,7 @@ class GameEntities
             this.Health := 100
         }
 
-        Step(Delta,Layer)
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         {
             global Gravity
             MoveSpeed := 10
@@ -273,13 +273,13 @@ class GameEntities
             {
                 this.SpeedY += Gravity * Delta ;process gravity
                 If Jump && (A_TickCount - this.LastContact) < 500 ;jump
-                    this.SpeedY += MoveSpeed * 0.25, this.LastContact := 0
+                    this.SpeedY += MoveSpeed * 0.3, this.LastContact := 0
             }
             this.H := Crouch ? 0.4 : 0.5
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
-            base.Step(Delta,Layer)
+            base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         }
     }
 
@@ -310,7 +310,7 @@ class GameEntities
             this.Color := 0x777777
         }
 
-        Step(Delta,Layer)
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         {
             global Gravity
             MoveSpeed := 8
@@ -351,7 +351,7 @@ class GameEntities
                 this.LastContact := A_TickCount
 
             this.SpeedY += Gravity * Delta ;process gravity
-            base.Step(Delta,Layer)
+            base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         }
     }
 }
@@ -471,7 +471,7 @@ class MessageScreenEntities
             this.Text := Text
         }
 
-        Step()
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         {
             global Game
             If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)

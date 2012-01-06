@@ -3,9 +3,9 @@
 /*
 Copyright 2011 Anthony Zhang <azhang9@gmail.com>
 
-This file is part of Autonomy. Source code is available at <https://github.com/Uberi/Autonomy>.
+This file is part of ProgressPlatformer. Source code is available at <https://github.com/Uberi/ProgressPlatformer>.
 
-Autonomy is free software: you can redistribute it and/or modify
+ProgressPlatformer is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -65,10 +65,9 @@ class ProgressEngine
             If (Delta > DeltaLimit)
                 Delta := DeltaLimit
 
-            Result := this.Step(Delta)
+            Result := this.Update(Delta)
             If Result
                 Return, Result
-            this.Update()
 
             ;calculate the time elapsed during stepping in milliseconds
             If !DllCall("QueryPerformanceCounter","Int64*",ElapsedTime)
@@ -79,20 +78,6 @@ class ProgressEngine
             If (this.FrameRate != 0 && ElapsedTime < FrameDelay)
                 Sleep, % Round(FrameDelay - ElapsedTime)
         }
-    }
-
-    Step(Delta)
-    {
-        For Index, Layer In this.Layers
-        {
-            For Key, Entity In Layer.Entities
-            {
-                Result := Entity.Step(Delta,Layer)
-                If Result
-                    Return, Result
-            }
-        }
-        Return, 0
     }
 
     class Layer
@@ -110,10 +95,9 @@ class ProgressEngine
         }
     }
 
-    Update()
+    Update(Delta)
     {
-        global hBitmap
-        static Width1 := -1, Height1 := -1
+        static Width1 := -1, Height1 := -1, Rectangle := Object("X",0,"Y",0,"W",0,"H",0)
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
         If !DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
@@ -145,14 +129,20 @@ class ProgressEngine
             For Key, Entity In Layer.Entities
             {
                 ;get the screen coordinates of the rectangle
-                CurrentX := Round((Layer.X + Entity.X) * ScaleX), CurrentY := Round((Layer.Y + Entity.Y) * ScaleY)
-                CurrentW := Round(Entity.W * ScaleX), CurrentH := Round(Entity.H * ScaleY)
+                Rectangle.X := (Layer.X + Entity.X) * ScaleX, Rectangle.Y := (Layer.Y + Entity.Y) * ScaleY
+                Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+                
 
-                Entity.Draw(this.hMemoryDC,CurrentX,CurrentY,CurrentW,CurrentH,Width,Height)
+                Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
+                If Result
+                    Return, Result
+
+                Entity.Draw(this.hMemoryDC,Rectangle,Width,Height)
             }
         }
         If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
             throw Exception("Could not transfer pixel data to window device context.")
+        Return, 0
     }
 
     class Blocks
@@ -173,7 +163,7 @@ class ProgressEngine
                 this.Physical := 0
             }
 
-            Step(Delta,Layer)
+            Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
             {
                 
             }
@@ -183,11 +173,11 @@ class ProgressEngine
                 ;wip
             }
 
-            Draw(hDC,PositionX,PositionY,Width,Height,ViewportWidth,ViewportHeight)
+            Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
             {
                 ;check for entity moving out of bounds
-                If (PositionX + Width) < 0 || PositionX > ViewportWidth
-                    || (PositionY + Height) < 0 || PositionY > ViewportHeight
+                If (Rectangle.X + Rectangle.W) < 0 || Rectangle.X > ViewportWidth
+                    || (Rectangle.Y + Rectangle.H) < 0 || Rectangle.Y > ViewportHeight
                     Return
 
                 ;update the color if it has changed
@@ -215,7 +205,7 @@ class ProgressEngine
 
                 If this.Visible
                 {
-                    If !DllCall("Rectangle","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Int",PositionX + Width,"Int",PositionY + Height)
+                    If !DllCall("Rectangle","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(Rectangle.Y),"Int",Round(Rectangle.X + Rectangle.W),"Int",Round(Rectangle.Y + Rectangle.H))
                         throw Exception("Could not draw rectangle.")
                 }
 
@@ -225,7 +215,7 @@ class ProgressEngine
                     throw Exception("Could not deselect brush from the memory device context.")
             }
 
-            MouseHovering(PositionX,PositionY,Width,Height) ;wip
+            MouseHovering(Layer,ScaleX,ScaleY)
             {
                 CoordMode, Mouse, Client
                 MouseGetPos, MouseX, MouseY
@@ -305,7 +295,7 @@ class ProgressEngine
 
         class Dynamic extends ProgressEngine.Blocks.Static
         {
-            Step(Delta,Layer)
+            Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
             {
                 ;wip: use spatial acceleration structure
                 Friction := 0.01
@@ -360,11 +350,11 @@ class ProgressEngine
                 this.Text := "Text"
             }
 
-            Draw(hDC,PositionX,PositionY,Width,Height,ViewportWidth,ViewportHeight)
+            Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
             {
                 ;check for entity moving out of bounds
-                If (PositionX + Width) < 0 || PositionX > ViewportWidth
-                    || (PositionY + Height) < 0 || PositionY > ViewportHeight
+                If (Rectangle.X + Rectangle.W) < 0 || Rectangle.X > ViewportWidth
+                    || (Rectangle.Y + Rectangle.H) < 0 || Rectangle.Y > ViewportHeight
                     Return
 
                 If (this.Align = "Left")
@@ -396,14 +386,14 @@ class ProgressEngine
     
                 If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
                     throw Exception("Could not set text color.")
-    
+
                 hOriginalFont := DllCall("SelectObject","UInt",hDC,"UPtr",this.hFont,"UPtr") ;select the font
                 If !hOriginalFont
                     throw Exception("Could not select font into memory device context.")
     
                 If this.Visible
                 {
-                    If !DllCall("TextOut","UPtr",hDC,"Int",PositionX,"Int",PositionY,"Str",this.Text,"Int",StrLen(this.Text))
+                    If !DllCall("TextOut","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(Rectangle.Y),"Str",this.Text,"Int",StrLen(this.Text))
                         throw Exception("Could not draw text.")
                 }
     

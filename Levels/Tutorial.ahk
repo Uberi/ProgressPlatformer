@@ -1,0 +1,62 @@
+#NoEnv
+
+/*
+Copyright 2011 Anthony Zhang <azhang9@gmail.com>
+
+This file is part of ProgressPlatformer. Source code is available at <https://github.com/Uberi/ProgressPlatformer>.
+
+ProgressPlatformer is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+StartLevel := 1
+Loop
+{
+    If StartLevel
+    {
+        Game.Layers[1] := new ProgressEngine.Layer
+        Game.Layers[2] := new ProgressEngine.Layer
+        Game.Layers[1].Entities.Insert(new GameEntities.Background)
+        Random, CloudCount, 6, 10
+        Loop, %CloudCount% ;add clouds
+            Game.Layers[1].Entities.Insert(new GameEntities.Cloud)
+        Entities := Game.Layers[2].Entities
+        Entities.Insert(new GameEntities.Block(1,9,8,0.5))
+        Entities.Insert(new GameEntities.Player(1.5,7,1 / 3,4 / 9,0,0))
+        Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
+    }
+    Result := Game.Start()
+    StartLevel := 1
+    If Result = 1 ;reached goal
+        Break
+    If Result = 2 ;out of bounds
+        MessageScreen(Game,"Out of bounds","Press Space to restart the level.")
+    Else If Result = 3 ;paused
+        MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
+        
+}
+
+class TutorialText extends ProgressEngine.Blocks.Text
+{
+    __New(Text,X,Y)
+    {
+        base.__New()
+        this.X := PositionX
+        this.Y := PositionY
+        this.Size := 8
+        this.Color := 0xD0D0D0
+        this.Weight := 100
+        this.Typeface := "Georgia"
+        this.Text := Text
+    }
+}
