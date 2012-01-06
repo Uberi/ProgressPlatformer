@@ -1,5 +1,24 @@
 #NoEnv
 
+/*
+Copyright 2011 Anthony Zhang <azhang9@gmail.com>
+
+This file is part of Autonomy. Source code is available at <https://github.com/Uberi/Autonomy>.
+
+Autonomy is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #Include ProgressEngine.ahk
 
 Gravity := -9.81
@@ -18,7 +37,9 @@ Gui, Show, w800 h600, ProgressPlatformer
 Game := new ProgressEngine(WinExist())
 
 ;title screen
-MessageScreen(Game,"ProgressPlatformer","Press Space to begin.")
+MessageScreen(Game,"Achromatic","Press Space to begin.")
+
+#Include Levels/Tutorial.ahk
 
 ;game screen
 LevelIndex := 1
@@ -442,7 +463,7 @@ class MessageScreenEntities
         {
             base.__New()
             this.X := 5
-            this.Y := 6
+            this.Y := 5.5
             this.Size := 3
             this.Color := 0xF5F5F5
             this.Weight := 100
