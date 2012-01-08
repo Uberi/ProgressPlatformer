@@ -1,5 +1,7 @@
 #NoEnv
 
+;wip: copy hDC on WM_PAINT
+
 /*
 Copyright 2011 Anthony Zhang <azhang9@gmail.com>
 
@@ -27,7 +29,7 @@ class ProgressEngine
     {
         this.Layers := []
 
-        this.FrameRate := 30
+        this.FrameRate := 60
 
         this.hWindow := hWindow
         this.hDC := DllCall("GetDC","UPtr",hWindow)
@@ -269,7 +271,7 @@ class ProgressEngine
 
             __Set(Key,Value)
             {
-                If (Key = "Color")
+                If (Key = "Color" && this[Key] != Value)
                     this.ColorModified := 1
                 ObjInsert(this[""],Key,Value)
                 Return, this
@@ -366,7 +368,9 @@ class ProgressEngine
                 Else
                     throw Exception("Invalid text alignment: " . this.Align . ".")
                 DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
-    
+
+                LineHeight := this.Size * ViewportWidth * 0.01
+
                 ;update the font if it has changed or if the viewport size has changed
                 If this.FontModified || ViewportWidth != this.PreviousViewportWidth
                 {
@@ -377,7 +381,7 @@ class ProgressEngine
                         ;throw Exception("Invalid font size: " . this.Size . ".")
                     ;If this.Weight Is Not Integer
                         ;throw Exception("Invalid font weight: " . this.Weight . ".")
-                    this.hFont := DllCall("CreateFont","Int",Round(this.Size * (ViewportWidth / 100)),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
+                    this.hFont := DllCall("CreateFont","Int",Round(LineHeight),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
                     If !this.hFont
                         throw Exception("Could not create font.")
                     this.FontModified := 0
@@ -393,8 +397,14 @@ class ProgressEngine
     
                 If this.Visible
                 {
-                    If !DllCall("TextOut","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(Rectangle.Y),"Str",this.Text,"Int",StrLen(this.Text))
-                        throw Exception("Could not draw text.")
+                    ;Loop, Parse, This.Text, `n ;wip
+                    Text := this.Text, PositionY := Rectangle.Y
+                    Loop, Parse, Text, `n
+                    {
+                        If !DllCall("TextOut","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(PositionY),"Str",A_LoopField,"Int",StrLen(A_LoopField))
+                            throw Exception("Could not draw text.")
+                        PositionY += LineHeight
+                    }
                 }
     
                 If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
@@ -403,8 +413,9 @@ class ProgressEngine
 
             __Set(Key,Value)
             {
-                If (Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
-                    this.FontModified := 1
+                If ((Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
+                    && this[Key] != Value)
+                    ObjInsert(this[""],"FontModified",1)
                 ObjInsert(this[""],Key,Value)
                 Return, this
             }

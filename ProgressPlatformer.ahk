@@ -53,7 +53,7 @@ Loop
         Game.Layers[3] := new ProgressEngine.Layer
         If LoadLevel(Game,LevelIndex)
             Break
-        Game.Layers[2].Entities.Insert(new GameEntities.Platform(2,2,1,0.2,1,1,2,1.5))
+        ;Game.Layers[2].Entities.Insert(new GameEntities.Platform(2,2,1,0.2,1,1,2,1.5))
         Game.Layers[1].Entities.Insert(new GameEntities.Background)
         Random, CloudCount, 6, 10
         Loop, %CloudCount% ;add clouds
@@ -71,9 +71,7 @@ Loop
     Else If Result = 4 ;game paused
         MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
 }
-Game.Layers.Remove(1)
-Game.Layers.Remove(2)
-Game.Layers.Remove(3)
+Game.Layers := []
 
 ;completion screen
 MessageScreen(Game,"Game complete","Press Space to exit.")
@@ -370,7 +368,7 @@ LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - 
 
     LevelDefinition := RegExReplace(LevelDefinition,"S)#[^\r\n]*") ;remove comments
 
-    If RegExMatch(LevelDefinition,"iS)Blocks\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
+    If RegExMatch(LevelDefinition,"iS)Blocks\s*:\s*\K(?:-?\d+\s*(?:,\s*-?\d+\s*){3})*",Property)
     {
         Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
         Loop, Parse, Property, `n
@@ -380,7 +378,7 @@ LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - 
         }
     }
 
-    If RegExMatch(LevelDefinition,"iS)Platforms\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){6,7})*",Property)
+    If RegExMatch(LevelDefinition,"iS)Platforms\s*:\s*\K(?:-?\d+\s*(?:,\s*-?\d+\s*){6,7})*",Property)
     {
         Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
         Loop, Parse, Property, `n
@@ -391,18 +389,18 @@ LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - 
         }
     }
 
-    RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
-    Entry5 := 0, Entry6 := 0
-    StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-    Entities.Insert(new GameEntities.Player(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90, Entry5 / 90,Entry6 / 90))
-
-    If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3})*",Property)
+    If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:-?\d+\s*(?:,\s*-?\d+\s*){3})*",Property)
     {
         StringSplit, Entry, Property, `,, %A_Space%`t`r`n
         Entities.Insert(new GameEntities.Goal(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90))
     }
 
-    If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
+    RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+\s*(?:,\s*\d+\s*){3,5})*",Property)
+    Entry5 := 0, Entry6 := 0
+    StringSplit, Entry, Property, `,, %A_Space%`t`r`n
+    Entities.Insert(new GameEntities.Player(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90, Entry5 / 90,Entry6 / 90))
+
+    If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:-?\d+\s*(?:,\s*-?\d+\s*){3,5})*",Property)
     {
         Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
         Loop, Parse, Property, `n, `r `t
