@@ -21,38 +21,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Notes := new NotePlayer
 
-Notes[49].On(50), Notes[52].On(50), Notes.Delay(1500), Notes[49].Off(), Notes[52].Off(), Notes.Delay(1200)
-Notes[52].On(70), Notes[56].On(70), Notes.Delay(1500), Notes[52].Off(), Notes[56].Off(), Notes.Delay(1200)
-Notes[47].On(45), Notes[51].On(45), Notes.Delay(1500), Notes[47].Off(), Notes[51].Off(), Notes.Delay(1200)
-Notes[45].On(40), Notes[49].On(40), Notes.Delay(1500), Notes[45].Off(), Notes[49].Off(), Notes.Delay(1200)
+Notes.Play(49,1500), Notes.Play(52,1500), Notes.Delay(3200)
+Notes.Play(52,1500), Notes.Play(56,1500), Notes.Delay(3200)
+Notes.Play(47,1500), Notes.Play(51,1500), Notes.Delay(3200)
+Notes.Play(45,1500), Notes.Play(49,1500), Notes.Delay(3200)
 
-Notes[49].On(50), Notes[52].On(50), Notes.Delay(1500), Notes[49].Off(), Notes[52].Off(), Notes.Delay(1200)
-Notes[52].On(70), Notes[56].On(70), Notes.Delay(1500), Notes[52].Off(), Notes[56].Off(), Notes.Delay(1200)
-Notes[47].On(45), Notes[51].On(45), Notes.Delay(1500), Notes[47].Off(), Notes[51].Off(), Notes.Delay(1200)
-Notes[45].On(40), Notes[49].On(40), Notes.Delay(1500), Notes[45].Off(), Notes[49].Off(), Notes.Delay(1200)
+Notes.Play(49,1500), Notes.Play(52,1500), Notes.Delay(3200)
+Notes.Play(52,1500), Notes.Play(56,1500), Notes.Delay(3200)
+Notes.Play(47,1500), Notes.Play(51,1500), Notes.Delay(3200)
+Notes.Play(45,1500), Notes.Play(49,1500), Notes.Delay(3200)
 
-Notes[49].On(50), Notes[52].On(50), Notes.Delay(1500), Notes[49].Off(), Notes[52].Off(), Notes.Delay(1200)
-Notes[52].On(70), Notes[56].On(70), Notes.Delay(1500), Notes[52].Off(), Notes[56].Off(), Notes.Delay(1200)
-Notes[56].On(45), Notes[59].On(45), Notes.Delay(1500), Notes[56].Off(), Notes[59].Off(), Notes.Delay(1200)
-Notes[51].On(40), Notes[57].On(40), Notes.Delay(1500), Notes[51].Off(), Notes[57].Off(), Notes.Delay(1200)
+Notes.Play(49,1500), Notes.Play(52,1500), Notes.Delay(3200)
+Notes.Play(52,1500), Notes.Play(56,1500), Notes.Delay(3200)
+Notes.Play(56,1500), Notes.Play(59,1500), Notes.Delay(3200)
+Notes.Play(51,1500), Notes.Play(57,1500), Notes.Delay(3200)
 
-Notes[49].On(50), Notes[52].On(50), Notes.Delay(1500), Notes[49].Off(), Notes[52].Off(), Notes.Delay(1200)
-Notes[52].On(70), Notes[56].On(70), Notes.Delay(1500), Notes[52].Off(), Notes[56].Off(), Notes.Delay(1200)
-Notes[47].On(45), Notes[51].On(45), Notes.Delay(1500), Notes[47].Off(), Notes[51].Off(), Notes.Delay(1200)
-Notes[54].On(40), Notes[57].On(40), Notes.Delay(1500), Notes[54].Off(), Notes[57].Off(), Notes.Delay(1200)
-
-/*
-Device := new MIDIOutputDevice
-Device.NoteOn(49,100)
-Sleep, 1000
-Device.NoteOff(49,20)
-*/
+Notes.Play(49,1500), Notes.Play(52,1500), Notes.Delay(3200)
+Notes.Play(52,1500), Notes.Play(56,1500), Notes.Delay(3200)
+Notes.Play(47,1500), Notes.Play(51,1500), Notes.Delay(3200)
+Notes.Play(54,1500), Notes.Play(57,1500), Notes.Delay(3200)
+ExitApp
 
 class NotePlayer
 {
     __New()
     {
+        this.ActiveNotes := []
         this.Device := new MIDIOutputDevice
+        pCallback := RegisterCallback("NotePlayerTimer","F","",&this)
+        If !pCallback
+            throw Exception("Could not register update callback.")
+        this.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",100,"UPtr",pCallback,"UPtr")
+        If !this.Timer
+            throw Exception("Could not create update timer.")
+    }
+
+    __Delete()
+    {
+        DllCall("KillTimer","UPtr",0,"UInt",this.Timer)
     }
 
     __Get(Index)
@@ -70,32 +76,57 @@ class NotePlayer
         Return, this
     }
 
-    class Note
+    Play(Note,Duration = 500,Velocity = 60)
     {
-        __New(Index,Device)
-        {
-            this.Index := Index
-            this.Device := Device
-        }
-
-        On(Velocity = 60)
-        {
-            this.Device.NoteOn(this.Index,Velocity)
-            Return, this
-        }
-
-        Off(Velocity = 20)
-        {
-            this.Device.NoteOff(this.Index,Velocity)
-            Return, this
-        }
-
-        Update(Pressure = 30)
-        {
-            this.Device.UpdateNotePressure(this.Index,Pressure)
-            Return, this
-        }
+        this.Device.NoteOn(Note,Velocity)
+        this.ActiveNotes.Insert(Object("Index",Note,"Duration",Duration))
+        Return, this
     }
+}
+
+NotePlayerTimer(hWindow,Message,Event,TickCount)
+{
+    static PreviousTime := A_TickCount
+    Critical
+    TimeElapsed := TickCount - PreviousTime, PreviousTime := TickCount
+    Notes := Object(A_EventInfo)
+    Index := 1, MaxIndex := ObjMaxIndex(Notes.ActiveNotes)
+    If !MaxIndex
+        Return
+    While, Index <= MaxIndex
+    {
+        Note := Notes.ActiveNotes[Index]
+        Note.Duration -= TimeElapsed
+        If Note.Duration <= 0
+        {
+            Notes.Device.NoteOff(Note.Index,20)
+            ObjRemove(Notes.ActiveNotes,Index), MaxIndex --
+        }
+        Else
+            Index ++
+    }
+    ToolTip % ShowObject(Notes)
+}
+
+ShowObject(ShowObject,Padding = "")
+{
+ ListLines, Off
+ If !IsObject(ShowObject)
+ {
+  ListLines, On
+  Return, ShowObject
+ }
+ ObjectContents := ""
+ For Key, Value In ShowObject
+ {
+  If IsObject(Value)
+   Value := "`n" . ShowObject(Value,Padding . A_Tab)
+  ObjectContents .= Padding . Key . ": " . Value . "`n"
+ }
+ ObjectContents := SubStr(ObjectContents,1,-1)
+ If (Padding = "")
+  ListLines, On
+ Return, ObjectContents
 }
 
 class MIDIOutputDevice
