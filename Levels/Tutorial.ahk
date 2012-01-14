@@ -74,7 +74,7 @@ Loop
         MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
 }
 
-class TutorialText extends ProgressEngine.Blocks.Text
+class TutorialText extends ProgressBlocks.Text
 {
     __New(Text)
     {

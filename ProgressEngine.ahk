@@ -145,287 +145,6 @@ class ProgressEngine
         Return, 0
     }
 
-    class Blocks
-    {
-        class Default
-        {
-            __New()
-            {
-                ObjInsert(this,"",Object())
-                this.X := 0
-                this.Y := 0
-                this.W := 10
-                this.H := 10
-                this.hPen := 0
-                this.hBrush := 0
-                this.Visible := 1
-                this.Color := 0xFFFFFF
-                this.Physical := 0
-            }
-
-            Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
-            {
-                
-            }
-
-            NearestEntities(Layer)
-            {
-                ;wip
-            }
-
-            Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
-            {
-                ;check for entity moving out of bounds
-                If (Rectangle.X + Rectangle.W) < 0 || Rectangle.X > ViewportWidth
-                    || (Rectangle.Y + Rectangle.H) < 0 || Rectangle.Y > ViewportHeight
-                    Return
-
-                ;update the color if it has changed
-                If this.ColorModified
-                {
-                    If this.hPen && !DllCall("DeleteObject","UPtr",this.hPen)
-                        throw Exception("Could not delete pen.")
-                    If this.hBrush && !DllCall("DeleteObject","UPtr",this.hBrush)
-                        throw Exception("Could not delete brush.")
-                    this.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",this.Color,"UPtr") ;PS_SOLID
-                    If !this.hPen
-                        throw Exception("Could not create pen.")
-                    this.hBrush := DllCall("CreateSolidBrush","UInt",this.Color,"UPtr")
-                    If !this.hBrush
-                        throw Exception("Could not create brush.")
-                    this.ColorModified := 0
-                }
-
-                hOriginalPen := DllCall("SelectObject","UInt",hDC,"UPtr",this.hPen,"UPtr") ;select the pen
-                If !hOriginalPen
-                    throw Exception("Could not select pen into memory device context.")
-                hOriginalBrush := DllCall("SelectObject","UInt",hDC,"UPtr",this.hBrush,"UPtr") ;select the brush
-                If !hOriginalBrush
-                    throw Exception("Could not select brush into memory device context.")
-
-                If this.Visible
-                {
-                    If !DllCall("Rectangle","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(Rectangle.Y),"Int",Round(Rectangle.X + Rectangle.W),"Int",Round(Rectangle.Y + Rectangle.H))
-                        throw Exception("Could not draw rectangle.")
-                }
-
-                If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
-                    throw Exception("Could not deselect pen from the memory device context.")
-                If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
-                    throw Exception("Could not deselect brush from the memory device context.")
-            }
-
-            MouseHovering(Layer,Rectangle)
-            {
-                CoordMode, Mouse, Client
-                MouseGetPos, MouseX, MouseY
-                If (MouseX >= Rectangle.X && MouseX <= (Rectangle.X + Rectangle.W)
-                    && MouseY >= Rectangle.Y && MouseY <= (Rectangle.Y + Rectangle.H))
-                    Return, 1
-                Return, 0
-            }
-
-            Collide(Rectangle,ByRef IntersectX,ByRef IntersectY)
-            {
-                Left1 := this.X, Left2 := Rectangle.X
-                Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
-                Top1 := this.Y, Top2 := Rectangle.Y
-                Bottom1 := Top1 + this.H, Bottom2 := Top2 + Rectangle.H
-
-                ;check for collision
-                If (Right1 < Left2 || Right2 < Left1 || Bottom1 < Top2 || Bottom2 < Top1)
-                {
-                    IntersectX := 0, IntersectY := 0
-                    Return, 0 ;no collision occurred
-                }
-
-                ;find width of intersection
-                If (Left1 < Left2)
-                    IntersectX := ((Right1 < Right2) ? Right1 : Right2) - Left2
-                Else
-                    IntersectX := Left1 - ((Right1 < Right2) ? Right1 : Right2)
-
-                ;find height of intersection
-                If (Top1 < Top2)
-                    IntersectY := ((Bottom1 < Bottom2) ? Bottom1 : Bottom2) - Top2
-                Else
-                    IntersectY := Top1 - ((Bottom1 < Bottom2) ? Bottom1 : Bottom2)
-                Return, 1 ;collision occurred
-            }
-
-            Inside(Rectangle)
-            {
-                Return, this.X >= Rectangle.X
-                        && (this.X + this.W) <= (Rectangle.X + Rectangle.W)
-                        && this.Y >= Rectangle.Y
-                        && (this.Y + this.H) <= (Rectangle.Y + Rectangle.H)
-            }
-
-            __Get(Key)
-            {
-                If (Key != "")
-                    Return, this[""][Key]
-            }
-
-            __Set(Key,Value)
-            {
-                If (Key = "Color" && this[Key] != Value)
-                    this.ColorModified := 1
-                ObjInsert(this[""],Key,Value)
-                Return, this
-            }
-
-            __Delete()
-            {
-                If this.hPen && !DllCall("DeleteObject","UPtr",this.hPen)
-                    throw Exception("Could not delete pen.")
-                If this.hBrush && !DllCall("DeleteObject","UPtr",this.hBrush)
-                    throw Exception("Could not delete brush.")
-            }
-        }
-
-        class Static extends ProgressEngine.Blocks.Default
-        {
-            __New()
-            {
-                base.__New()
-                this.Physical := 1
-            }
-        }
-
-        class Dynamic extends ProgressEngine.Blocks.Static
-        {
-            Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
-            {
-                ;wip: use spatial acceleration structure
-                Friction := 0.01
-                Restitution := 0.6
-
-                this.X += this.SpeedX * Delta, this.Y -= this.SpeedY * Delta ;process momentum
-
-                CollisionX := 0, CollisionY := 0, TotalIntersectX := 0, TotalIntersectY := 0
-                For Index, Entity In Layer.Entities
-                {
-                    If (&Entity = &this || !Entity.Physical) ;entity is the same as the current entity or is not physical
-                        Continue
-                    If !this.Collide(Entity,IntersectX,IntersectY) ;entity did not collide with the rectangle
-                        Continue
-                    If (Abs(IntersectX) >= Abs(IntersectY)) ;collision along top or bottom side
-                    {
-                        CollisionY := 1
-                        this.Y -= IntersectY ;move the entity out of the intersection area
-                        this.SpeedY *= -Restitution ;reflect the speed and apply damping
-                        TotalIntersectY += Abs(IntersectY)
-                    }
-                    Else ;collision along left or right side
-                    {
-                        CollisionX := 1
-                        this.X -= IntersectX ;move the entity out of the intersection area
-                        this.SpeedX *= -Restitution ;reflect the speed and apply damping
-                        TotalIntersectX += Abs(IntersectX)
-                    }
-                }
-                this.IntersectX := TotalIntersectX, this.IntersectY := TotalIntersectY
-                If CollisionY
-                    this.SpeedX *= (Friction * TotalIntersectY) ** Delta ;apply friction
-                If CollisionX
-                    this.SpeedY *= (Friction * TotalIntersectX) ** Delta ;apply friction
-            }
-        }
-
-        class Text extends ProgressEngine.Blocks.Default
-        {
-            __New()
-            {
-                base.__New()
-                this.hFont := 0
-                this.PreviousViewportWidth := -1
-                this.Align := "Center"
-                this.Size := 5
-                this.Weight := 500
-                this.Italic := 0
-                this.Underline := 0
-                this.Strikeout := 0
-                this.Typeface := "Verdana"
-                this.Text := "Text"
-            }
-
-            Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
-            {
-                ;check for entity moving out of bounds
-                If (Rectangle.X + Rectangle.W) < 0 || Rectangle.X > ViewportWidth
-                    || (Rectangle.Y + Rectangle.H) < 0 || Rectangle.Y > ViewportHeight
-                    Return
-
-                If (this.Align = "Left")
-                    AlignMode := 24 ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
-                Else If (this.Align = "Center")
-                    AlignMode := 30 ;TA_CENTER | TA_BASELINE: align text to the center and the baseline
-                Else If (this.Align = "Right")
-                    AlignMode := 26 ;TA_RIGHT | TA_BASELINE: align text to the right and the baseline
-                Else
-                    throw Exception("Invalid text alignment: " . this.Align . ".")
-                DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
-
-                LineHeight := this.Size * ViewportWidth * 0.01
-
-                ;update the font if it has changed or if the viewport size has changed
-                If this.FontModified || ViewportWidth != this.PreviousViewportWidth
-                {
-                    If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
-                        throw Exception("Could not delete font.")
-                    ;wip: doesn't work
-                    ;If this.Size Is Not Number
-                        ;throw Exception("Invalid font size: " . this.Size . ".")
-                    ;If this.Weight Is Not Integer
-                        ;throw Exception("Invalid font weight: " . this.Weight . ".")
-                    this.hFont := DllCall("CreateFont","Int",Round(LineHeight),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
-                    If !this.hFont
-                        throw Exception("Could not create font.")
-                    this.FontModified := 0
-                }
-                this.PreviousViewportWidth := ViewportWidth
-    
-                If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
-                    throw Exception("Could not set text color.")
-
-                hOriginalFont := DllCall("SelectObject","UInt",hDC,"UPtr",this.hFont,"UPtr") ;select the font
-                If !hOriginalFont
-                    throw Exception("Could not select font into memory device context.")
-    
-                If this.Visible
-                {
-                    ;Loop, Parse, This.Text, `n ;wip
-                    Text := this.Text, PositionY := Rectangle.Y
-                    Loop, Parse, Text, `n
-                    {
-                        If !DllCall("TextOut","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(PositionY),"Str",A_LoopField,"Int",StrLen(A_LoopField))
-                            throw Exception("Could not draw text.")
-                        PositionY += LineHeight
-                    }
-                }
-    
-                If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
-                    throw Exception("Could not deselect font from memory device context.")
-            }
-
-            __Set(Key,Value)
-            {
-                If ((Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
-                    && this[Key] != Value)
-                    ObjInsert(this[""],"FontModified",1)
-                ObjInsert(this[""],Key,Value)
-                Return, this
-            }
-
-            __Delete()
-            {
-                If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
-                    throw Exception("Could not delete font.")
-            }
-        }
-    }
-
     __Delete()
     {
         If !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
@@ -436,5 +155,286 @@ class ProgressEngine
             throw Exception("Could not delete memory device context.")
         If !DllCall("ReleaseDC","UPtr",this.hWindow,"UPtr",this.hDC) ;release the window device context
             throw Exception("Could not release window device context.")
+    }
+}
+
+class ProgressBlocks
+{
+    class Default
+    {
+        __New()
+        {
+            ObjInsert(this,"",Object())
+            this.X := 0
+            this.Y := 0
+            this.W := 10
+            this.H := 10
+            this.hPen := 0
+            this.hBrush := 0
+            this.Visible := 1
+            this.Color := 0xFFFFFF
+            this.Physical := 0
+        }
+
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        {
+            
+        }
+
+        NearestEntities(Layer)
+        {
+            ;wip
+        }
+
+        Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
+        {
+            ;check for entity moving out of bounds
+            If (Rectangle.X + Rectangle.W) < 0 || Rectangle.X > ViewportWidth
+                || (Rectangle.Y + Rectangle.H) < 0 || Rectangle.Y > ViewportHeight
+                Return
+
+            ;update the color if it has changed
+            If this.ColorModified
+            {
+                If this.hPen && !DllCall("DeleteObject","UPtr",this.hPen)
+                    throw Exception("Could not delete pen.")
+                If this.hBrush && !DllCall("DeleteObject","UPtr",this.hBrush)
+                    throw Exception("Could not delete brush.")
+                this.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",this.Color,"UPtr") ;PS_SOLID
+                If !this.hPen
+                    throw Exception("Could not create pen.")
+                this.hBrush := DllCall("CreateSolidBrush","UInt",this.Color,"UPtr")
+                If !this.hBrush
+                    throw Exception("Could not create brush.")
+                this.ColorModified := 0
+            }
+
+            hOriginalPen := DllCall("SelectObject","UInt",hDC,"UPtr",this.hPen,"UPtr") ;select the pen
+            If !hOriginalPen
+                throw Exception("Could not select pen into memory device context.")
+            hOriginalBrush := DllCall("SelectObject","UInt",hDC,"UPtr",this.hBrush,"UPtr") ;select the brush
+            If !hOriginalBrush
+                throw Exception("Could not select brush into memory device context.")
+
+            If this.Visible
+            {
+                If !DllCall("Rectangle","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(Rectangle.Y),"Int",Round(Rectangle.X + Rectangle.W),"Int",Round(Rectangle.Y + Rectangle.H))
+                    throw Exception("Could not draw rectangle.")
+            }
+
+            If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
+                throw Exception("Could not deselect pen from the memory device context.")
+            If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
+                throw Exception("Could not deselect brush from the memory device context.")
+        }
+
+        MouseHovering(Layer,Rectangle)
+        {
+            CoordMode, Mouse, Client
+            MouseGetPos, MouseX, MouseY
+            If (MouseX >= Rectangle.X && MouseX <= (Rectangle.X + Rectangle.W)
+                && MouseY >= Rectangle.Y && MouseY <= (Rectangle.Y + Rectangle.H))
+                Return, 1
+            Return, 0
+        }
+
+        Collide(Rectangle,ByRef IntersectX,ByRef IntersectY)
+        {
+            Left1 := this.X, Left2 := Rectangle.X
+            Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
+            Top1 := this.Y, Top2 := Rectangle.Y
+            Bottom1 := Top1 + this.H, Bottom2 := Top2 + Rectangle.H
+
+            ;check for collision
+            If (Right1 < Left2 || Right2 < Left1 || Bottom1 < Top2 || Bottom2 < Top1)
+            {
+                IntersectX := 0, IntersectY := 0
+                Return, 0 ;no collision occurred
+            }
+
+            ;find width of intersection
+            If (Left1 < Left2)
+                IntersectX := ((Right1 < Right2) ? Right1 : Right2) - Left2
+            Else
+                IntersectX := Left1 - ((Right1 < Right2) ? Right1 : Right2)
+
+            ;find height of intersection
+            If (Top1 < Top2)
+                IntersectY := ((Bottom1 < Bottom2) ? Bottom1 : Bottom2) - Top2
+            Else
+                IntersectY := Top1 - ((Bottom1 < Bottom2) ? Bottom1 : Bottom2)
+            Return, 1 ;collision occurred
+        }
+
+        Inside(Rectangle)
+        {
+            Return, this.X >= Rectangle.X
+                    && (this.X + this.W) <= (Rectangle.X + Rectangle.W)
+                    && this.Y >= Rectangle.Y
+                    && (this.Y + this.H) <= (Rectangle.Y + Rectangle.H)
+        }
+
+        __Get(Key)
+        {
+            If (Key != "")
+                Return, this[""][Key]
+        }
+
+        __Set(Key,Value)
+        {
+            If (Key = "Color" && this[Key] != Value)
+                this.ColorModified := 1
+            ObjInsert(this[""],Key,Value)
+            Return, this
+        }
+
+        __Delete()
+        {
+            If this.hPen && !DllCall("DeleteObject","UPtr",this.hPen)
+                throw Exception("Could not delete pen.")
+            If this.hBrush && !DllCall("DeleteObject","UPtr",this.hBrush)
+                throw Exception("Could not delete brush.")
+        }
+    }
+
+    class Static extends ProgressBlocks.Default
+    {
+        __New()
+        {
+            base.__New()
+            this.Physical := 1
+        }
+    }
+
+    class Dynamic extends ProgressBlocks.Static
+    {
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        {
+            ;wip: use spatial acceleration structure
+            Friction := 0.01
+            Restitution := 0.6
+
+            this.X += this.SpeedX * Delta, this.Y -= this.SpeedY * Delta ;process momentum
+
+            CollisionX := 0, CollisionY := 0, TotalIntersectX := 0, TotalIntersectY := 0
+            For Index, Entity In Layer.Entities
+            {
+                If (&Entity = &this || !Entity.Physical) ;entity is the same as the current entity or is not physical
+                    Continue
+                If !this.Collide(Entity,IntersectX,IntersectY) ;entity did not collide with the rectangle
+                    Continue
+                If (Abs(IntersectX) >= Abs(IntersectY)) ;collision along top or bottom side
+                {
+                    CollisionY := 1
+                    this.Y -= IntersectY ;move the entity out of the intersection area
+                    this.SpeedY *= -Restitution ;reflect the speed and apply damping
+                    TotalIntersectY += Abs(IntersectY)
+                }
+                Else ;collision along left or right side
+                {
+                    CollisionX := 1
+                    this.X -= IntersectX ;move the entity out of the intersection area
+                    this.SpeedX *= -Restitution ;reflect the speed and apply damping
+                    TotalIntersectX += Abs(IntersectX)
+                }
+            }
+            this.IntersectX := TotalIntersectX, this.IntersectY := TotalIntersectY
+            If CollisionY
+                this.SpeedX *= (Friction * TotalIntersectY) ** Delta ;apply friction
+            If CollisionX
+                this.SpeedY *= (Friction * TotalIntersectX) ** Delta ;apply friction
+        }
+    }
+
+    class Text extends ProgressBlocks.Default
+    {
+        __New()
+        {
+            base.__New()
+            this.hFont := 0
+            this.PreviousViewportWidth := -1
+            this.Align := "Center"
+            this.Size := 5
+            this.Weight := 500
+            this.Italic := 0
+            this.Underline := 0
+            this.Strikeout := 0
+            this.Typeface := "Verdana"
+            this.Text := "Text"
+        }
+
+        Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
+        {
+            ;check for entity moving out of bounds
+            If (Rectangle.X + Rectangle.W) < 0 || Rectangle.X > ViewportWidth
+                || (Rectangle.Y + Rectangle.H) < 0 || Rectangle.Y > ViewportHeight
+                Return
+
+            If (this.Align = "Left")
+                AlignMode := 24 ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
+            Else If (this.Align = "Center")
+                AlignMode := 30 ;TA_CENTER | TA_BASELINE: align text to the center and the baseline
+            Else If (this.Align = "Right")
+                AlignMode := 26 ;TA_RIGHT | TA_BASELINE: align text to the right and the baseline
+            Else
+                throw Exception("Invalid text alignment: " . this.Align . ".")
+            DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
+
+            LineHeight := this.Size * ViewportWidth * 0.01
+
+            ;update the font if it has changed or if the viewport size has changed
+            If this.FontModified || ViewportWidth != this.PreviousViewportWidth
+            {
+                If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
+                    throw Exception("Could not delete font.")
+                ;wip: doesn't work
+                ;If this.Size Is Not Number
+                    ;throw Exception("Invalid font size: " . this.Size . ".")
+                ;If this.Weight Is Not Integer
+                    ;throw Exception("Invalid font weight: " . this.Weight . ".")
+                this.hFont := DllCall("CreateFont","Int",Round(LineHeight),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
+                If !this.hFont
+                    throw Exception("Could not create font.")
+                this.FontModified := 0
+            }
+            this.PreviousViewportWidth := ViewportWidth
+
+            If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
+                throw Exception("Could not set text color.")
+
+            hOriginalFont := DllCall("SelectObject","UInt",hDC,"UPtr",this.hFont,"UPtr") ;select the font
+            If !hOriginalFont
+                throw Exception("Could not select font into memory device context.")
+
+            If this.Visible
+            {
+                ;Loop, Parse, This.Text, `n ;wip
+                Text := this.Text, PositionY := Rectangle.Y
+                Loop, Parse, Text, `n
+                {
+                    If !DllCall("TextOut","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(PositionY),"Str",A_LoopField,"Int",StrLen(A_LoopField))
+                        throw Exception("Could not draw text.")
+                    PositionY += LineHeight
+                }
+            }
+
+            If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
+                throw Exception("Could not deselect font from memory device context.")
+        }
+
+        __Set(Key,Value)
+        {
+            If ((Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
+                && this[Key] != Value)
+                ObjInsert(this[""],"FontModified",1)
+            ObjInsert(this[""],Key,Value)
+            Return, this
+        }
+
+        __Delete()
+        {
+            If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
+                throw Exception("Could not delete font.")
+        }
     }
 }

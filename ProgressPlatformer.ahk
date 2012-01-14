@@ -85,7 +85,7 @@ ExitApp
 
 class GameEntities
 {
-    class Background extends ProgressEngine.Blocks.Default
+    class Background extends ProgressBlocks.Default
     {
         __New()
         {
@@ -114,7 +114,7 @@ class GameEntities
         }
     }
 
-    class HealthBar extends ProgressEngine.Blocks.Default
+    class HealthBar extends ProgressBlocks.Default
     {
         __New(Layer)
         {
@@ -138,7 +138,7 @@ class GameEntities
         }
     }
 
-    class Cloud extends ProgressEngine.Blocks.Default
+    class Cloud extends ProgressBlocks.Default
     {
         __New(Layer)
         {
@@ -165,7 +165,7 @@ class GameEntities
         }
     }
 
-    class Block extends ProgressEngine.Blocks.Static
+    class Block extends ProgressBlocks.Static
     {
         __New(X,Y,W,H)
         {
@@ -178,7 +178,7 @@ class GameEntities
         }
     }
 
-    class Platform extends ProgressEngine.Blocks.Static
+    class Platform extends ProgressBlocks.Static
     {
         __New(X,Y,W,H,Horizontal,Start,Length,Speed) ;wip: allow custom ranges for diagonal platforms
         {
@@ -208,7 +208,7 @@ class GameEntities
         }
     }
 
-    class Player extends ProgressEngine.Blocks.Dynamic
+    class Player extends ProgressBlocks.Dynamic
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
         {
@@ -283,7 +283,7 @@ class GameEntities
         }
     }
 
-    class Goal extends ProgressEngine.Blocks.Default
+    class Goal extends ProgressBlocks.Default
     {
         __New(X,Y,W,H)
         {
@@ -296,7 +296,7 @@ class GameEntities
         }
     }
 
-    class Enemy extends ProgressEngine.Blocks.Dynamic
+    class Enemy extends ProgressBlocks.Dynamic
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
         {
@@ -429,7 +429,7 @@ MessageScreen(ByRef Game,Title = "",Message = "")
 
 class MessageScreenEntities
 {
-    class Background extends ProgressEngine.Blocks.Default
+    class Background extends ProgressBlocks.Default
     {
         __New()
         {
@@ -442,7 +442,7 @@ class MessageScreenEntities
         }
     }
 
-    class Title extends ProgressEngine.Blocks.Text
+    class Title extends ProgressBlocks.Text
     {
         __New(Text)
         {
@@ -457,7 +457,7 @@ class MessageScreenEntities
         }
     }
 
-    class Message extends ProgressEngine.Blocks.Text
+    class Message extends ProgressBlocks.Text
     {
         __New(Text)
         {
