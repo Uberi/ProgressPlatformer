@@ -92,8 +92,6 @@ class ProgressEngine
             this.Y := 0
             this.W := 10
             this.H := 10
-            this.ScaleX := 1
-            this.ScaleY := 1
         }
     }
 
@@ -126,19 +124,19 @@ class ProgressEngine
         {
             If !Layer.Visible
                 Continue
-            ScaleX := (Width / Layer.W) * Layer.ScaleX
-            ScaleY := (Height / Layer.H) * Layer.ScaleY
+            ScaleX := Width / Layer.W
+            ScaleY := Height / Layer.H
             For Key, Entity In Layer.Entities
             {
                 ;get the screen coordinates of the rectangle
                 Rectangle.X := (Layer.X + Entity.X) * ScaleX, Rectangle.Y := (Layer.Y + Entity.Y) * ScaleY
                 Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
-                
 
                 Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
                 If Result
                     Return, Result
 
+                ;wip: log(n) occlusion culling here
                 Entity.Draw(this.hMemoryDC,Rectangle,Width,Height)
             }
         }
@@ -217,12 +215,12 @@ class ProgressEngine
                     throw Exception("Could not deselect brush from the memory device context.")
             }
 
-            MouseHovering(Layer,ScaleX,ScaleY)
+            MouseHovering(Layer,Rectangle)
             {
                 CoordMode, Mouse, Client
                 MouseGetPos, MouseX, MouseY
-                If (MouseX >= PositionX && MouseX <= (PositionX + Width)
-                    && MouseY >= PositionY && MouseY <= (PositionY + Height))
+                If (MouseX >= Rectangle.X && MouseX <= (Rectangle.X + Rectangle.W)
+                    && MouseY >= Rectangle.Y && MouseY <= (Rectangle.Y + Rectangle.H))
                     Return, 1
                 Return, 0
             }
