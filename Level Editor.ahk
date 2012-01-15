@@ -1,5 +1,8 @@
 #NoEnv
 
+;wip: level loading
+;wip: save button
+
 Width := 800, Height := 600
 
 CoordMode, Mouse, Client

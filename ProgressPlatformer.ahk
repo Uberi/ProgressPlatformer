@@ -19,8 +19,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-;wip: elevators
-
 #Include ProgressEngine.ahk
 
 Gravity := -9.81
@@ -38,9 +36,7 @@ Gui, Show, w800 h600, ProgressPlatformer
 
 Game := new ProgressEngine(WinExist())
 
-;title screen
-MessageScreen(Game,"Achromatic","Press Space to begin.")
-
+#Include Levels/Title.ahk
 #Include Levels/Tutorial.ahk
 
 ;game screen
@@ -57,9 +53,10 @@ Loop
             Break
         ;Game.Layers[2].Entities.Insert(new GameEntities.Platform(2,2,1,0.2,1,1,2,1.5))
         Game.Layers[1].Entities.Insert(new GameEntities.Background)
+        Game.Layers[1].Entities.Insert(new KeyboardController)
         Random, CloudCount, 6, 10
         Loop, %CloudCount% ;add clouds
-            Game.Layers[1].Entities.Insert(new GameEntities.Cloud(Game.Layers[1]))
+            Game.Layers[1].Entities.Insert(new Cloud(Game.Layers[1]))
         Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
     Result := Game.Start()
@@ -83,6 +80,52 @@ GuiClose:
 Game.__Delete() ;wip: this shouldn't be needed
 ExitApp
 
+class Cloud extends ProgressBlocks.Default
+{
+    __New(Layer)
+    {
+        base.__New()
+        this.Color := 0xE8E8E8
+        Random, Temp1, -Layer.W, Layer.W
+        this.X := Temp1
+        Random, Temp1, 0.0, Layer.W
+        this.Y := Temp1
+        Random, Temp1, 1.0, 2.5
+        this.W := Temp1
+        Random, Temp1, 0.5, 1.2
+        this.H := Temp1
+        Random, Temp1, 0.1, 0.4
+        this.SpeedX := Temp1
+    }
+
+    Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+    {
+        global Game
+        this.X += this.SpeedX * Delta
+        If this.X > Layer.W
+            this.X := -Layer.W
+    }
+}
+
+class KeyboardController
+{
+    Step(ByRef Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+    {
+        global Game
+        If !WinActive("ahk_id " . Game.hWindow)
+            Return, 4 ;paused
+
+        If GetKeyState("Tab","P") ;slow motion
+            Delta *= 0.25
+
+        If GetKeyState("Space","P") ;pause
+        {
+            KeyWait, Space
+            Return, 4 ;paused
+        }
+    }
+}
+
 class GameEntities
 {
     class Background extends ProgressBlocks.Default
@@ -95,22 +138,6 @@ class GameEntities
             this.W := 10
             this.H := 10
             this.Color := 0xCCCCCC
-        }
-
-        Step(ByRef Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
-        {
-            global Game
-            If !WinActive("ahk_id " . Game.hWindow)
-                Return, 4 ;paused
-
-            If GetKeyState("Tab","P") ;slow motion
-                Delta *= 0.25
-
-            If GetKeyState("Space","P") ;pause
-            {
-                KeyWait, Space
-                Return, 4 ;paused
-            }
         }
     }
 
@@ -138,33 +165,6 @@ class GameEntities
         }
     }
 
-    class Cloud extends ProgressBlocks.Default
-    {
-        __New(Layer)
-        {
-            base.__New()
-            this.Color := 0xE8E8E8
-            Random, Temp1, -Layer.W, Layer.W
-            this.X := Temp1
-            Random, Temp1, 0.0, Layer.W
-            this.Y := Temp1
-            Random, Temp1, 0.0, 2.5
-            this.W := Temp1
-            Random, Temp1, 0.5, 1.2
-            this.H := Temp1
-            Random, Temp1, 0.1, 0.4
-            this.SpeedX := Temp1
-        }
-
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
-        {
-            global Game
-            this.X += this.SpeedX * Delta
-            If this.X > Game.Layers[1].W
-                this.X := -this.W
-        }
-    }
-
     class Block extends ProgressBlocks.Static
     {
         __New(X,Y,W,H)
@@ -180,7 +180,7 @@ class GameEntities
 
     class Platform extends ProgressBlocks.Static
     {
-        __New(X,Y,W,H,Horizontal,Start,Length,Speed) ;wip: allow custom ranges for diagonal platforms
+        __New(X,Y,W,H,Horizontal,Start,Length,Speed)
         {
             base.__New()
             this.X := X
@@ -217,6 +217,7 @@ class GameEntities
             this.Y := Y
             this.W := W
             this.H := H
+            this.FullH := H
             this.SpeedX := SpeedX
             this.SpeedY := SpeedY
             this.Color := 0xAFAFAF
@@ -275,7 +276,7 @@ class GameEntities
                 If Jump && (A_TickCount - this.LastContact) < 500 ;jump
                     this.SpeedY += MoveSpeed * 0.3, this.LastContact := 0
             }
-            this.H := Crouch ? 0.4 : 0.5 ;wip: hardcoded values
+            this.H := Crouch ? (this.FullH * 0.75) : this.FullH ;crouch
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 

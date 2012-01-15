@@ -27,9 +27,10 @@ Loop
         Game.Layers[1] := new ProgressEngine.Layer
         Game.Layers[2] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new GameEntities.Background)
+        Game.Layers[1].Entities.Insert(new KeyboardController)
         Random, CloudCount, 6, 10
         Loop, %CloudCount% ;add clouds
-            Game.Layers[1].Entities.Insert(new GameEntities.Cloud)
+            Game.Layers[1].Entities.Insert(new Cloud(Game.Layers[1]))
         Game.Layers[1].Entities.Insert(new TutorialText("Oh look!`n`nA door!"))
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,9,8,0.5))
@@ -55,9 +56,10 @@ Loop
         Game.Layers[1] := new ProgressEngine.Layer
         Game.Layers[2] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new GameEntities.Background)
+        Game.Layers[1].Entities.Insert(new KeyboardController)
         Random, CloudCount, 6, 10
         Loop, %CloudCount% ;add clouds
-            Game.Layers[1].Entities.Insert(new GameEntities.Cloud)
+            Game.Layers[1].Entities.Insert(new Cloud(Game.Layers[1]))
         Game.Layers[1].Entities.Insert(new TutorialText("That was too easy."))
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,9,8,0.5))
