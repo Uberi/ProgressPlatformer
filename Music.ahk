@@ -19,39 +19,40 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-Notes := new NotePlayer
+Notes := new NotePlayer(28) ;wip: 9 is also a good sound
 
-Notes.Play(49,1500), Notes.Play(52,1500), Notes.Delay(3200)
-Notes.Play(52,1500), Notes.Play(56,1500), Notes.Delay(3200)
-Notes.Play(47,1500), Notes.Play(51,1500), Notes.Delay(3200)
-Notes.Play(45,1500), Notes.Play(49,1500), Notes.Delay(3200)
+Notes.Play(49,2000,50).Play(52,2000,50).Delay(3200)
+Notes.Play(52,2000,70).Play(56,2000,70).Delay(3200)
+Notes.Play(47,2000,45).Play(51,2000,45).Delay(3200)
+Notes.Play(45,2000,40).Play(49,2000,40).Delay(3200)
 
-Notes.Play(49,1500), Notes.Play(52,1500), Notes.Delay(3200)
-Notes.Play(52,1500), Notes.Play(56,1500), Notes.Delay(3200)
-Notes.Play(47,1500), Notes.Play(51,1500), Notes.Delay(3200)
-Notes.Play(45,1500), Notes.Play(49,1500), Notes.Delay(3200)
+Notes.Play(49,2000,50).Play(52,2000,50).Delay(3200)
+Notes.Play(52,2000,70).Play(56,2000,70).Delay(3200)
+Notes.Play(47,2000,45).Play(51,2000,45).Delay(3200)
+Notes.Play(45,2000,40).Play(49,2000,40).Delay(3200)
 
-Notes.Play(49,1500), Notes.Play(52,1500), Notes.Delay(3200)
-Notes.Play(52,1500), Notes.Play(56,1500), Notes.Delay(3200)
-Notes.Play(56,1500), Notes.Play(59,1500), Notes.Delay(3200)
-Notes.Play(51,1500), Notes.Play(57,1500), Notes.Delay(3200)
+Notes.Play(49,2000,50).Play(52,2000,50).Delay(3200)
+Notes.Play(52,2000,70).Play(56,2000,70).Delay(3200)
+Notes.Play(56,2000,45).Play(59,2000,45).Delay(3200)
+Notes.Play(51,2000,40).Play(57,2000,40).Delay(3200)
 
-Notes.Play(49,1500), Notes.Play(52,1500), Notes.Delay(3200)
-Notes.Play(52,1500), Notes.Play(56,1500), Notes.Delay(3200)
-Notes.Play(47,1500), Notes.Play(51,1500), Notes.Delay(3200)
-Notes.Play(54,1500), Notes.Play(57,1500), Notes.Delay(3200)
+Notes.Play(49,2000,50).Play(52,2000,50).Delay(3200)
+Notes.Play(52,2000,70).Play(56,2000,70).Delay(3200)
+Notes.Play(47,2000,45).Play(51,2000,45).Delay(3200)
+Notes.Play(54,2000,40).Play(57,2000,40).Delay(3200)
 ExitApp
 
 class NotePlayer
 {
-    __New()
+    __New(Sound = 0)
     {
         this.ActiveNotes := []
         this.Device := new MIDIOutputDevice
-        pCallback := RegisterCallback("NotePlayerTimer","F","",&this)
-        If !pCallback
+        this.Device.Sound := Sound
+        this.pCallback := RegisterCallback("NotePlayerTimer","F","",&this)
+        If !this.pCallback
             throw Exception("Could not register update callback.")
-        this.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",100,"UPtr",pCallback,"UPtr")
+        this.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",50,"UPtr",this.pCallback,"UPtr")
         If !this.Timer
             throw Exception("Could not create update timer.")
     }
@@ -59,27 +60,19 @@ class NotePlayer
     __Delete()
     {
         DllCall("KillTimer","UPtr",0,"UInt",this.Timer)
-    }
-
-    __Get(Index)
-    {
-        If Index Is Integer
-        {
-            If !ObjHasKey(this,Index)
-                this[Index] := new NotePlayer.Note(Index,this.Device)
-        }
-    }
-
-    Delay(Milliseconds = 1000)
-    {
-        Sleep, Milliseconds
-        Return, this
+        DllCall("GlobalFree","UPtr",this.pCallback)
     }
 
     Play(Note,Duration = 500,Velocity = 60)
     {
         this.Device.NoteOn(Note,Velocity)
-        this.ActiveNotes.Insert(Object("Index",Note,"Duration",Duration))
+        this.ActiveNotes.Insert(Object("Note",Note,"Duration",Duration))
+        Return, this
+    }
+
+    Delay(Milliseconds = 1000)
+    {
+        Sleep, Milliseconds
         Return, this
     }
 }
@@ -99,34 +92,12 @@ NotePlayerTimer(hWindow,Message,Event,TickCount)
         Note.Duration -= TimeElapsed
         If Note.Duration <= 0
         {
-            Notes.Device.NoteOff(Note.Index,20)
+            Notes.Device.NoteOff(Note.Note,20)
             ObjRemove(Notes.ActiveNotes,Index), MaxIndex --
         }
         Else
             Index ++
     }
-    ToolTip % ShowObject(Notes)
-}
-
-ShowObject(ShowObject,Padding = "")
-{
- ListLines, Off
- If !IsObject(ShowObject)
- {
-  ListLines, On
-  Return, ShowObject
- }
- ObjectContents := ""
- For Key, Value In ShowObject
- {
-  If IsObject(Value)
-   Value := "`n" . ShowObject(Value,Padding . A_Tab)
-  ObjectContents .= Padding . Key . ": " . Value . "`n"
- }
- ObjectContents := SubStr(ObjectContents,1,-1)
- If (Padding = "")
-  ListLines, On
- Return, ObjectContents
 }
 
 class MIDIOutputDevice
@@ -151,7 +122,7 @@ class MIDIOutputDevice
         this.hMIDIOutputDevice := hMIDIOutputDevice
 
         this.Channel := 0
-        this.Sound := 1
+        this.Sound := 0
         this.Pitch := 0
     }
 
