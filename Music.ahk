@@ -23,23 +23,23 @@ Notes := new NotePlayer(28) ;wip: 9 is also a good sound
 
 Notes.Play(49,2000,50).Play(52,2000,50).Delay(3200)
 Notes.Play(52,2000,70).Play(56,2000,70).Delay(3200)
-Notes.Play(47,2000,45).Play(51,2000,45).Delay(3200)
-Notes.Play(45,2000,40).Play(49,2000,40).Delay(3200)
+Notes.Play(47,2000,45).Play(51,2000,45).Delay(3000)
+Notes.Play(45,2000,40).Play(49,2000,40).Delay(3400)
 
 Notes.Play(49,2000,50).Play(52,2000,50).Delay(3200)
 Notes.Play(52,2000,70).Play(56,2000,70).Delay(3200)
-Notes.Play(47,2000,45).Play(51,2000,45).Delay(3200)
-Notes.Play(45,2000,40).Play(49,2000,40).Delay(3200)
+Notes.Play(47,2000,45).Play(51,2000,45).Delay(3000)
+Notes.Play(45,2000,40).Play(49,2000,40).Delay(3400)
 
 Notes.Play(49,2000,50).Play(52,2000,50).Delay(3200)
 Notes.Play(52,2000,70).Play(56,2000,70).Delay(3200)
-Notes.Play(56,2000,45).Play(59,2000,45).Delay(3200)
-Notes.Play(51,2000,40).Play(57,2000,40).Delay(3200)
+Notes.Play(56,2000,45).Play(59,2000,45).Delay(3000)
+Notes.Play(51,2000,40).Play(57,2000,40).Delay(3400)
 
 Notes.Play(49,2000,50).Play(52,2000,50).Delay(3200)
 Notes.Play(52,2000,70).Play(56,2000,70).Delay(3200)
-Notes.Play(47,2000,45).Play(51,2000,45).Delay(3200)
-Notes.Play(54,2000,40).Play(57,2000,40).Delay(3200)
+Notes.Play(47,2000,45).Play(51,2000,45).Delay(3000)
+Notes.Play(54,2000,40).Play(57,2000,40).Delay(3400)
 ExitApp
 
 class NotePlayer

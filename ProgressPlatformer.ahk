@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #Include ProgressEngine.ahk
+#Include Environment.ahk
 
 Gravity := -9.81
 
@@ -52,11 +53,8 @@ Loop
         If LoadLevel(Game,LevelIndex)
             Break
         ;Game.Layers[2].Entities.Insert(new GameEntities.Platform(2,2,1,0.2,1,1,2,1.5))
-        Game.Layers[1].Entities.Insert(new GameEntities.Background)
         Game.Layers[1].Entities.Insert(new KeyboardController)
-        Random, CloudCount, 6, 10
-        Loop, %CloudCount% ;add clouds
-            Game.Layers[1].Entities.Insert(new Cloud(Game.Layers[1]))
+        Environment.Clouds(Game.Layers[1])
         Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
     Result := Game.Start()
@@ -72,38 +70,50 @@ Loop
 }
 Game.Layers := []
 
-;completion screen
-MessageScreen(Game,"Game complete","Press Space to exit.")
+#Include Levels/End.ahk
 ExitApp
 
 GuiClose:
-Game.__Delete() ;wip: this shouldn't be needed
+Game.__Delete() ;wip: this is related to a limitation of the reference counting mechanism in AHK (Although references in static and global variables are released automatically when the program exits, references in non-static local variables or on the expression evaluation stack are not. These references are only released if the function or expression is allowed to complete normally.). normal exiting (game complete) works fine though
 ExitApp
 
-class Cloud extends ProgressBlocks.Default
+class TitleText extends ProgressBlocks.Text
 {
-    __New(Layer)
+    __New(Text)
     {
         base.__New()
-        this.Color := 0xE8E8E8
-        Random, Temp1, -Layer.W, Layer.W
-        this.X := Temp1
-        Random, Temp1, 0.0, Layer.W
-        this.Y := Temp1
-        Random, Temp1, 1.0, 2.5
-        this.W := Temp1
-        Random, Temp1, 0.5, 1.2
-        this.H := Temp1
-        Random, Temp1, 0.1, 0.4
-        this.SpeedX := Temp1
+        this.X := 5
+        this.Y := 5
+        this.Size := 14
+        this.Color := 0x444444
+        this.Weight := 100
+        this.Typeface := "Georgia"
+        this.Text := Text
+    }
+}
+
+class TitleMessage extends ProgressBlocks.Text
+{
+    __New(Text)
+    {
+        base.__New()
+        this.X := 5
+        this.Y := 6
+        this.Size := 3
+        this.Color := 0x666666
+        this.Weight := 100
+        this.Typeface := "Georgia"
+        this.Text := Text
     }
 
     Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
     {
         global Game
-        this.X += this.SpeedX * Delta
-        If this.X > Layer.W
-            this.X := -Layer.W
+        If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
+        {
+            KeyWait, Space
+            Return, 1
+        }
     }
 }
 
@@ -128,19 +138,6 @@ class KeyboardController
 
 class GameEntities
 {
-    class Background extends ProgressBlocks.Default
-    {
-        __New()
-        {
-            base.__New()
-            this.X := 0
-            this.Y := 0
-            this.W := 10
-            this.H := 10
-            this.Color := 0xCCCCCC
-        }
-    }
-
     class HealthBar extends ProgressBlocks.Default
     {
         __New(Layer)

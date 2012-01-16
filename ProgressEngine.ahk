@@ -44,6 +44,18 @@ class ProgressEngine
             throw Exception("Could not set background mode.")
     }
 
+    __Delete()
+    {
+        If !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
+            throw Exception("Could not deselect bitmap from memory device context.")
+        If !DllCall("DeleteObject","UPtr",this.hBitmap) ;delete the bitmap
+            throw Exception("Could not delete bitmap.")
+        If !DllCall("DeleteObject","UPtr",this.hMemoryDC) ;delete the memory device context
+            throw Exception("Could not delete memory device context.")
+        If !DllCall("ReleaseDC","UPtr",this.hWindow,"UPtr",this.hDC) ;release the window device context
+            throw Exception("Could not release window device context.")
+    }
+
     Start(DeltaLimit = 0.05)
     {
         ;calculate the amount of time each iteration should take
@@ -143,18 +155,6 @@ class ProgressEngine
         If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
             throw Exception("Could not transfer pixel data to window device context.")
         Return, 0
-    }
-
-    __Delete()
-    {
-        If !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
-            throw Exception("Could not deselect bitmap from memory device context.")
-        If !DllCall("DeleteObject","UPtr",this.hBitmap) ;delete the bitmap
-            throw Exception("Could not delete bitmap.")
-        If !DllCall("DeleteObject","UPtr",this.hMemoryDC) ;delete the memory device context
-            throw Exception("Could not delete memory device context.")
-        If !DllCall("ReleaseDC","UPtr",this.hWindow,"UPtr",this.hDC) ;release the window device context
-            throw Exception("Could not release window device context.")
     }
 }
 
