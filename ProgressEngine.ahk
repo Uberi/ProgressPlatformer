@@ -1,7 +1,5 @@
 #NoEnv
 
-;wip: copy hDC on WM_PAINT
-
 /*
 Copyright 2011 Anthony Zhang <azhang9@gmail.com>
 
@@ -23,8 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class ProgressEngine
 {
-    static ControlCounter := 0
-
     __New(hWindow)
     {
         this.Layers := []
