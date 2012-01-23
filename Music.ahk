@@ -33,35 +33,6 @@ Notes.Play()
 Return
 */
 
-/*
-#Persistent
-
-Notes := new NotePlayer(28)
-
-Notes.Repeat := 1
-
-Loop, 2
-{
-    Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
-    Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
-    Notes.Note(47,2000,45).Note(51,2000,45).Delay(3000)
-    Notes.Note(45,2000,40).Note(49,2000,40).Delay(3400)
-}
-
-Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
-Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
-Notes.Note(56,2000,45).Note(59,2000,45).Delay(3000)
-Notes.Note(51,2000,40).Note(57,2000,40).Delay(3400)
-
-Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
-Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
-Notes.Note(47,2000,45).Note(51,2000,45).Delay(3000)
-Notes.Note(54,2000,40).Note(57,2000,40).Delay(3400)
-
-Notes.Play()
-Return
-*/
-
 class NotePlayer
 {
     __New(Sound = 0)
@@ -266,7 +237,7 @@ class MIDIOutputDevice
             throw Exception("Could not close MIDI output device.")
 
         MIDIOutputDevice.DeviceCount --
-        If (MIDIOutputDevice.DeviceCount = 0)
+        If MIDIOutputDevice.DeviceCount = 0
             DllCall("FreeLibrary","UPtr",this.hModule)
     }
 

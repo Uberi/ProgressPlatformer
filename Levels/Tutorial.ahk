@@ -19,6 +19,32 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#Persistent
+
+Notes := new NotePlayer(28)
+
+Notes.Repeat := 1
+
+Loop, 2
+{
+    Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
+    Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
+    Notes.Note(47,2000,45).Note(51,2000,45).Delay(3000)
+    Notes.Note(45,2000,40).Note(49,2000,40).Delay(3400)
+}
+
+Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
+Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
+Notes.Note(56,2000,45).Note(59,2000,45).Delay(3000)
+Notes.Note(51,2000,40).Note(57,2000,40).Delay(3400)
+
+Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
+Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
+Notes.Note(47,2000,45).Note(51,2000,45).Delay(3000)
+Notes.Note(54,2000,40).Note(57,2000,40).Delay(3400)
+
+Notes.Play()
+
 StartLevel := 1
 Loop
 {
@@ -69,6 +95,9 @@ Loop
     Else If Result = 4 ;paused
         MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
 }
+
+Notes.Stop()
+Notes.Device.__Delete() ;wip
 
 class TutorialText extends ProgressBlocks.Text
 {

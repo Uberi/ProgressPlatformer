@@ -48,3 +48,4 @@ Game.Start()
 Game.Layers := []
 
 Notes.Stop()
+Notes.Device.__Delete() ;wip
