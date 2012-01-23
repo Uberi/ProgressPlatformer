@@ -19,37 +19,26 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/*
 #Persistent
 
 Notes := new NotePlayer(9)
 
 Notes.Repeat := 1
 
-Notes.Note(40,1000,70).Note(48,1000,70).Delay(1800)
-Notes.Note(41,1000,70).Note(47,1000,70).Delay(1800)
-Notes.Note(40,1000,70).Note(48,1000,70).Delay(1800)
-Notes.Note(40,1000,70).Note(45,1000,70).Delay(1800)
-
-Notes.Delay(500)
-
-Notes.Note(41,1000,70).Note(48,1000,70).Delay(1800)
-Notes.Note(41,1000,70).Note(47,1000,70).Delay(1800)
-Notes.Note(41,1000,70).Note(48,1000,70).Delay(1800)
-Notes.Note(41,1000,70).Note(45,1000,70).Delay(1800)
-
-Notes.Delay(500)
+Notes.Note(45,2000,70).Note(48,2000,70).Note(42,2000,70).Delay(3000)
+Notes.Note(45,2000,60).Note(48,2000,60).Note(51,2000,60).Delay(3000)
 
 Notes.Play()
 Return
+*/
 
-Loop, 3
-{
-    Notes.Note(45,2000,70).Note(48,2000,70).Note(42,2000,70).Delay(3000)
-    Notes.Note(45,2000,60).Note(48,2000,60).Note(51,2000,60).Delay(3000)
-}
-ExitApp
+/*
+#Persistent
 
 Notes := new NotePlayer(28)
+
+Notes.Repeat := 1
 
 Loop, 2
 {
@@ -68,9 +57,10 @@ Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
 Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
 Notes.Note(47,2000,45).Note(51,2000,45).Delay(3000)
 Notes.Note(54,2000,40).Note(57,2000,40).Delay(3400)
-ExitApp
 
-Esc::ExitApp
+Notes.Play()
+Return
+*/
 
 class NotePlayer
 {
@@ -80,8 +70,7 @@ class NotePlayer
         this.Device.Sound := Sound
         this.Device.SetVolume(100)
         this.Actions := []
-        this.pCallback := 0
-        this.Timer := 0
+        this.Playing := 0
     }
 
     Note(Index,Length = 500,DownVelocity = 60,UpVelocity = 60)
@@ -107,7 +96,7 @@ class NotePlayer
     Play()
     {
         ;sort the notes into groups by their time offsets
-        Positions := [], Offset := 0
+        Timeline := [], Offset := 0
         For Index, Action In this.Actions
         {
             If Action.Index = -1 ;delay
@@ -115,19 +104,20 @@ class NotePlayer
             Else ;note
             {
                 If !ObjHasKey(Positions,Offset)
-                    Positions[Offset] := []
-                Positions[Offset].Insert(Object("Type","NoteOn","Index",Action.Index,"Velocity",Action.DownVelocity))
+                    Timeline[Offset] := []
+                Timeline[Offset].Insert(Object("Type","NoteOn","Index",Action.Index,"Velocity",Action.DownVelocity))
                 Temp1 := Offset + Action.Length
-                If !ObjHasKey(Positions,Temp1)
-                    Positions[Temp1] := []
-                Positions[Temp1].Insert(Object("Type","NoteOff","Index",Action.Index,"Velocity",Action.UpVelocity))
+                If !ObjHasKey(Timeline,Temp1)
+                    Timeline[Temp1] := []
+                Timeline[Temp1].Insert(Object("Type","NoteOff","Index",Action.Index,"Velocity",Action.UpVelocity))
             }
         }
-        If !ObjHasKey(Positions,Offset) ;insert the ending delay
-            Positions[Offset] := []
+        If !ObjHasKey(Timeline,Offset) ;insert the ending delay
+            Timeline[Offset] := []
 
+        ;convert the timeline into a set of actions
         this.Sequence := [], PreviousOffset := 0
-        For Offset, Actions In Positions
+        For Offset, Actions In Timeline
         {
             Actions.Insert(1,Offset - PreviousOffset), PreviousOffset := Offset
             this.Sequence.Insert(Actions)
@@ -136,10 +126,12 @@ class NotePlayer
         ;activate the first set of actions if it is present
         If ObjMaxIndex(this.Sequence)
         {
-            this.pCallback := RegisterCallback("NotePlayerTimer","F","",&this)
-            If !this.pCallback
-                throw Exception("Could not register update callback.")
+            this.ActiveNotes := []
+            this.Playing := 1
             this.Index := 1
+
+            ;set up the timer to execute the action set
+            this.pCallback := RegisterCallback("NotePlayerTimer","F","",&this)
             this.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",this.Sequence[1][1],"UPtr",this.pCallback,"UPtr")
             If !this.Timer
                 throw Exception("Could not create update timer.")
@@ -147,34 +139,56 @@ class NotePlayer
         Return, this
     }
 
-    Pause()
-    {
-        ;wip
-    }
-
     Stop()
     {
-        ;wip
+        If this.Playing
+        {
+            ;clean up timers
+            If !DllCall("KillTimer","UPtr",0,"UInt",this.Timer)
+                throw Exception("Could not destroy update timer.")
+            DllCall("GlobalFree","UPtr",this.pCallback)
+
+            ;turn off any active notes
+            For Index In this.ActiveNotes
+                this.Device.NoteOff(Index,100)
+            this.Playing := 0
+        }
+    }
+
+    __Delete()
+    {
+        this.Stop()
     }
 }
 
 NotePlayerTimer(hWindow,Message,Event,TickCount)
 {
-    Critical
-    NotePlayer := Object(A_EventInfo)
+    NotePlayer := Object(A_EventInfo) ;retrieve the note player object
+
+    ;remove the currently active timer
     If !DllCall("KillTimer","UPtr",0,"UInt",NotePlayer.Timer)
         throw Exception("Could not destroy update timer.")
+
+    ;execute the set of actions
     For Index, Action In NotePlayer.Sequence[NotePlayer.Index] ;perform the current action set
     {
         If Index != 1
         {
-            If (Action.Type = "NoteOn")
+            If (Action.Type = "NoteOn") ;note on action
+            {
                 NotePlayer.Device.NoteOn(Action.Index,Action.Velocity)
-            Else If (Action.Type = "NoteOff")
+                NotePlayer.ActiveNotes[Action.Index] := 1
+            }
+            Else If (Action.Type = "NoteOff") ;note off action
+            {
                 NotePlayer.Device.NoteOff(Action.Index,Action.Velocity)
+                NotePlayer.ActiveNotes.Remove(Action.Index,"")
+            }
         }
     }
-    If (NotePlayer.Index < ObjMaxIndex(NotePlayer.Sequence)) ;set the next timer if necessary
+
+    ;set the next timer if needed
+    If (NotePlayer.Index < ObjMaxIndex(NotePlayer.Sequence))
     {
         NotePlayer.Index ++
         NotePlayer.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",NotePlayer.Sequence[NotePlayer.Index][1],"UPtr",NotePlayer.pCallback,"UPtr")
