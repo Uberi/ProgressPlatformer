@@ -103,7 +103,7 @@ class NotePlayer
                 Offset += Action.Length
             Else ;note
             {
-                If !ObjHasKey(Positions,Offset)
+                If !ObjHasKey(Timeline,Offset)
                     Timeline[Offset] := []
                 Timeline[Offset].Insert(Object("Type","NoteOn","Index",Action.Index,"Velocity",Action.DownVelocity))
                 Temp1 := Offset + Action.Length
