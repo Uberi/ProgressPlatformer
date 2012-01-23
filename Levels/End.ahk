@@ -19,6 +19,26 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+Notes := new NotePlayer(9)
+
+Notes.Repeat := 1
+
+Notes.Note(40,1000,70).Note(48,1000,70).Delay(1800)
+Notes.Note(41,1000,70).Note(47,1000,70).Delay(1800)
+Notes.Note(40,1000,70).Note(48,1000,70).Delay(2000)
+Notes.Note(40,1000,70).Note(45,1000,70).Delay(1800)
+
+Notes.Delay(300)
+
+Notes.Note(41,1000,70).Note(48,1000,70).Delay(1800)
+Notes.Note(41,1000,70).Note(47,1000,70).Delay(1800)
+Notes.Note(41,1000,70).Note(48,1000,70).Delay(2000)
+Notes.Note(41,1000,70).Note(45,1000,70).Delay(1800)
+
+Notes.Delay(500)
+
+Notes.Play()
+
 Game.Layers[1] := new ProgressEngine.Layer
 Game.Layers[2] := new ProgressEngine.Layer
 Environment.Snow(Game.Layers[1])
@@ -26,3 +46,6 @@ Game.Layers[1].Entities.Insert(new TitleText("Game Complete"))
 Game.Layers[1].Entities.Insert(new TitleMessage("Press Space to exit"))
 Game.Start()
 Game.Layers := []
+
+Notes.Stop()
+Notes.Device.__Delete() ;wip
