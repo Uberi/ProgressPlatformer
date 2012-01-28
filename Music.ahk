@@ -117,7 +117,7 @@ class NotePlayer
             ;clean up timers
             If !DllCall("KillTimer","UPtr",0,"UInt",this.Timer)
                 throw Exception("Could not destroy update timer.")
-            DllCall("GlobalFree","UPtr",this.pCallback)
+            DllCall("GlobalFree","UPtr",this.pCallback) ;free callback
 
             ;turn off any active notes
             For Index In this.ActiveNotes
@@ -158,16 +158,24 @@ NotePlayerTimer(hWindow,Message,Event,TickCount)
         }
     }
 
-    ;set the next timer if needed
-    If (NotePlayer.Index < ObjMaxIndex(NotePlayer.Sequence))
+    If (NotePlayer.Index < ObjMaxIndex(NotePlayer.Sequence)) ;set the next timer if available
     {
         NotePlayer.Index ++
         NotePlayer.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",NotePlayer.Sequence[NotePlayer.Index][1],"UPtr",NotePlayer.pCallback,"UPtr")
     }
-    Else If NotePlayer.Repeat
+    Else If NotePlayer.Repeat ;repeat note sequence
     {
         NotePlayer.Index := 1
         NotePlayer.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",NotePlayer.Sequence[1][1],"UPtr",NotePlayer.pCallback,"UPtr")
+    }
+    Else ;stop playing
+    {
+        DllCall("GlobalFree","UPtr",NotePlayer.pCallback) ;free callback
+
+        ;turn off any active notes
+        For Index In NotePlayer.ActiveNotes
+            this.Device.NoteOff(Index,100)
+        this.Playing := 0
     }
 }
 
