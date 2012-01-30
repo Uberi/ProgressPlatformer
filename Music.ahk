@@ -22,15 +22,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
 #Persistent
 
-Notes := new NotePlayer(9)
+;Notes := new NotePlayer(9)
+Notes := new NotePlayer(0)
 
 Notes.Repeat := 1
 
-Notes.Note(45,2000,70).Note(48,2000,70).Note(42,2000,70).Delay(3000)
-Notes.Note(45,2000,60).Note(48,2000,60).Note(51,2000,60).Delay(3000)
+Notes.Note(33,3000,70).Note(41,3000,70).Note(48,3000,70).Note(56,3000,70).Delay(3000)
+Notes.Note(36,3000,70).Note(48,3000,70).Note(51,3000,70).Note(60,3000,70).Delay(3000)
+Notes.Note(30,3000,70).Note(39,3000,70).Note(56,3000,70).Note(60,3000,70).Delay(3000)
+Notes.Note(58,3000,70).Delay(3000)
+
+;Notes.Note(26,3000,70).Note(39,3000,70).Note(54,3000,70).Note(57,3000,70).Delay(3000)
+;Notes.Note(27,3000,70).Note(38,3000,70).Note(50,3000,70).Note(57,3000,70).Delay(3000)
+
+;Notes.Note(45,2000,70).Note(48,2000,70).Note(42,2000,70).Delay(3000)
+;Notes.Note(45,2000,60).Note(48,2000,60).Note(51,2000,60).Delay(3000)
 
 Notes.Play()
 Return
+
+Esc::
+Notes.Stop()
+ExitApp
 */
 
 class NotePlayer
