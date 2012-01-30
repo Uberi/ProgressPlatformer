@@ -75,7 +75,17 @@ Game.Layers := []
 ExitApp
 
 GuiClose:
-Game.__Delete() ;wip: this is related to a limitation of the reference counting mechanism in AHK (Although references in static and global variables are released automatically when the program exits, references in non-static local variables or on the expression evaluation stack are not. These references are only released if the function or expression is allowed to complete normally.). normal exiting (game complete) works fine though
+Try Game.__Delete() ;wip: this is related to a limitation of the reference counting mechanism in AHK (Although references in static and global variables are released automatically when the program exits, references in non-static local variables or on the expression evaluation stack are not. These references are only released if the function or expression is allowed to complete normally.). normal exiting (game complete) works fine though
+Catch
+{
+    
+}
+Notes.Stop() ;wip: also a garbage collection issue
+Try Notes.Device.__Delete() ;wip
+Catch
+{
+    
+}
 ExitApp
 
 class TitleText extends ProgressBlocks.Text
@@ -134,6 +144,30 @@ class KeyboardController
             KeyWait, Space
             Return, 4 ;paused
         }
+    }
+}
+
+class TestBlock extends ProgressBlocks.Dynamic
+{
+    __New(X,Y,W,H,SpeedX,SpeedY)
+    {
+        base.__New()
+        this.X := X
+        this.Y := Y
+        this.W := W
+        this.H := H
+        this.SpeedX := SpeedX
+        this.SpeedY := SpeedY
+        this.Color := 0x777777
+        this.Density := 0.5
+    }
+
+    Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+    {
+        global Gravity
+
+        this.SpeedY += Gravity * Delta ;process gravity
+        base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
     }
 }
 
@@ -338,7 +372,7 @@ class GameEntities
                             this.SpeedX -= MoveSpeed * Delta
                     }
                 }
-                Else If (Entity.__Class = "GameEntities.Enemy" && &this = &Entity)
+                Else If (Entity.__Class = "GameEntities.Enemy" && this = Entity)
                 {
                     Padding := 1
                     If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding)) ;out of bounds
