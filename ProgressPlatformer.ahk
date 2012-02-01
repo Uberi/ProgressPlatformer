@@ -147,30 +147,6 @@ class KeyboardController
     }
 }
 
-class TestBlock extends ProgressBlocks.Dynamic
-{
-    __New(X,Y,W,H,SpeedX,SpeedY)
-    {
-        base.__New()
-        this.X := X
-        this.Y := Y
-        this.W := W
-        this.H := H
-        this.SpeedX := SpeedX
-        this.SpeedY := SpeedY
-        this.Color := 0x777777
-        this.Density := 0.5
-    }
-
-    Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
-    {
-        global Gravity
-
-        this.SpeedY += Gravity * Delta ;process gravity
-        base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
-    }
-}
-
 class GameEntities
 {
     class HealthBar extends ProgressBlocks.Default
@@ -237,6 +213,30 @@ class GameEntities
             Else If (this.X > (this.RangeX + this.RangeW))
                 this.Direction := -1
             this.X += this.Speed * Delta * this.Direction
+        }
+    }
+    
+    class Box extends ProgressBlocks.Dynamic
+    {
+        __New(X,Y,W,H,SpeedX,SpeedY)
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.SpeedX := SpeedX
+            this.SpeedY := SpeedY
+            this.Color := 0x777777
+            this.Density := 0.5
+        }
+
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        {
+            global Gravity
+
+            this.SpeedY += Gravity * Delta ;process gravity
+            base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         }
     }
 
@@ -312,6 +312,8 @@ class GameEntities
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
+            Layer.X += (((this.X + (this.W / 2)) - (Layer.X + (Layer.W / 2))) * 0.03)
+            Layer.Y += (((this.Y + (this.H / 2)) - (Layer.Y + (Layer.H / 2))) * 0.03)
             base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         }
     }

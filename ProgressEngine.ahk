@@ -137,7 +137,7 @@ class ProgressEngine
             For Key, Entity In Layer.Entities
             {
                 ;get the screen coordinates of the rectangle
-                Rectangle.X := (Layer.X + Entity.X) * ScaleX, Rectangle.Y := (Layer.Y + Entity.Y) * ScaleY
+                Rectangle.X := (Entity.X - Layer.X) * ScaleX, Rectangle.Y := (Entity.Y - Layer.Y) * ScaleY
                 Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
 
                 Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
