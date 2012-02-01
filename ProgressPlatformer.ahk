@@ -292,6 +292,14 @@ class GameEntities
             If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding)) ;out of bounds
                 Return, 3 ;out of bounds
 
+            If Crouch
+            {
+                this.H := this.FullH * 0.75
+                MoveSpeed *= 0.5
+            }
+            Else
+                this.H := this.FullH
+
             If Left
                 this.SpeedX -= MoveSpeed * Delta ;move left
             If Right
@@ -308,7 +316,6 @@ class GameEntities
                 If Jump && (A_TickCount - this.LastContact) < 500 ;jump
                     this.SpeedY += MoveSpeed * 0.3, this.LastContact := 0
             }
-            this.H := Crouch ? (this.FullH * 0.75) : this.FullH ;crouch
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
