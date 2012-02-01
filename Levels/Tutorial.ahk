@@ -54,7 +54,6 @@ Loop
         Game.Layers[2] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
-        Game.Layers[1].Entities.Insert(new TutorialText("Let's warm up."))
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,9,8,0.5))
         Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
@@ -69,6 +68,8 @@ Loop
         Entities.Insert(new GameEntities.Box(3,4,0.5,0.5,0,0))
         Entities.Insert(new GameEntities.Box(3,3.5,0.5,0.5,0,0))
         Entities.Insert(new GameEntities.Box(3,3,0.5,0.5,0,0))
+
+        Entities.Insert(new TutorialText("Let's warm up."))
     }
     Result := Game.Start()
     StartLevel := 1
@@ -90,11 +91,11 @@ Loop
         Game.Layers[2] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
-        Game.Layers[1].Entities.Insert(new TutorialText("That was too easy."))
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,9,8,0.5))
         Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
         Entities.Insert(new GameEntities.Player(1.5,7,1 / 3,4 / 9,0,0))
+        Entities.Insert(new TutorialText("That was too easy."))
     }
     Result := Game.Start()
     StartLevel := 1
