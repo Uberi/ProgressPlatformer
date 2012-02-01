@@ -29,8 +29,8 @@ Notes.Repeat := 1
 
 Notes.Note(33,3000,70).Note(41,3000,70).Note(48,3000,70).Note(56,3000,70).Delay(3000)
 Notes.Note(36,3000,70).Note(48,3000,70).Note(51,3000,70).Note(60,3000,70).Delay(3000)
-Notes.Note(30,3000,70).Note(39,3000,70).Note(56,3000,70).Note(60,3000,70).Delay(3000)
-Notes.Note(58,3000,70).Delay(3000)
+Notes.Note(30,3500,80).Note(39,3500,80).Note(56,3500,80).Note(60,3500,80).Delay(3500)
+Notes.Note(33,4000,50).Note(41,4000,50).Note(49,4000,50).Note(58,4000,50).Delay(4000)
 
 ;Notes.Note(26,3000,70).Note(39,3000,70).Note(54,3000,70).Note(57,3000,70).Delay(3000)
 ;Notes.Note(27,3000,70).Note(38,3000,70).Note(50,3000,70).Note(57,3000,70).Delay(3000)
