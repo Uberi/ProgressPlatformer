@@ -18,6 +18,7 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 ;wip: oncollide() callbacks for ProgressBlocks.Dynamic
 #Include ProgressEngine.ahk
 #Include Music.ahk
@@ -41,35 +42,29 @@ Game := new ProgressEngine(WinExist())
 #Include Levels/Title.ahk
 #Include Levels/Tutorial.ahk
 
-;game screen
-LevelIndex := 1
-StartLevel := 1
-Loop
-{
-    If StartLevel
-    {
-        Game.Layers[1] := new ProgressEngine.Layer
-        Game.Layers[2] := new ProgressEngine.Layer
-        Game.Layers[3] := new ProgressEngine.Layer
-        If LoadLevel(Game,LevelIndex)
-            Break
-        ;Game.Layers[2].Entities.Insert(new GameEntities.Platform(2,2,1,0.2,1,1,2,1.5))
-        Game.Layers[1].Entities.Insert(new KeyboardController)
-        Environment.Clouds(Game.Layers[1])
-        Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
-    }
-    Result := Game.Start()
-    StartLevel := 1
-    If Result = 1 ;reached goal
-        LevelIndex ++ ;move to the next level
-    If Result = 2 ;out of health
-        MessageScreen(Game,"Try again","Press Space to restart the level.")
-    Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds","Press Space to restart the level.")
-    Else If Result = 4 ;game paused
-        MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
-}
-Game.Layers := []
+#Include Levels/Level 1.ahk
+#Include Levels/Level 2.ahk
+#Include Levels/Level 3.ahk
+
+/*
+Notes := new NotePlayer(0)
+
+Notes.Repeat := 1
+
+Notes.Delay(1000)
+
+Notes.Note(33,3000,60).Note(41,3000,60).Note(48,3000,60).Note(56,3000,60).Delay(3000)
+Notes.Note(36,3000,60).Note(48,3000,60).Note(51,3000,60).Note(60,3000,60).Delay(3000)
+Notes.Note(30,3500,70).Note(39,3500,70).Note(56,3500,70).Note(60,3500,70).Delay(3500)
+Notes.Note(33,4000,45).Note(41,4000,45).Note(49,4000,45).Note(58,4000,45).Delay(4000)
+
+Notes.Play()
+
+;level here
+
+Notes.Stop()
+Notes.Device.__Delete() ;wip
+*/
 
 #Include Levels/End.ahk
 ExitApp
@@ -394,64 +389,6 @@ class GameEntities
 
             this.SpeedY += Gravity * Delta ;process gravity
             base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
-        }
-    }
-}
-
-LoadLevel(ByRef Game,LevelIndex) ;wip: the divide by 90 thing is really hacky - should replace the actual numbers and add regex to support floats
-{
-    ;load the level file
-    LevelFile := A_ScriptDir . "\Levels\Level " . LevelIndex . ".txt"
-    If !FileExist(LevelFile)
-        Return, 1
-    FileRead, LevelDefinition, %LevelFile%
-    If ErrorLevel
-        Return, 1
-
-    Entities := Game.Layers[2].Entities
-
-    LevelDefinition := RegExReplace(LevelDefinition,"S)#[^\r\n]*") ;remove comments
-
-    If RegExMatch(LevelDefinition,"iS)Blocks\s*:\s*\K(?:-?\d+(?:\.\d+)?\s*(?:,\s*-?\d+(?:\.\d+)?\s*){3})*",Property)
-    {
-        Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
-        Loop, Parse, Property, `n
-        {
-            StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entities.Insert(new GameEntities.Block(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90))
-        }
-    }
-
-    If RegExMatch(LevelDefinition,"iS)Platforms\s*:\s*\K(?:-?\d+(?:\.\d+)?\s*(?:,\s*-?\d+(?:\.\d+)?\s*){6,7})*",Property)
-    {
-        Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
-        Loop, Parse, Property, `n
-        {
-            Entry8 := 1.5
-            StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entities.Insert(new GameEntities.Platform(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90,Entry5 / 90,Entry6 / 90,Entry7 / 90,Entry8 / 90))
-        }
-    }
-
-    If RegExMatch(LevelDefinition,"iS)Goal\s*:\s*\K(?:-?\d+(?:\.\d+)?\s*(?:,\s*-?\d+(?:\.\d+)?\s*){3})*",Property)
-    {
-        StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-        Entities.Insert(new GameEntities.Goal(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90))
-    }
-
-    RegExMatch(LevelDefinition,"iS)Player\s*:\s*\K(?:\d+(?:\.\d+)?\s*(?:,\s*\d+(?:\.\d+)?\s*){3,5})*",Property)
-    Entry5 := 0, Entry6 := 0
-    StringSplit, Entry, Property, `,, %A_Space%`t`r`n
-    Entities.Insert(new GameEntities.Player(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90, Entry5 / 90,Entry6 / 90))
-
-    If RegExMatch(LevelDefinition,"iS)Enemies\s*:\s*\K(?:-?\d+(?:\.\d+)?\s*(?:,\s*-?\d+(?:\.\d+)?\s*){3,5})*",Property)
-    {
-        Property := Trim(RegExReplace(RegExReplace(Property,"S)[\r \t]"),"S)\n+","`n"),"`n")
-        Loop, Parse, Property, `n, `r `t
-        {
-            Entry5 := 0, Entry6 := 0
-            StringSplit, Entry, A_LoopField, `,, %A_Space%`t
-            Entities.Insert(new GameEntities.Enemy(Entry1 / 90,Entry2 / 90,Entry3 / 90,Entry4 / 90,Entry5 / 90,Entry6 / 90))
         }
     }
 }
