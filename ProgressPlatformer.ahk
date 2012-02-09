@@ -376,12 +376,6 @@ class GameEntities
                             this.SpeedX -= MoveSpeed * Delta
                     }
                 }
-                Else If (Entity.__Class = "GameEntities.Enemy" && this = Entity)
-                {
-                    Padding := 1
-                    If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding)) ;out of bounds
-                        Layer.Entities.Remove(Key) ;wip: can't do this in a For loop
-                }
             }
 
             If this.IntersectY ;contacting top or bottom of a block
