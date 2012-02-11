@@ -25,6 +25,11 @@ class ProgressEngine
     {
         this.Layers := []
 
+        this.X := 0
+        this.Y := 0
+        this.W := 10
+        this.H := 10
+
         this.FrameRate := 60
 
         this.hWindow := hWindow
@@ -94,13 +99,16 @@ class ProgressEngine
     {
         __New(Container = 0)
         {
-            this.Entities := []
             this.Visible := 1
             this.X := 0
             this.Y := 0
             this.W := 10
             this.H := 10
             this.Container := Container
+            If Container
+                this.Layers := []
+            Else
+                this.Entities := []
         }
     }
 
@@ -129,7 +137,7 @@ class ProgressEngine
         }
         Width1 := Width, Height1 := Height
 
-        Result := this.Step(Delta,this.Layers,0,0,1,1,this.hMemoryDC,Width,Height)
+        Result := this.Step(Delta,this.Layers,this.X,this.Y,this.W,this.H,this.hMemoryDC,Width,Height)
         If Result
             Return, Result
 
@@ -140,19 +148,17 @@ class ProgressEngine
 
     Step(Delta,Layers,OffsetX,OffsetY,SizeX,SizeY,hMemoryDC,Width,Height)
     {
-        Rectangle := Object()
+        static Rectangle := Object()
         For Index, Layer In Layers
         {
             If !Layer.Visible ;layer is hidden
                 Continue
 
             PositionX := OffsetX + Layer.X, PositionY := OffsetY + Layer.Y
-            ScaleX := SizeX * (Width / Layer.W), ScaleY := SizeY * (Height / Layer.H)
+            ScaleX := (Width / Layer.W) * (SizeX / Layer.W), ScaleY := (Height / Layer.H) * (SizeY / Layer.H)
 
             If Layer.Container ;layer contains other layers
-            {
-                this.Step(Delta,Layer.Entities,PositionX,PositionY,ScaleX,ScaleY,hMemoryDC,Width,Height)
-            }
+                this.Step(Delta,Layer.Layers,PositionX,PositionY,Layer.W,Layer.H,hMemoryDC,Width,Height)
             Else ;layer contains entities
             {
                 For Key, Entity In Layer.Entities
@@ -160,6 +166,8 @@ class ProgressEngine
                     ;get the screen coordinates of the rectangle
                     Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
                     Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+                    ;If OffsetX
+                        ;MsgBox %PositionX% %ScaleX%
 
                     Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
                     If Result
@@ -175,6 +183,26 @@ class ProgressEngine
 
 class ProgressEntities
 {
+    class Container
+    {
+        __New()
+        {
+            this.Entities := []
+            this.X := 0
+            this.Y := 0
+            this.W := 10
+            this.H := 10
+        }
+
+        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        {
+            For Index, Entity In this.Entities
+            {
+                
+            }
+        }
+    }
+
     class Default
     {
         __New()

@@ -32,11 +32,18 @@ Editor := new ProgressEngine(WinExist())
 Editor.Layers[1] := new ProgressEngine.Layer
 Environment[LevelBackground](Editor.Layers[1])
 
-Editor.Layers[2] := new ProgressEngine.Layer
+;Editor.Layers[2] := new ProgressEngine.Layer ;wip: debug
 
-Editor.Layers[3] := new ProgressEngine.Layer
-Entities := Editor.Layers[3].Entities
-Entities.Insert(new EditingPane(2,2,3,5))
+Editor.Layers[3] := new ProgressEngine.Layer(1)
+Editor.Layers[3].Layers[1] := new ProgressEngine.Layer
+Editor.Layers[3].X := 2, Editor.Layers[3].Y := 2
+Editor.Layers[3].W := 3, Editor.Layers[3].H := 5
+Layers := Editor.Layers[3].Layers
+Layers[1] := new ProgressEngine.Layer
+Layers[1].Entities.Insert(new EditingPane.Background)
+Layers[2] := new ProgressEngine.Layer
+Layers[2].Entities.Insert(new EditingPane.Title("Level Editor"))
+
 Loop
 {
     Result := Editor.Start()
@@ -66,17 +73,56 @@ SaveLevel(Layer)
     }
 }
 
-class EditingPane extends ProgressEntities.Default
+class EditingPane
 {
-    __New(X,Y,W,H)
+    class Background extends ProgressEntities.Default
     {
-        base.__New()
-        this.X := X
-        this.Y := Y
-        this.W := W
-        this.H := H
-        this.OffsetX := 0
-        this.OffsetY := 0
-        this.Color := 0x555555
+        __New()
+        {
+            base.__New()
+            this.X := 0
+            this.Y := 0
+            this.W := 10
+            this.H := 10
+            this.Color := 0x555555
+        }
     }
+
+    class Title extends ProgressEntities.Text
+    {
+        __New(Text)
+        {
+            base.__New()
+            this.X := 5
+            this.Y := 1
+            this.W := 10
+            this.H := 1
+            this.Size := 4
+            this.Color := 0xFFFFFF
+            this.Weight := 100
+            this.Typeface := "Georgia"
+            this.Text := Text
+        }
+    }
+}
+
+ShowObject(ShowObject,Padding = "")
+{
+ ListLines, Off
+ If !IsObject(ShowObject)
+ {
+  ListLines, On
+  Return, ShowObject
+ }
+ ObjectContents := ""
+ For Key, Value In ShowObject
+ {
+  If IsObject(Value)
+   Value := "`n" . ShowObject(Value,Padding . A_Tab)
+  ObjectContents .= Padding . Key . ": " . Value . "`n"
+ }
+ ObjectContents := SubStr(ObjectContents,1,-1)
+ If (Padding = "")
+  ListLines, On
+ Return, ObjectContents
 }
