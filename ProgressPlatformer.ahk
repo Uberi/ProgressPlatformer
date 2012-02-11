@@ -310,8 +310,9 @@ class GameEntities
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
-            Layer.X += (((this.X + (this.W / 2)) - (Layer.X + (Layer.W / 2))) * 0.03)
-            Layer.Y += (((this.Y + (this.H / 2)) - (Layer.Y + (Layer.H / 2))) * 0.03)
+            Layer.X -= ((Layer.X + this.X + (this.W / 2)) - (Layer.W / 2)) * 0.03
+            Layer.Y -= ((Layer.Y + this.Y + (this.H / 2)) - (Layer.H / 2)) * 0.03
+
             base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         }
     }

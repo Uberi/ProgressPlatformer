@@ -92,7 +92,7 @@ class ProgressEngine
 
     class Layer
     {
-        __New()
+        __New(Container = 0)
         {
             this.Entities := []
             this.Visible := 1
@@ -100,19 +100,20 @@ class ProgressEngine
             this.Y := 0
             this.W := 10
             this.H := 10
+            this.Container := Container
         }
     }
 
     Update(Delta)
     {
-        static Width1 := -1, Height1 := -1, Rectangle := Object("X",0,"Y",0,"W",0,"H",0)
+        static Width1 := -1, Height1 := -1
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
         If !DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
             throw Exception("Could not obtain client area dimensions.")
         Width := NumGet(ClientRectangle,8,"Int"), Height := NumGet(ClientRectangle,12,"Int")
 
-        If (Width != Width1 || Height != Height1)
+        If (Width != Width1 || Height != Height1) ;window was resized
         {
             If this.hOriginalBitmap
             {
@@ -128,29 +129,47 @@ class ProgressEngine
         }
         Width1 := Width, Height1 := Height
 
-        For Index, Layer In this.Layers
-        {
-            If !Layer.Visible
-                Continue
-            ScaleX := Width / Layer.W
-            ScaleY := Height / Layer.H
-            For Key, Entity In Layer.Entities
-            {
-                ;get the screen coordinates of the rectangle
-                Rectangle.X := (Entity.X - Layer.X) * ScaleX, Rectangle.Y := (Entity.Y - Layer.Y) * ScaleY
-                Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+        Result := this.Step(Delta,this.Layers,0,0,1,1,this.hMemoryDC,Width,Height)
+        If Result
+            Return, Result
 
-                Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
-                If Result
-                    Return, Result
-
-                ;wip: log(n) occlusion culling here
-                Entity.Draw(this.hMemoryDC,Rectangle,Width,Height)
-            }
-        }
         If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
             throw Exception("Could not transfer pixel data to window device context.")
         Return, 0
+    }
+
+    Step(Delta,Layers,OffsetX,OffsetY,SizeX,SizeY,hMemoryDC,Width,Height)
+    {
+        Rectangle := Object()
+        For Index, Layer In Layers
+        {
+            If !Layer.Visible ;layer is hidden
+                Continue
+
+            PositionX := OffsetX + Layer.X, PositionY := OffsetY + Layer.Y
+            ScaleX := SizeX * (Width / Layer.W), ScaleY := SizeY * (Height / Layer.H)
+
+            If Layer.Container ;layer contains other layers
+            {
+                this.Step(Delta,Layer.Entities,PositionX,PositionY,ScaleX,ScaleY,hMemoryDC,Width,Height)
+            }
+            Else ;layer contains entities
+            {
+                For Key, Entity In Layer.Entities
+                {
+                    ;get the screen coordinates of the rectangle
+                    Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
+                    Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+
+                    Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
+                    If Result
+                        Return, Result
+
+                    ;wip: log(n) occlusion culling here
+                    Entity.Draw(hMemoryDC,Rectangle,Width,Height)
+                }
+            }
+        }
     }
 }
 
