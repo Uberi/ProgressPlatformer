@@ -154,7 +154,7 @@ class ProgressEngine
     }
 }
 
-class ProgressBlocks
+class ProgressEntities
 {
     class Default
     {
@@ -170,7 +170,6 @@ class ProgressBlocks
             this.Visible := 1
             this.Color := 0xFFFFFF
             this.Physical := 0
-            this.Dynamic := 0
         }
 
         Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
@@ -225,7 +224,7 @@ class ProgressBlocks
                 throw Exception("Could not deselect brush from the memory device context.")
         }
 
-        MouseHovering(Layer,Rectangle)
+        MouseHovering(Layer,Rectangle) ;wip
         {
             CoordMode, Mouse, Client
             MouseGetPos, MouseX, MouseY
@@ -235,7 +234,7 @@ class ProgressBlocks
             Return, 0
         }
 
-        Collide(Rectangle,ByRef IntersectX,ByRef IntersectY)
+        Intersect(Rectangle,ByRef IntersectX,ByRef IntersectY)
         {
             Left1 := this.X, Left2 := Rectangle.X
             Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
@@ -294,7 +293,7 @@ class ProgressBlocks
         }
     }
 
-    class Static extends ProgressBlocks.Default
+    class Static extends ProgressEntities.Default
     {
         __New()
         {
@@ -302,12 +301,13 @@ class ProgressBlocks
             this.Physical := 1
             this.Dynamic := 0
             this.Density := 1
+            this.Restitution := 0.7
             this.SpeedX := 0
             this.SpeedY := 0
         }
     }
 
-    class Dynamic extends ProgressBlocks.Static
+    class Dynamic extends ProgressEntities.Static
     {
         __New()
         {
@@ -319,58 +319,62 @@ class ProgressBlocks
         {
             ;wip: use spatial acceleration structure
             Friction := 0.98
-            Restitution := 0.6
 
             this.X += this.SpeedX * Delta, this.Y -= this.SpeedY * Delta ;process momentum
 
-            CollisionX := 0, CollisionY := 0, TotalIntersectX := 0, TotalIntersectY := 0
-            CurrentMass := this.W * this.H * this.Density
+            this.IntersectX := 0, this.IntersectY := 0
             For Index, Entity In Layer.Entities
             {
                 If (&Entity = &this || !Entity.Physical) ;entity is the same as the current entity or is not physical
                     Continue
-                If !this.Collide(Entity,IntersectX,IntersectY) ;entity did not collide with the rectangle
-                    Continue
-                EntityMass := Entity.W * Entity.H * Entity.Density
-                If (Abs(IntersectX) >= Abs(IntersectY)) ;collision along top or bottom side
-                {
-                    If Entity.Dynamic
-                    {
-                        Velocity := ((this.SpeedY - Entity.SpeedY) * Restitution) / ((1 / CurrentMass) + (1 / EntityMass))
-                        this.SpeedY := -Velocity / CurrentMass
-                        Entity.SpeedY := Velocity / EntityMass
-                    }
-                    Else
-                        this.SpeedY := -(this.SpeedY - Entity.SpeedY) * Restitution
-                    
-                    CollisionY := 1
-                    this.Y -= IntersectY ;move the entity out of the intersection area
-                    TotalIntersectY += Abs(IntersectY)
-                }
-                Else ;collision along left or right side
-                {
-                    If Entity.Dynamic
-                    {
-                        Velocity := ((this.SpeedX - Entity.SpeedX) * Restitution) / ((1 / CurrentMass) + (1 / EntityMass))
-                        this.SpeedX := -Velocity / CurrentMass
-                        Entity.SpeedX := Velocity / EntityMass
-                    }
-                    Else
-                        this.SpeedX := -(this.SpeedX - Entity.SpeedX) * Restitution
-                    CollisionX := 1
-                    this.X -= IntersectX ;move the entity out of the intersection area
-                    TotalIntersectX += Abs(IntersectX)
-                }
+                If this.Intersect(Entity,IntersectX,IntersectY) ;entity collided with the rectangle
+                    this.Collide(Delta,Entity,IntersectX,IntersectY)
+                IntersectX := Abs(IntersectX), IntersectY := Abs(IntersectY)
+                If (IntersectY >= IntersectX) ;collision along top or bottom side
+                    this.IntersectX += IntersectX
+                Else
+                    this.IntersectY += IntersectY
             }
-            this.IntersectX := TotalIntersectX, this.IntersectY := TotalIntersectY
-            If CollisionY ;handle collision along top or bottom side
-                this.SpeedX *= (Friction * TotalIntersectY) ** Delta
-            If CollisionX ;handle collision along left or right side
-                this.SpeedY *= (Friction * TotalIntersectX) ** Delta
+            If this.IntersectY ;handle collision along top or bottom side
+                this.SpeedX *= (Friction * this.IntersectY) ** Delta
+            If this.IntersectX ;handle collision along left or right side
+                this.SpeedY *= (Friction * this.IntersectX) ** Delta
+        }
+
+        Collide(Delta,Entity,IntersectX,IntersectY)
+        {
+            Restitution := this.Restitution * Entity.Restitution
+            CurrentMass := this.W * this.H * this.Density
+            EntityMass := Entity.W * Entity.H * Entity.Density
+
+            If (Abs(IntersectX) >= Abs(IntersectY)) ;collision along top or bottom side
+            {
+                If Entity.Dynamic
+                {
+                    Velocity := ((this.SpeedY - Entity.SpeedY) * Restitution) / ((1 / CurrentMass) + (1 / EntityMass))
+                    this.SpeedY := -Velocity / CurrentMass
+                    Entity.SpeedY := Velocity / EntityMass
+                }
+                Else
+                    this.SpeedY := -(this.SpeedY - Entity.SpeedY) * Restitution
+                this.Y -= IntersectY ;move the entity out of the intersection area
+            }
+            Else ;collision along left or right side
+            {
+                If Entity.Dynamic
+                {
+                    Velocity := ((this.SpeedX - Entity.SpeedX) * Restitution) / ((1 / CurrentMass) + (1 / EntityMass))
+                    this.SpeedX := -Velocity / CurrentMass
+                    Entity.SpeedX := Velocity / EntityMass
+                }
+                Else
+                    this.SpeedX := -(this.SpeedX - Entity.SpeedX) * Restitution
+                this.X -= IntersectX ;move the entity out of the intersection area
+            }
         }
     }
 
-    class Text extends ProgressBlocks.Default
+    class Text extends ProgressEntities.Default
     {
         __New()
         {
@@ -432,7 +436,7 @@ class ProgressBlocks
 
             If this.Visible
             {
-                ;Loop, Parse, This.Text, `n ;wip
+                ;Loop, Parse, this.Text, `n ;wip
                 Text := this.Text, PositionY := Rectangle.Y
                 Loop, Parse, Text, `n
                 {

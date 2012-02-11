@@ -38,7 +38,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             Layer.Entities.Insert(new Environment.Cloud(Layer))
     }
 
-    class Background extends ProgressBlocks.Default
+    class Background extends ProgressEntities.Default
     {
         __New()
         {
@@ -51,7 +51,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         }
     }
 
-    class GroundSnow extends ProgressBlocks.Default
+    class GroundSnow extends ProgressEntities.Default
     {
         __New(Height = 0.5)
         {
@@ -68,7 +68,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         }
     }
 
-    class Snowflake extends ProgressBlocks.Default
+    class Snowflake extends ProgressEntities.Default
     {
         __New(Layer)
         {
@@ -99,7 +99,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         }
     }
 
-    class Cloud extends ProgressBlocks.Default
+    class Cloud extends ProgressEntities.Default
     {
         __New(Layer)
         {

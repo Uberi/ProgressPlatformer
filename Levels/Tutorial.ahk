@@ -57,17 +57,7 @@ Loop
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,9,8,0.5))
         Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
-        Entities.Insert(new GameEntities.Player(1.5,7,1 / 3,4 / 9,0,0))
-
-        Entities.Insert(new GameEntities.Box(3,7,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,6.5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,6,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,5.5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,4.5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,4,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,3.5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,3,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Player(1.5,7,0.333,0.444,0,0))
 
         Entities.Insert(new TutorialText("Let's warm up."))
     }
@@ -94,7 +84,18 @@ Loop
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,9,8,0.5))
         Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
-        Entities.Insert(new GameEntities.Player(1.5,7,1 / 3,4 / 9,0,0))
+        Entities.Insert(new GameEntities.Player(1.5,7,0.333,0.444,0,0))
+
+        Entities.Insert(new GameEntities.Box(3,7,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(3,6.5,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(3,6,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(3,5.5,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(3,5,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(3,4.5,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(3,4,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(3,3.5,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(3,3,0.5,0.5,0,0))
+
         Entities.Insert(new TutorialText("That was too easy."))
     }
     Result := Game.Start()
@@ -110,7 +111,7 @@ Loop
 Notes.Stop()
 Notes.Device.__Delete() ;wip
 
-class TutorialText extends ProgressBlocks.Text
+class TutorialText extends ProgressEntities.Text
 {
     __New(Text)
     {

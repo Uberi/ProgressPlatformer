@@ -19,7 +19,10 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-;wip: oncollide() callbacks for ProgressBlocks.Dynamic
+;wip: total asynchronocity or parallelism (tasklets)
+;wip: input manager that supports keyboard and joystick input
+;wip: add a container block type that recursively draws its contents
+;wip: oncollide() callbacks for ProgressEntities.Dynamic, onclick() and onhover() callbacks for ProgressEntities.Default
 #Include ProgressEngine.ahk
 #Include Music.ahk
 #Include Environment.ahk
@@ -27,14 +30,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Gravity := -9.81
 
 SetBatchLines, -1
+DetectHiddenWindows, On
 
 #Warn All
 #Warn LocalSameAsGlobal, Off
 
-Gui, +OwnDialogs
-DetectHiddenWindows, On
-Gui, +Resize +LastFound
-
+Gui, +Resize +MinSize300x200 +LastFound +OwnDialogs
 Gui, Show, w800 h600, ProgressPlatformer
 
 Game := new ProgressEngine(WinExist())
@@ -42,29 +43,24 @@ Game := new ProgressEngine(WinExist())
 #Include Levels/Title.ahk
 #Include Levels/Tutorial.ahk
 
-#Include Levels/Level 1.ahk
-#Include Levels/Level 2.ahk
-#Include Levels/Level 3.ahk
-
-/*
 Notes := new NotePlayer(0)
 
 Notes.Repeat := 1
 
 Notes.Delay(1000)
-
-Notes.Note(33,3000,60).Note(41,3000,60).Note(48,3000,60).Note(56,3000,60).Delay(3000)
+Notes.Note(33,3000,55).Note(41,3000,55).Note(48,3000,55).Note(56,3000,55).Delay(3000)
 Notes.Note(36,3000,60).Note(48,3000,60).Note(51,3000,60).Note(60,3000,60).Delay(3000)
 Notes.Note(30,3500,70).Note(39,3500,70).Note(56,3500,70).Note(60,3500,70).Delay(3500)
 Notes.Note(33,4000,45).Note(41,4000,45).Note(49,4000,45).Note(58,4000,45).Delay(4000)
 
 Notes.Play()
 
-;level here
+#Include Levels/Level 1.ahk
+#Include Levels/Level 2.ahk
+#Include Levels/Level 3.ahk
 
 Notes.Stop()
 Notes.Device.__Delete() ;wip
-*/
 
 #Include Levels/End.ahk
 ExitApp
@@ -83,7 +79,7 @@ Catch
 }
 ExitApp
 
-class TitleText extends ProgressBlocks.Text
+class TitleText extends ProgressEntities.Text
 {
     __New(Text)
     {
@@ -98,7 +94,7 @@ class TitleText extends ProgressBlocks.Text
     }
 }
 
-class TitleMessage extends ProgressBlocks.Text
+class TitleMessage extends ProgressEntities.Text
 {
     __New(Text)
     {
@@ -144,7 +140,7 @@ class KeyboardController
 
 class GameEntities
 {
-    class HealthBar extends ProgressBlocks.Default
+    class HealthBar extends ProgressEntities.Default
     {
         __New(Layer)
         {
@@ -168,7 +164,7 @@ class GameEntities
         }
     }
 
-    class Block extends ProgressBlocks.Static
+    class Block extends ProgressEntities.Static
     {
         __New(X,Y,W,H)
         {
@@ -181,7 +177,7 @@ class GameEntities
         }
     }
 
-    class Platform extends ProgressBlocks.Static
+    class Platform extends ProgressEntities.Static
     {
         __New(X,Y,W,H,Horizontal,Start,Length,Speed)
         {
@@ -211,7 +207,7 @@ class GameEntities
         }
     }
     
-    class Box extends ProgressBlocks.Dynamic
+    class Box extends ProgressEntities.Dynamic
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
         {
@@ -235,7 +231,7 @@ class GameEntities
         }
     }
 
-    class Player extends ProgressBlocks.Dynamic
+    class Player extends ProgressEntities.Dynamic
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
         {
@@ -266,11 +262,11 @@ class GameEntities
             {
                 If (Entity.__Class = "GameEntities.Goal" && this.Inside(Entity)) ;player is inside the goal
                     Return, 1 ;reached goal
-                If (Entity.__Class = "GameEntities.Enemy" && this.Collide(Entity,IntersectX,IntersectY))
+                If (Entity.__Class = "GameEntities.Enemy" && this.Intersect(Entity,IntersectX,IntersectY)) ;player collided with an enemy
                 {
-                    If IntersectX && (this.Y + this.H) < (Entity.Y + Entity.H)
+                    If (Abs(IntersectY) < Abs(IntersectX) && this.Y < Entity.Y)
                     {
-                        Layer.Entities.Remove(Key) ;wip: can't do this in a For loop
+                        Layer.Entities.Remove(Key) ;wip: can't do this in a For loop (maybe would be better in an oncollide callback)
                         this.Health += 30
                     }
                     Else
@@ -320,7 +316,7 @@ class GameEntities
         }
     }
 
-    class Goal extends ProgressBlocks.Default
+    class Goal extends ProgressEntities.Default
     {
         __New(X,Y,W,H)
         {
@@ -333,7 +329,7 @@ class GameEntities
         }
     }
 
-    class Enemy extends ProgressBlocks.Dynamic
+    class Enemy extends ProgressEntities.Dynamic
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
         {
@@ -354,7 +350,7 @@ class GameEntities
             JumpSpeed := MoveSpeed * 0.25
 
             ;move towards the player
-            For Key, Entity In Layer.Entities ;wip: use NearestEntities()
+            For Key, Entity In Layer.Entities ;wip: use NearestEntities(), add a findentity() function
             {
                 If (Entity.__Class = "GameEntities.Player")
                 {
@@ -402,7 +398,7 @@ MessageScreen(ByRef Game,Title = "",Message = "")
 
 class MessageScreenEntities
 {
-    class Background extends ProgressBlocks.Default
+    class Background extends ProgressEntities.Default
     {
         __New()
         {
@@ -415,7 +411,7 @@ class MessageScreenEntities
         }
     }
 
-    class Title extends ProgressBlocks.Text
+    class Title extends ProgressEntities.Text
     {
         __New(Text)
         {
@@ -430,7 +426,7 @@ class MessageScreenEntities
         }
     }
 
-    class Message extends ProgressBlocks.Text
+    class Message extends ProgressEntities.Text
     {
         __New(Text)
         {
