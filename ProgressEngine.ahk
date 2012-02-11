@@ -114,7 +114,7 @@ class ProgressEngine
 
     Update(Delta)
     {
-        static Width1 := -1, Height1 := -1
+        static Width1 := -1, Height1 := -1, Rectangle := Object()
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
         If !DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
@@ -137,47 +137,47 @@ class ProgressEngine
         }
         Width1 := Width, Height1 := Height
 
-        Result := this.Step(Delta,this.Layers,this.X,this.Y,this.W,this.H,this.hMemoryDC,Width,Height)
-        If Result
-            Return, Result
-
-        If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
-            throw Exception("Could not transfer pixel data to window device context.")
-        Return, 0
-    }
-
-    Step(Delta,Layers,OffsetX,OffsetY,SizeX,SizeY,hMemoryDC,Width,Height)
-    {
-        static Rectangle := Object()
-        For Index, Layer In Layers
+        For Index, Layer In this.Layers ;step entities
         {
             If !Layer.Visible ;layer is hidden
                 Continue
 
-            PositionX := OffsetX + Layer.X, PositionY := OffsetY + Layer.Y
-            ScaleX := (Width / Layer.W) * (SizeX / Layer.W), ScaleY := (Height / Layer.H) * (SizeY / Layer.H)
+            PositionX := this.X + Layer.X, PositionY := this.Y + Layer.Y
+            ScaleX := (Width / Layer.W) * (this.W / Layer.W), ScaleY := (Height / Layer.H) * (this.H / Layer.H)
 
-            If Layer.Container ;layer contains other layers
-                this.Step(Delta,Layer.Layers,PositionX,PositionY,Layer.W,Layer.H,hMemoryDC,Width,Height)
-            Else ;layer contains entities
+            For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
-                For Key, Entity In Layer.Entities
-                {
-                    ;get the screen coordinates of the rectangle
-                    Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
-                    Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
-                    ;If OffsetX
-                        ;MsgBox %PositionX% %ScaleX%
+                ;get the screen coordinates of the rectangle
+                Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
+                Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
 
-                    Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
-                    If Result
-                        Return, Result
-
-                    ;wip: log(n) occlusion culling here
-                    Entity.Draw(hMemoryDC,Rectangle,Width,Height)
-                }
+                Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
+                If Result
+                    Return, Result
             }
         }
+
+        For Index, Layer In this.Layers ;draw entities
+        {
+            If !Layer.Visible ;layer is hidden
+                Continue
+
+            PositionX := this.X + Layer.X, PositionY := this.Y + Layer.Y
+            ScaleX := (Width / Layer.W) * (this.W / Layer.W), ScaleY := (Height / Layer.H) * (this.H / Layer.H)
+
+            For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
+            {
+                ;get the screen coordinates of the rectangle
+                Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
+                Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+
+                Entity.Draw(this.hMemoryDC,Rectangle,Width,Height)
+            }
+        }
+
+        If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
+            throw Exception("Could not transfer pixel data to window device context.")
+        Return, 0
     }
 }
 
@@ -187,7 +187,7 @@ class ProgressEntities
     {
         __New()
         {
-            this.Entities := []
+            this.Layers := []
             this.X := 0
             this.Y := 0
             this.W := 10
@@ -196,9 +196,46 @@ class ProgressEntities
 
         Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
         {
-            For Index, Entity In this.Entities
+            For Index, Layer In this.Layers 
             {
-                
+                If !Layer.Visible ;layer is hidden
+                    Continue
+
+                PositionX := this.X + Layer.X, PositionY := this.Y + Layer.Y
+                ScaleX := (ViewportWidth / Layer.W) * (this.W / Layer.W), ScaleY := (ViewportHeight / Layer.H) * (this.H / Layer.H)
+
+                For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
+                {
+                    ;get the screen coordinates of the rectangle
+                    Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
+                    Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+
+                    Result := Entity.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+                    If Result
+                        Return, Result
+                }
+            }
+        }
+
+        Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
+        {
+            For Index, Layer In this.Layers
+            {
+                If !Layer.Visible ;layer is hidden
+                    Continue
+
+                PositionX := this.X + Layer.X, PositionY := this.Y + Layer.Y
+                ScaleX := (ViewportWidth / Layer.W) * (this.W / Layer.W), ScaleY := (ViewportHeight / Layer.H) * (this.H / Layer.H)
+
+                For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
+                {
+                    ;get the screen coordinates of the rectangle
+                    Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
+                    Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+
+                    ;wip: log(n) occlusion culling here
+                    Entity.Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
+                }
             }
         }
     }

@@ -22,6 +22,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #Include ProgressEngine.ahk
 #Include Environment.ahk
 
+#Warn All
+#Warn LocalSameAsGlobal, Off
+
 LevelBackground := "Snow"
 
 Gui, +Resize +LastFound +OwnDialogs
@@ -34,15 +37,15 @@ Environment[LevelBackground](Editor.Layers[1])
 
 ;Editor.Layers[2] := new ProgressEngine.Layer ;wip: debug
 
-Editor.Layers[3] := new ProgressEngine.Layer(1)
-Editor.Layers[3].Layers[1] := new ProgressEngine.Layer
-Editor.Layers[3].X := 2, Editor.Layers[3].Y := 2
-Editor.Layers[3].W := 3, Editor.Layers[3].H := 5
-Layers := Editor.Layers[3].Layers
-Layers[1] := new ProgressEngine.Layer
-Layers[1].Entities.Insert(new EditingPane.Background)
-Layers[2] := new ProgressEngine.Layer
-Layers[2].Entities.Insert(new EditingPane.Title("Level Editor"))
+Editor.Layers[3] := new ProgressEngine.Layer
+    Container := new ProgressEntities.Container
+    Container.X := 2, Container.Y := 2
+    Container.W := 3, Container.H := 5
+    Container.Layers[1] := new ProgressEngine.Layer
+    Entities := Container.Layers[1].Entities
+    Entities.Insert(new EditingPane.Background)
+    Entities.Insert(new EditingPane.Title("Level Editor"))
+Editor.Layers[3].Entities.Insert(Container)
 
 Loop
 {
@@ -58,7 +61,7 @@ Loop
 ExitApp
 
 GuiClose:
-Try Game.__Delete() ;wip: this is related to a limitation of the reference counting mechanism in AHK (Although references in static and global variables are released automatically when the program exits, references in non-static local variables or on the expression evaluation stack are not. These references are only released if the function or expression is allowed to complete normally.). normal exiting (game complete) works fine though
+Try Editor.__Delete() ;wip: this is related to a limitation of the reference counting mechanism in AHK (Although references in static and global variables are released automatically when the program exits, references in non-static local variables or on the expression evaluation stack are not. These references are only released if the function or expression is allowed to complete normally.). normal exiting (game complete) works fine though
 Catch
 {
     
@@ -97,7 +100,7 @@ class EditingPane
             this.Y := 1
             this.W := 10
             this.H := 1
-            this.Size := 4
+            this.Size := 3
             this.Color := 0xFFFFFF
             this.Weight := 100
             this.Typeface := "Georgia"

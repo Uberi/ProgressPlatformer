@@ -21,19 +21,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick input
-;wip: add a container block type that recursively draws its contents and remove nested container layers
 ;wip: oncollide() callbacks for ProgressEntities.Dynamic, onclick() and onhover() callbacks for ProgressEntities.Default
+
 #Include ProgressEngine.ahk
 #Include Music.ahk
 #Include Environment.ahk
+
+#Warn All
+#Warn LocalSameAsGlobal, Off
 
 Gravity := -9.81
 
 SetBatchLines, -1
 DetectHiddenWindows, On
-
-#Warn All
-#Warn LocalSameAsGlobal, Off
 
 Gui, +Resize +MinSize300x200 +LastFound +OwnDialogs
 Gui, Show, w800 h600, ProgressPlatformer
