@@ -142,14 +142,15 @@ class ProgressEngine
             If !Layer.Visible ;layer is hidden
                 Continue
 
-            PositionX := this.X + Layer.X, PositionY := this.Y + Layer.Y
-            ScaleX := (Width / Layer.W) * (this.W / Layer.W), ScaleY := (Height / Layer.H) * (this.H / Layer.H)
+            ScaleX := Width / Layer.W, ScaleY := Height / Layer.H
+            RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
+            PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
 
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
                 ;get the screen coordinates of the rectangle
-                Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
-                Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+                Rectangle.X := (PositionX + (Entity.X * RatioX)) * ScaleX, Rectangle.Y := (PositionY + (Entity.Y * RatioY)) * ScaleY
+                Rectangle.W := Entity.W * ScaleX * RatioX, Rectangle.H := Entity.H * ScaleY * RatioY
 
                 Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
                 If Result
@@ -162,14 +163,15 @@ class ProgressEngine
             If !Layer.Visible ;layer is hidden
                 Continue
 
-            PositionX := this.X + Layer.X, PositionY := this.Y + Layer.Y
-            ScaleX := (Width / Layer.W) * (this.W / Layer.W), ScaleY := (Height / Layer.H) * (this.H / Layer.H)
+            ScaleX := Width / Layer.W, ScaleY := Height / Layer.H
+            RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
+            PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
 
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
                 ;get the screen coordinates of the rectangle
-                Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
-                Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+                Rectangle.X := (PositionX + (Entity.X * RatioX)) * ScaleX, Rectangle.Y := (PositionY + (Entity.Y * RatioY)) * ScaleY
+                Rectangle.W := Entity.W * ScaleX * RatioX, Rectangle.H := Entity.H * ScaleY * RatioY
 
                 Entity.Draw(this.hMemoryDC,Rectangle,Width,Height)
             }
@@ -194,21 +196,23 @@ class ProgressEntities
             this.H := 10
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,CurrentRectangle,ViewportWidth,ViewportHeight)
         {
-            For Index, Layer In this.Layers 
+            Rectangle := Object()
+            For Index, Layer In this.Layers
             {
                 If !Layer.Visible ;layer is hidden
                     Continue
 
-                PositionX := this.X + Layer.X, PositionY := this.Y + Layer.Y
-                ScaleX := (ViewportWidth / Layer.W) * (this.W / Layer.W), ScaleY := (ViewportHeight / Layer.H) * (this.H / Layer.H)
+                ScaleX := ViewportWidth / Layer.W, ScaleY := ViewportHeight / Layer.H
+                RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
+                PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
 
                 For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
                 {
                     ;get the screen coordinates of the rectangle
-                    Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
-                    Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+                    Rectangle.X := (PositionX + (Entity.X * RatioX)) * ScaleX, Rectangle.Y := (PositionY + (Entity.Y * RatioY)) * ScaleY
+                    Rectangle.W := Entity.W * ScaleX * RatioX, Rectangle.H := Entity.H * ScaleY * RatioY
 
                     Result := Entity.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
                     If Result
@@ -217,21 +221,23 @@ class ProgressEntities
             }
         }
 
-        Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
+        Draw(hDC,CurrentRectangle,ViewportWidth,ViewportHeight)
         {
+            Rectangle := Object()
             For Index, Layer In this.Layers
             {
                 If !Layer.Visible ;layer is hidden
                     Continue
 
-                PositionX := this.X + Layer.X, PositionY := this.Y + Layer.Y
-                ScaleX := (ViewportWidth / Layer.W) * (this.W / Layer.W), ScaleY := (ViewportHeight / Layer.H) * (this.H / Layer.H)
+                ScaleX := ViewportWidth / Layer.W, ScaleY := ViewportHeight / Layer.H
+                RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
+                PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
 
                 For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
                 {
                     ;get the screen coordinates of the rectangle
-                    Rectangle.X := (PositionX + Entity.X) * ScaleX, Rectangle.Y := (PositionY + Entity.Y) * ScaleY
-                    Rectangle.W := Entity.W * ScaleX, Rectangle.H := Entity.H * ScaleY
+                    Rectangle.X := (PositionX + (Entity.X * RatioX)) * ScaleX, Rectangle.Y := (PositionY + (Entity.Y * RatioY)) * ScaleY
+                    Rectangle.W := Entity.W * ScaleX * RatioX, Rectangle.H := Entity.H * ScaleY * RatioY
 
                     ;wip: log(n) occlusion culling here
                     Entity.Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
