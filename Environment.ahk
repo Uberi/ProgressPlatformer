@@ -27,7 +27,6 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         Random, FlakeCount, FlakeMinimum, FlakeMaximum
         Loop, %FlakeCount% ;add snowflakes
             Layer.Entities.Insert(new Environment.Snowflake(Layer))
-        Layer.Entities.Insert(new Environment.GroundSnow(Height))
     }
 
     Clouds(ByRef Layer,CloudMinimum = 6,CloudMaximum = 10)
@@ -48,23 +47,6 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             this.W := 10
             this.H := 10
             this.Color := 0xCCCCCC
-        }
-    }
-
-    class GroundSnow extends ProgressEntities.Default
-    {
-        __New(Height = 0.5)
-        {
-            base.__New()
-            this.Color := 0xE8E8E8
-            this.H := Height
-        }
-
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
-        {
-            this.X := Layer.X
-            this.Y := Layer.Y + (Layer.H - this.H)
-            this.W := Layer.W
         }
     }
 
