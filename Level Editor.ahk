@@ -70,10 +70,71 @@ ExitApp
 
 SaveLevel(Layer)
 {
+    Precision := 3
+    Entities := Object()
     For Index, Entity In Layer.Entities
     {
-        ;save entity here
+        If Entity.__Class = "Block" || Entity.__Class = "Goal"
+            Entities.Blocks .= "Entities.Insert(new GameEntities." . Entity.__Class . "("
+                . Round(Entity.X,Precision) 
+                . "," . Round(Entity.Y,Precision)
+                . "," . Round(Entity.W,Precision)
+                . "," . Round(Entity.H,Precision) . "))`n"
+        Else If Entity.__Class = "Platform"
+            Entities.Blocks .= "Entities.Insert(new GameEntities.Platform("
+                . Round(Entity.X,Precision)
+                . "," . Round(Entity.Y,Precision)
+                . "," . Round(Entity.W,Precision)
+                . "," . Round(Entity.H,Precision)
+                . "," . Round(Entity.RangeW ? "1" : "0",Precision)
+                . "," . Round(Entity.RangeW ? Entity.RangeX : Entity.RangeY,Precision)
+                . "," . Round(Entity.RangeW ? Entity.RangeW : Entity.RangeH,Precision)
+                . "," . Round(Entity.Speed,Precision) . "))`n"
+        Else If Entity.__Class = "Box" || Entity.__Class = "Player" || Entity.__Class = "Enemy"
+            Entities.Blocks .= "Entities.Insert(new GameEntities." . Entity.__Class . "("
+                . Round(Entity.X,Precision)
+                . "," . Round(Entity.Y,Precision)
+                . "," . Round(Entity.W,Precision)
+                . "," . Round(Entity.H,Precision)
+                . "," . Round(Entity.SpeedX,Precision)
+                . "," . Round(Entity.SpeedY,Precision) . "))`n"
     }
+    Result := Entities.Blocks . Entities.Platforms . Entities.Goals . Entities.Players . Entities.Enemies
+
+    Code = 
+    (
+#NoEnv
+
+StartLevel := 1
+Loop
+{
+    If StartLevel
+    {
+        Game.Layers[1] := new ProgressEngine.Layer
+        Game.Layers[2] := new ProgressEngine.Layer
+        Game.Layers[3] := new ProgressEngine.Layer
+
+        Game.Layers[1].Entities.Insert(new KeyboardController)
+        Environment.%LevelBackground%(Game.Layers[1])
+
+        Entities := Game.Layers[2].Entities
+        %Result%
+        Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
+    }
+    Result := Game.Start()
+    StartLevel := 1
+    If Result = 1 ;reached goal
+        Break
+    If Result = 2 ;out of health
+        MessageScreen(Game,"Try again","Press Space to restart the level.")
+    Else If Result = 3 ;out of bounds
+        MessageScreen(Game,"Out of bounds","Press Space to restart the level.")
+    Else If Result = 4 ;game paused
+        MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
+}
+Game.Layers := []
+    )
+    Return, Code
 }
 
 class EditingPane
@@ -105,6 +166,19 @@ class EditingPane
             this.Weight := 100
             this.Typeface := "Georgia"
             this.Text := Text
+        }
+    }
+
+    class Button extends ProgressEntities.Default
+    {
+        __New(X,Y,W,H)
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.Color := 0x888888
         }
     }
 }
