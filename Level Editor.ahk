@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #Warn All
 #Warn LocalSameAsGlobal, Off
 
-LevelBackground := "Snow"
+LevelBackground := "Clouds"
 
 Gui, +Resize +LastFound +OwnDialogs
 Gui, Show, w800 h600, ProgressPlatformer
@@ -35,12 +35,12 @@ Editor := new ProgressEngine(WinExist())
 Editor.Layers[1] := new ProgressEngine.Layer
 Environment[LevelBackground](Editor.Layers[1])
 
-;Editor.Layers[2] := new ProgressEngine.Layer ;wip: debug
+Editor.Layers[2] := new ProgressEngine.Layer
 
 Editor.Layers[3] := new ProgressEngine.Layer
     Container := new ProgressEntities.Container
-    Container.X := 2, Container.Y := 2
-    Container.W := 3, Container.H := 5
+    Container.X := 7, Container.Y := 2
+    Container.W := 2.5, Container.H := 6
     Container.Layers[1] := new ProgressEngine.Layer
     Entities := Container.Layers[1].Entities
     Entities.Insert(new EditingPane.Background)
@@ -107,25 +107,4 @@ class EditingPane
             this.Text := Text
         }
     }
-}
-
-ShowObject(ShowObject,Padding = "")
-{
- ListLines, Off
- If !IsObject(ShowObject)
- {
-  ListLines, On
-  Return, ShowObject
- }
- ObjectContents := ""
- For Key, Value In ShowObject
- {
-  If IsObject(Value)
-   Value := "`n" . ShowObject(Value,Padding . A_Tab)
-  ObjectContents .= Padding . Key . ": " . Value . "`n"
- }
- ObjectContents := SubStr(ObjectContents,1,-1)
- If (Padding = "")
-  ListLines, On
- Return, ObjectContents
 }
