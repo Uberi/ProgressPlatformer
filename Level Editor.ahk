@@ -45,9 +45,9 @@ Editor.Layers[3].Entities.Insert(new EditingPane(7,2,2.5,6,"Level Editor"))
 Loop
 {
     Result := Editor.Start()
-    If (Result = 1) ;save
+    If Result = 1 ;save
         SaveLevel(Editor.Layers[2])
-    Else If (Result = 2) ;change background
+    Else If Result = 2 ;change background
     {
         Editor.Layers[1] := new ProgressEngine.Layer
         Environment[LevelBackground](Editor.Layers[1])

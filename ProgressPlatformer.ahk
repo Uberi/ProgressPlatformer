@@ -19,6 +19,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+;wip: container drawtype doesn't support multiple levels of nesting
+;wip: credit screen
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick input
 ;wip: oncollide() callbacks for ProgressEntities.Dynamic, onclick() and onhover() callbacks for ProgressEntities.Default
@@ -110,7 +112,7 @@ class TitleMessage extends ProgressEntities.Text
         this.Text := Text
     }
 
-    Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+    Step(Delta,Layer,ViewportWidth,ViewportHeight)
     {
         global Game
         If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
@@ -123,7 +125,7 @@ class TitleMessage extends ProgressEntities.Text
 
 class KeyboardController
 {
-    Step(ByRef Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+    Step(ByRef Delta,Layer,ViewportWidth,ViewportHeight)
     {
         global Game
         If !WinActive("ahk_id " . Game.hWindow)
@@ -159,7 +161,7 @@ class GameEntities
             }
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             this.W := (Mod(this.Player.Health,100) / 100) * this.TotalWidth
             this.H := 0.08 * ((this.Player.Health // 100) + 1)
@@ -198,7 +200,7 @@ class GameEntities
             this.Color := 0x777777
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             ;wip: need to push player along direction of platform
             If (this.X < this.RangeX)
@@ -224,12 +226,12 @@ class GameEntities
             this.Density := 0.5
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             global Gravity
 
             this.SpeedY += Gravity * Delta ;process gravity
-            base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+            base.Step(Delta,Layer,ViewportWidth,ViewportHeight)
         }
     }
 
@@ -250,7 +252,7 @@ class GameEntities
             this.Health := 100
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             global Gravity
             MoveSpeed := 10
@@ -315,7 +317,7 @@ class GameEntities
             Layer.X -= ((Layer.X + this.X + (this.W / 2)) - (Layer.W / 2)) * 0.03
             Layer.Y -= ((Layer.Y + this.Y + (this.H / 2)) - (Layer.H / 2)) * 0.03
 
-            base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+            base.Step(Delta,Layer,ViewportWidth,ViewportHeight)
         }
     }
 
@@ -346,7 +348,7 @@ class GameEntities
             this.Color := 0x777777
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             global Gravity
             MoveSpeed := 8
@@ -381,7 +383,7 @@ class GameEntities
                 this.LastContact := A_TickCount
 
             this.SpeedY += Gravity * Delta ;process gravity
-            base.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+            base.Step(Delta,Layer,ViewportWidth,ViewportHeight)
         }
     }
 }
@@ -443,7 +445,7 @@ class MessageScreenEntities
             this.Text := Text
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             global Game
             If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)

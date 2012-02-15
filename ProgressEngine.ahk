@@ -110,7 +110,7 @@ class ProgressEngine
 
     Update(Delta)
     {
-        static Width1 := -1, Height1 := -1, Rectangle := Object()
+        static Width1 := -1, Height1 := -1
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
         If !DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
@@ -145,10 +145,10 @@ class ProgressEngine
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
                 ;get the screen coordinates of the rectangle
-                Rectangle.X := (PositionX + (Entity.X * RatioX)) * ScaleX, Rectangle.Y := (PositionY + (Entity.Y * RatioY)) * ScaleY
-                Rectangle.W := Entity.W * ScaleX * RatioX, Rectangle.H := Entity.H * ScaleY * RatioY
+                Entity.ScreenX := (PositionX + (Entity.X * RatioX)) * ScaleX, Entity.ScreenY := (PositionY + (Entity.Y * RatioY)) * ScaleY
+                Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
 
-                Result := Entity.Step(Delta,Layer,Rectangle,Width,Height)
+                Result := Entity.Step(Delta,Layer,Width,Height)
                 If Result
                     Return, Result
             }
@@ -158,19 +158,8 @@ class ProgressEngine
         {
             If !Layer.Visible ;layer is hidden
                 Continue
-
-            ScaleX := Width / Layer.W, ScaleY := Height / Layer.H
-            RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
-            PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
-
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
-            {
-                ;get the screen coordinates of the rectangle
-                Rectangle.X := (PositionX + (Entity.X * RatioX)) * ScaleX, Rectangle.Y := (PositionY + (Entity.Y * RatioY)) * ScaleY
-                Rectangle.W := Entity.W * ScaleX * RatioX, Rectangle.H := Entity.H * ScaleY * RatioY
-
-                Entity.Draw(this.hMemoryDC,Rectangle,Width,Height)
-            }
+                Entity.Draw(this.hMemoryDC,Width,Height)
         }
 
         If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
@@ -192,9 +181,8 @@ class ProgressEntities
             this.H := 10
         }
 
-        Step(Delta,Layer,CurrentRectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
-            Rectangle := Object()
             For Index, Layer In this.Layers
             {
                 If !Layer.Visible ;layer is hidden
@@ -207,10 +195,10 @@ class ProgressEntities
                 For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
                 {
                     ;get the screen coordinates of the rectangle
-                    Rectangle.X := (PositionX + (Entity.X * RatioX)) * ScaleX, Rectangle.Y := (PositionY + (Entity.Y * RatioY)) * ScaleY
-                    Rectangle.W := Entity.W * ScaleX * RatioX, Rectangle.H := Entity.H * ScaleY * RatioY
+                    Entity.ScreenX := (PositionX + (Entity.X * RatioX)) * ScaleX, Entity.ScreenY := (PositionY + (Entity.Y * RatioY)) * ScaleY
+                    Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
 
-                    Result := Entity.Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+                    Result := Entity.Step(Delta,Layer,ViewportWidth,ViewportHeight)
                     If Result
                         Return, Result
                 }
@@ -224,20 +212,8 @@ class ProgressEntities
             {
                 If !Layer.Visible ;layer is hidden
                     Continue
-
-                ScaleX := ViewportWidth / Layer.W, ScaleY := ViewportHeight / Layer.H
-                RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
-                PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
-
                 For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
-                {
-                    ;get the screen coordinates of the rectangle
-                    Rectangle.X := (PositionX + (Entity.X * RatioX)) * ScaleX, Rectangle.Y := (PositionY + (Entity.Y * RatioY)) * ScaleY
-                    Rectangle.W := Entity.W * ScaleX * RatioX, Rectangle.H := Entity.H * ScaleY * RatioY
-
-                    ;wip: log(n) occlusion culling here
                     Entity.Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
-                }
             }
         }
     }
@@ -258,7 +234,7 @@ class ProgressEntities
             this.Physical := 0
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             
         }
@@ -268,11 +244,11 @@ class ProgressEntities
             ;wip
         }
 
-        Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
+        Draw(hDC,ViewportWidth,ViewportHeight)
         {
             ;check for entity moving out of bounds
-            If (Rectangle.X + Rectangle.W) < 0 || Rectangle.X > ViewportWidth
-                || (Rectangle.Y + Rectangle.H) < 0 || Rectangle.Y > ViewportHeight
+            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > ViewportWidth
+                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > ViewportHeight
                 Return
 
             ;update the color if it has changed
@@ -300,7 +276,7 @@ class ProgressEntities
 
             If this.Visible
             {
-                If !DllCall("Rectangle","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(Rectangle.Y),"Int",Round(Rectangle.X + Rectangle.W),"Int",Round(Rectangle.Y + Rectangle.H))
+                If !DllCall("Rectangle","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(this.ScreenY),"Int",Round(this.ScreenX + this.ScreenW),"Int",Round(this.ScreenY + this.ScreenH))
                     throw Exception("Could not draw rectangle.")
             }
 
@@ -401,7 +377,7 @@ class ProgressEntities
             this.Dynamic := 1
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             ;wip: use spatial acceleration structure
             Friction := 0.98
@@ -477,11 +453,11 @@ class ProgressEntities
             this.Text := "Text"
         }
 
-        Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
+        Draw(hDC,ViewportWidth,ViewportHeight)
         {
             ;check for entity moving out of bounds
-            If (Rectangle.X + Rectangle.W) < 0 || Rectangle.X > ViewportWidth
-                || (Rectangle.Y + Rectangle.H) < 0 || Rectangle.Y > ViewportHeight
+            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > ViewportWidth
+                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > ViewportHeight
                 Return
 
             If (this.Align = "Left")
@@ -523,10 +499,10 @@ class ProgressEntities
             If this.Visible
             {
                 ;Loop, Parse, this.Text, `n ;wip
-                Text := this.Text, PositionY := Rectangle.Y
+                Text := this.Text, PositionY := this.ScreenY
                 Loop, Parse, Text, `n
                 {
-                    If !DllCall("TextOut","UPtr",hDC,"Int",Round(Rectangle.X),"Int",Round(PositionY),"Str",A_LoopField,"Int",StrLen(A_LoopField))
+                    If !DllCall("TextOut","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(PositionY),"Str",A_LoopField,"Int",StrLen(A_LoopField))
                         throw Exception("Could not draw text.")
                     PositionY += LineHeight
                 }

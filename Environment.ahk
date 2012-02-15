@@ -68,7 +68,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             this.SpeedY := Temp1
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             this.X += this.SpeedX * Delta
             this.Y += this.SpeedY * Delta
@@ -99,7 +99,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             this.SpeedX := Temp1
         }
 
-        Step(Delta,Layer,Rectangle,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,ViewportWidth,ViewportHeight)
         {
             global Game
             this.X += this.SpeedX * Delta
