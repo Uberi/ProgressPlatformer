@@ -19,6 +19,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#Include %A_ScriptDir%
+
 #Include ProgressEngine.ahk
 #Include Environment.ahk
 
@@ -38,14 +40,7 @@ Environment[LevelBackground](Editor.Layers[1])
 Editor.Layers[2] := new ProgressEngine.Layer
 
 Editor.Layers[3] := new ProgressEngine.Layer
-    Container := new ProgressEntities.Container
-    Container.X := 7, Container.Y := 2
-    Container.W := 2.5, Container.H := 6
-    Container.Layers[1] := new ProgressEngine.Layer
-    Entities := Container.Layers[1].Entities
-    Entities.Insert(new EditingPane.Background)
-    Entities.Insert(new EditingPane.Title("Level Editor"))
-Editor.Layers[3].Entities.Insert(Container)
+Editor.Layers[3].Entities.Insert(new EditingPane(7,2,2.5,6,"Level Editor"))
 
 Loop
 {
@@ -137,8 +132,22 @@ Game.Layers := []
     Return, Code
 }
 
-class EditingPane
+class EditingPane extends ProgressEntities.Container
 {
+    __New(X,Y,W,H,Title)
+    {
+        base.__New()
+        this.X := X
+        this.Y := Y
+        this.W := W
+        this.H := H
+
+        this.Layers[1] := new ProgressEngine.Layer
+        this.Layers[1].Entities.Insert(new this.Background)
+        this.Layers[1].Entities.Insert(new this.Title(Title))
+        this.Layers[1].Entities.Insert(new Button(1,5,8,2,"Add"))
+    }
+
     class Background extends ProgressEntities.Default
     {
         __New()
@@ -168,16 +177,32 @@ class EditingPane
             this.Text := Text
         }
     }
+}
 
-    class Button extends ProgressEntities.Default
+class Button extends ProgressEntities.Container
+{
+    __New(X,Y,W,H,Text)
     {
-        __New(X,Y,W,H)
+        base.__New()
+        this.X := X
+        this.Y := Y
+        this.W := W
+        this.H := H
+
+        this.Layers[1] := new ProgressEngine.Layer
+        ;wip: button stuff here
+        this.Layers[1].Entities.Insert(new this.Background)
+    }
+
+    class Background extends ProgressEntities.Default
+    {
+        __New()
         {
             base.__New()
-            this.X := X
-            this.Y := Y
-            this.W := W
-            this.H := H
+            this.X := 0
+            this.Y := 0
+            this.W := 10
+            this.H := 10
             this.Color := 0x888888
         }
     }

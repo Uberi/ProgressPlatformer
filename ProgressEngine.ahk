@@ -97,18 +97,14 @@ class ProgressEngine
 
     class Layer
     {
-        __New(Container = 0)
+        __New()
         {
             this.Visible := 1
             this.X := 0
             this.Y := 0
             this.W := 10
             this.H := 10
-            this.Container := Container
-            If Container
-                this.Layers := []
-            Else
-                this.Entities := []
+            this.Entities := []
         }
     }
 
