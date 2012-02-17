@@ -110,7 +110,7 @@ class ProgressEngine
 
     Update(Delta)
     {
-        static Width1 := -1, Height1 := -1
+        static Width1 := -1, Height1 := -1, Viewport := Object()
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
         If !DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
@@ -133,6 +133,9 @@ class ProgressEngine
         }
         Width1 := Width, Height1 := Height
 
+        Viewport.ScreenX := 0, Viewport.ScreenY := 0
+        Viewport.ScreenW := Width, Viewport.ScreenH := Height
+
         For Index, Layer In this.Layers ;step entities
         {
             If !Layer.Visible ;layer is hidden
@@ -140,7 +143,10 @@ class ProgressEngine
 
             ScaleX := Width / Layer.W, ScaleY := Height / Layer.H
             RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
-            PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
+            PositionX := this.X - (Layer.X * RatioX), PositionY := this.Y - (Layer.Y * RatioY)
+
+            Viewport.X := this.X + Layer.X, Viewport.Y := this.Y + Layer.Y
+            Viewport.W := this.W, Viewport.H := this.H
 
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
@@ -148,7 +154,7 @@ class ProgressEngine
                 Entity.ScreenX := (PositionX + (Entity.X * RatioX)) * ScaleX, Entity.ScreenY := (PositionY + (Entity.Y * RatioY)) * ScaleY
                 Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
 
-                Result := Entity.Step(Delta,Layer,Width,Height)
+                Result := Entity.Step(Delta,Layer,Viewport)
                 If Result
                     Return, Result
             }
@@ -158,8 +164,12 @@ class ProgressEngine
         {
             If !Layer.Visible ;layer is hidden
                 Continue
+
+            Viewport.X := this.X + Layer.X, Viewport.Y := this.Y + Layer.Y
+            Viewport.W := this.W, Viewport.H := this.H
+
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
-                Entity.Draw(this.hMemoryDC,Width,Height)
+                Entity.Draw(this.hMemoryDC,Viewport)
         }
 
         If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
@@ -181,14 +191,14 @@ class ProgressEntities
             this.H := 10
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             For Index, Layer In this.Layers
             {
                 If !Layer.Visible ;layer is hidden
                     Continue
 
-                ScaleX := ViewportWidth / Layer.W, ScaleY := ViewportHeight / Layer.H
+                ScaleX := Viewport.ScreenW / Layer.W, ScaleY := ViewportHeight / Layer.H
                 RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
                 PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
 
@@ -198,22 +208,25 @@ class ProgressEntities
                     Entity.ScreenX := (PositionX + (Entity.X * RatioX)) * ScaleX, Entity.ScreenY := (PositionY + (Entity.Y * RatioY)) * ScaleY
                     Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
 
-                    Result := Entity.Step(Delta,Layer,ViewportWidth,ViewportHeight)
+                    TempLayer := new ProgressEngine.Layer ;wip: debug
+                    TempLayer.X := this.X + Layer.X, TempLayer.Y := this.Y + Layer.Y, TempLayer.W := RatioX, TempLayer.H := RatioY
+                    TempLayer.Entities := Layer.Entities
+
+                    Result := Entity.Step(Delta,TempLayer,Viewport)
                     If Result
                         Return, Result
                 }
             }
         }
 
-        Draw(hDC,CurrentRectangle,ViewportWidth,ViewportHeight)
+        Draw(hDC,Viewport)
         {
-            Rectangle := Object()
             For Index, Layer In this.Layers
             {
                 If !Layer.Visible ;layer is hidden
                     Continue
                 For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
-                    Entity.Draw(hDC,Rectangle,ViewportWidth,ViewportHeight)
+                    Entity.Draw(hDC,Viewport)
             }
         }
     }
@@ -234,7 +247,7 @@ class ProgressEntities
             this.Physical := 0
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             
         }
@@ -244,11 +257,11 @@ class ProgressEntities
             ;wip
         }
 
-        Draw(hDC,ViewportWidth,ViewportHeight)
+        Draw(hDC,Viewport)
         {
             ;check for entity moving out of bounds
-            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > ViewportWidth
-                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > ViewportHeight
+            If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
+                || (this.Y + this.H) < Viewport.Y || this.Y > (Viewport.Y + Viewport.H)
                 Return
 
             ;update the color if it has changed
@@ -377,7 +390,7 @@ class ProgressEntities
             this.Dynamic := 1
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             ;wip: use spatial acceleration structure
             Friction := 0.98
@@ -453,11 +466,11 @@ class ProgressEntities
             this.Text := "Text"
         }
 
-        Draw(hDC,ViewportWidth,ViewportHeight)
+        Draw(hDC,Viewport)
         {
             ;check for entity moving out of bounds
-            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > ViewportWidth
-                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > ViewportHeight
+            If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
+                || (this.Y + this.H) < Viewport.Y || this.Y > (Viewport.Y + Viewport.H)
                 Return
 
             If (this.Align = "Left")
@@ -470,10 +483,10 @@ class ProgressEntities
                 throw Exception("Invalid text alignment: " . this.Align . ".")
             DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
 
-            LineHeight := this.Size * ViewportWidth * 0.01
+            LineHeight := this.Size * Viewport.ScreenW * 0.01
 
             ;update the font if it has changed or if the viewport size has changed
-            If this.FontModified || ViewportWidth != this.PreviousViewportWidth
+            If this.FontModified || Viewport.ScreenW != this.PreviousViewportWidth
             {
                 If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
                     throw Exception("Could not delete font.")
@@ -487,7 +500,7 @@ class ProgressEntities
                     throw Exception("Could not create font.")
                 this.FontModified := 0
             }
-            this.PreviousViewportWidth := ViewportWidth
+            this.PreviousViewportWidth := Viewport.ScreenW
 
             If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
                 throw Exception("Could not set text color.")

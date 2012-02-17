@@ -112,7 +112,7 @@ class TitleMessage extends ProgressEntities.Text
         this.Text := Text
     }
 
-    Step(Delta,Layer,ViewportWidth,ViewportHeight)
+    Step(Delta,Layer,Viewport)
     {
         global Game
         If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
@@ -125,7 +125,7 @@ class TitleMessage extends ProgressEntities.Text
 
 class KeyboardController
 {
-    Step(ByRef Delta,Layer,ViewportWidth,ViewportHeight)
+    Step(ByRef Delta,Layer,Viewport)
     {
         global Game
         If !WinActive("ahk_id " . Game.hWindow)
@@ -161,7 +161,7 @@ class GameEntities
             }
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             this.W := (Mod(this.Player.Health,100) / 100) * this.TotalWidth
             this.H := 0.08 * ((this.Player.Health // 100) + 1)
@@ -200,7 +200,7 @@ class GameEntities
             this.Color := 0x777777
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             ;wip: need to push player along direction of platform
             If (this.X < this.RangeX)
@@ -226,12 +226,12 @@ class GameEntities
             this.Density := 0.5
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             global Gravity
 
             this.SpeedY += Gravity * Delta ;process gravity
-            base.Step(Delta,Layer,ViewportWidth,ViewportHeight)
+            base.Step(Delta,Layer,Viewport)
         }
     }
 
@@ -252,7 +252,7 @@ class GameEntities
             this.Health := 100
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             global Gravity
             MoveSpeed := 10
@@ -314,14 +314,14 @@ class GameEntities
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
-            Layer.X -= ((Layer.X + this.X + (this.W / 2)) - (Layer.W / 2)) * 0.03
-            Layer.Y -= ((Layer.Y + this.Y + (this.H / 2)) - (Layer.H / 2)) * 0.03
+            Layer.X += (((this.X + (this.W / 2)) - (Layer.X + (Layer.W / 2))) * 0.03)
+            Layer.Y += (((this.Y + (this.H / 2)) - (Layer.Y + (Layer.H / 2))) * 0.03)
 
-            base.Step(Delta,Layer,ViewportWidth,ViewportHeight)
+            base.Step(Delta,Layer,Viewport)
         }
     }
 
-    class Goal extends ProgressEntities.Default
+    class Goal extends ProgressEntities.Default ;wip: have this detect the player instead of the player detecting this
     {
         __New(X,Y,W,H)
         {
@@ -348,7 +348,7 @@ class GameEntities
             this.Color := 0x777777
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             global Gravity
             MoveSpeed := 8
@@ -383,7 +383,7 @@ class GameEntities
                 this.LastContact := A_TickCount
 
             this.SpeedY += Gravity * Delta ;process gravity
-            base.Step(Delta,Layer,ViewportWidth,ViewportHeight)
+            base.Step(Delta,Layer,Viewport)
         }
     }
 }
@@ -445,7 +445,7 @@ class MessageScreenEntities
             this.Text := Text
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             global Game
             If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)

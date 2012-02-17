@@ -68,16 +68,16 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             this.SpeedY := Temp1
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             this.X += this.SpeedX * Delta
             this.Y += this.SpeedY * Delta
-            If this.X < -this.W
-                this.X := Layer.W
-            If this.X > Layer.W
-                this.X := -this.W
-            If this.Y > Layer.H
-                this.Y := -this.H
+            If (this.X + this.W) < Viewport.X
+                this.X := Viewport.X + Viewport.W
+            If this.X > (Viewport.X + Viewport.W)
+                this.X := Viewport.X - this.W
+            If this.Y > (Viewport.Y + Viewport.H)
+                this.Y := Viewport.Y - this.H
         }
     }
 
@@ -99,12 +99,12 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             this.SpeedX := Temp1
         }
 
-        Step(Delta,Layer,ViewportWidth,ViewportHeight)
+        Step(Delta,Layer,Viewport)
         {
             global Game
             this.X += this.SpeedX * Delta
-            If this.X > Layer.W
-                this.X := -Layer.W
+            If this.X > (Viewport.X + Viewport.W)
+                this.X := Viewport.X - this.W
         }
     }
 }
