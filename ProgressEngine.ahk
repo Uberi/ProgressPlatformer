@@ -485,11 +485,6 @@ class ProgressEntities
 
         Draw(hDC,Viewport)
         {
-            ;check for entity moving out of bounds
-            If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
-                || (this.Y + this.H) < Viewport.Y || this.Y > (Viewport.Y + Viewport.H)
-                Return
-
             If (this.Align = "Left")
                 AlignMode := 24 ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
             Else If (this.Align = "Center")

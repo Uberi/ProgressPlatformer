@@ -145,7 +145,7 @@ class EditingPane extends ProgressEntities.Container
         this.Layers[1] := new ProgressEngine.Layer
         this.Layers[1].Entities.Insert(new this.Background)
         this.Layers[1].Entities.Insert(new this.Title(Title))
-        this.Layers[1].Entities.Insert(new Button(1,5,8,2,"Add"))
+        this.Layers[1].Entities.Insert(new Button(0,0,10,2,"Add"))
     }
 
     class Background extends ProgressEntities.Default

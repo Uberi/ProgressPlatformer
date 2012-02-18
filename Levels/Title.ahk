@@ -42,10 +42,50 @@ Notes.Play()
 Game.Layers[1] := new ProgressEngine.Layer
 Game.Layers[2] := new ProgressEngine.Layer
 Environment.Snow(Game.Layers[1])
-Game.Layers[1].Entities.Insert(new TitleText("Achromatic"))
+Game.Layers[1].Entities.Insert(new TitleHeading("Achromatic"))
 Game.Layers[1].Entities.Insert(new TitleMessage("Press Space to begin"))
 Game.Start()
 Game.Layers := []
 
 Notes.Stop()
 Notes.Device.__Delete() ;wip
+
+class TitleHeading extends ProgressEntities.Text
+{
+    __New(Text)
+    {
+        base.__New()
+        this.X := 5
+        this.Y := 5
+        this.Size := 14
+        this.Color := 0x444444
+        this.Weight := 100
+        this.Typeface := "Georgia"
+        this.Text := Text
+    }
+}
+
+class TitleMessage extends ProgressEntities.Text
+{
+    __New(Text)
+    {
+        base.__New()
+        this.X := 5
+        this.Y := 6
+        this.Size := 3
+        this.Color := 0x666666
+        this.Weight := 100
+        this.Typeface := "Georgia"
+        this.Text := Text
+    }
+
+    Step(Delta,Layer,Viewport)
+    {
+        global Game
+        If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
+        {
+            KeyWait, Space
+            Return, 1
+        }
+    }
+}

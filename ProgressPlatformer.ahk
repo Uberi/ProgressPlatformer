@@ -83,46 +83,6 @@ Catch
 }
 ExitApp
 
-class TitleText extends ProgressEntities.Text
-{
-    __New(Text)
-    {
-        base.__New()
-        this.X := 5
-        this.Y := 5
-        this.Size := 14
-        this.Color := 0x444444
-        this.Weight := 100
-        this.Typeface := "Georgia"
-        this.Text := Text
-    }
-}
-
-class TitleMessage extends ProgressEntities.Text
-{
-    __New(Text)
-    {
-        base.__New()
-        this.X := 5
-        this.Y := 6
-        this.Size := 3
-        this.Color := 0x666666
-        this.Weight := 100
-        this.Typeface := "Georgia"
-        this.Text := Text
-    }
-
-    Step(Delta,Layer,Viewport)
-    {
-        global Game
-        If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
-        {
-            KeyWait, Space
-            Return, 1
-        }
-    }
-}
-
 class KeyboardController
 {
     Step(ByRef Delta,Layer,Viewport)
@@ -283,8 +243,8 @@ class GameEntities
             If this.Health <= 0
                 Return, 2 ;out of health
 
-            Padding := 1
-            If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding)) ;out of bounds
+            Padding := 2.5
+            If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding) || (this.Y + this.H) < -Padding) ;out of bounds
                 Return, 3 ;out of bounds
 
             If Crouch
