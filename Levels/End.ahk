@@ -42,10 +42,120 @@ Notes.Play()
 Game.Layers[1] := new ProgressEngine.Layer
 Game.Layers[2] := new ProgressEngine.Layer
 Environment.Snow(Game.Layers[1])
-Game.Layers[1].Entities.Insert(new TitleText("Game Complete"))
-Game.Layers[1].Entities.Insert(new TitleMessage("Press Space to exit"))
+Game.Layers[2].Entities.Insert(new Credits)
+
 Game.Start()
 Game.Layers := []
 
 Notes.Stop()
 Notes.Device.__Delete() ;wip
+
+class Credits extends ProgressEntities.Container
+{
+    __New()
+    {
+        base.__New()
+        this.X := 1
+        this.Y := 6
+        this.W := 8
+        this.H := 10
+
+        this.Layers[1] := new ProgressEngine.Layer
+        Entities := this.Layers[1].Entities
+
+        PositionY := 0
+        Entities.Insert(new this.EndHeading("Game Complete",PositionY)), PositionY += 1
+        Entities.Insert(new this.EndMessage("Press Space to exit",PositionY)), PositionY += 5
+        
+        Entities.Insert(new this.CreditHeading("Design",PositionY)), PositionY += 1.2
+        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 1.8
+
+        Entities.Insert(new this.CreditHeading("Programming",PositionY)), PositionY += 1.2
+        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 1.8
+
+        Entities.Insert(new this.CreditHeading("Content",PositionY)), PositionY += 1.2
+        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 5.8
+
+        Entities.Insert(new this.EndHeading("Achromatic",PositionY)), PositionY += 1
+        Entities.Insert(new this.EndMessage("2011-2012",PositionY))
+
+        this.EndY := this.Y - PositionY
+    }
+
+    Step(Delta,Layer,Viewport)
+    {
+        If this.Y > this.EndY
+            this.Y -= 0.7 * Delta
+        Return, base.Step(Delta,Layer,Viewport)
+    }
+
+    class EndHeading extends ProgressEntities.Text
+    {
+        __New(Text,PositionY)
+        {
+            base.__New()
+            this.X := 5
+            this.Y := PositionY
+            this.Size := 14
+            this.Color := 0x444444
+            this.Weight := 100
+            this.Typeface := "Georgia"
+            this.Text := Text
+        }
+    }
+
+    class EndMessage extends ProgressEntities.Text
+    {
+        __New(Text,PositionY)
+        {
+            base.__New()
+            this.X := 5
+            this.Y := PositionY
+            this.Size := 3
+            this.Color := 0x666666
+            this.Weight := 100
+            this.Typeface := "Georgia"
+            this.Text := Text
+        }
+
+        Step(Delta,Layer,Viewport)
+        {
+            global Game
+            If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
+            {
+                KeyWait, Space
+                Return, 1
+            }
+        }
+    }
+
+    class CreditHeading extends ProgressEntities.Text
+    {
+        __New(Text,PositionY)
+        {
+            base.__New()
+            this.X := 5
+            this.Y := PositionY
+            this.Size := 3
+            this.Color := 0x666666
+            this.Weight := 300
+            this.Typeface := "Georgia"
+            this.Text := Text
+        }
+    }
+
+    class CreditMessage extends ProgressEntities.Text
+    {
+        __New(Text,PositionY)
+        {
+            base.__New()
+            this.X := 5
+            this.Y := PositionY
+            this.Size := 8
+            this.Color := 0x444444
+            this.Weight := 100
+            this.Typeface := "Georgia"
+            this.Text := Text
+        }
+    }
+}
