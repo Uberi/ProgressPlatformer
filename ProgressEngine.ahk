@@ -41,15 +41,18 @@ class ProgressEngine
         If !this.hMemoryDC
             throw Exception("Could not create memory device context.")
 
+        this.hOriginalBitmap := 0
+        this.hBitmap := 0
+
         If !DllCall("SetBkMode","UPtr",this.hMemoryDC,"Int",1) ;TRANSPARENT
             throw Exception("Could not set background mode.")
     }
 
     __Delete()
     {
-        If !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
+        If this.hOriginalBitmap && !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
             throw Exception("Could not deselect bitmap from memory device context.")
-        If !DllCall("DeleteObject","UPtr",this.hBitmap) ;delete the bitmap
+        If this.hBitmap && !DllCall("DeleteObject","UPtr",this.hBitmap) ;delete the bitmap
             throw Exception("Could not delete bitmap.")
         If !DllCall("DeleteObject","UPtr",this.hMemoryDC) ;delete the memory device context
             throw Exception("Could not delete memory device context.")
@@ -485,6 +488,11 @@ class ProgressEntities
 
         Draw(hDC,Viewport)
         {
+            ;check for entity moving out of bounds ;wip: text objects do not have width and height properties
+            ;If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
+                ;|| (this.Y + this.H) < Viewport.Y || this.Y > (Viewport.Y + Viewport.H)
+                ;Return
+
             If (this.Align = "Left")
                 AlignMode := 24 ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
             Else If (this.Align = "Center")

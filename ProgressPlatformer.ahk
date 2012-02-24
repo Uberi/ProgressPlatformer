@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 ;wip: container drawtype doesn't support multiple levels of nesting
-;wip: credit screen
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick input
 ;wip: oncollide() callbacks for ProgressEntities.Dynamic, onclick() and onhover() callbacks for ProgressEntities.Default
