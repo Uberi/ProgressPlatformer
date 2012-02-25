@@ -42,8 +42,8 @@ Notes.Play()
 Game.Layers[1] := new ProgressEngine.Layer
 Game.Layers[2] := new ProgressEngine.Layer
 Environment.Snow(Game.Layers[1])
-Game.Layers[1].Entities.Insert(new TitleHeading("Achromatic"))
-Game.Layers[1].Entities.Insert(new TitleMessage("Press Space to begin"))
+Game.Layers[2].Entities.Insert(new TitleHeading("Achromatic"))
+Game.Layers[2].Entities.Insert(new TitleMessage("Press Space to begin"))
 Game.Start()
 Game.Layers := []
 
