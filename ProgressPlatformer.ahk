@@ -19,6 +19,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+;wip: look into why the player sometimes can't kill an enemy while it is jumping
+;wip: text entities take the entire screen into account when doing line height calculations
 ;wip: container drawtype doesn't support multiple levels of nesting
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick input
@@ -243,7 +245,7 @@ class GameEntities
                 Return, 2 ;out of health
 
             Padding := 2.5
-            If (this.X > (Layer.W + Padding) || (this.X + this.W) < -Padding || this.Y > (Layer.H + Padding) || (this.Y + this.H) < -Padding) ;out of bounds
+            If (this.X > (10 + Padding) || (this.X + this.W) < -Padding || this.Y > (10 + Padding) || (this.Y + this.H) < -Padding) ;out of bounds
                 Return, 3 ;out of bounds
 
             If Crouch
@@ -273,8 +275,8 @@ class GameEntities
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
-            Layer.X += (((this.X + (this.W / 2)) - (Layer.X + (Layer.W / 2))) * 0.03)
-            Layer.Y += (((this.Y + (this.H / 2)) - (Layer.Y + (Layer.H / 2))) * 0.03)
+            Layer.X += (((this.X + (this.W / 2)) - (Layer.X + 5)) * 0.03)
+            Layer.Y += (((this.Y + (this.H / 2)) - (Layer.Y + 5)) * 0.03)
 
             base.Step(Delta,Layer,Viewport)
         }

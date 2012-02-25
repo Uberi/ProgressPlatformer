@@ -56,9 +56,9 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         {
             base.__New()
             this.Color := 0xE8E8E8
-            Random, Temp1, 0.0, Layer.W
+            Random, Temp1, 0.0, 10
             this.X := Temp1
-            Random, Temp1, -Layer.H, Layer.H
+            Random, Temp1, -10, 10
             this.Y := Temp1
             this.W := 0.2
             this.H := 0.2
@@ -72,12 +72,12 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         {
             this.X += this.SpeedX * Delta
             this.Y += this.SpeedY * Delta
-            If (this.X + this.W) < Viewport.X
-                this.X := Viewport.X + Viewport.W
-            If this.X > (Viewport.X + Viewport.W)
-                this.X := Viewport.X - this.W
-            If this.Y > (Viewport.Y + Viewport.H)
-                this.Y := Viewport.Y - this.H
+            If (this.X + this.W) < 0
+                this.X := 10
+            Else If this.X > 10
+                this.X := -this.W
+            If this.Y > 10
+                this.Y := -this.H
         }
     }
 
@@ -87,9 +87,9 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         {
             base.__New()
             this.Color := 0xE8E8E8
-            Random, Temp1, -Layer.W, Layer.W
+            Random, Temp1, -10, 10
             this.X := Temp1
-            Random, Temp1, 0.0, Layer.W
+            Random, Temp1, 0.0, 10
             this.Y := Temp1
             Random, Temp1, 1.0, 2.5
             this.W := Temp1
@@ -103,7 +103,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         {
             global Game
             this.X += this.SpeedX * Delta
-            If this.X > (Viewport.X + Viewport.W)
+            If this.X > (Layer.X + 10)
                 this.X := Viewport.X - this.W
         }
     }

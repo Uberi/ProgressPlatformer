@@ -25,11 +25,6 @@ class ProgressEngine
     {
         this.Layers := []
 
-        this.X := 0
-        this.Y := 0
-        this.W := 10
-        this.H := 10
-
         this.FrameRate := 60
 
         this.hWindow := hWindow
@@ -144,18 +139,16 @@ class ProgressEngine
             If !Layer.Visible ;layer is hidden
                 Continue
 
-            ScaleX := Width / Layer.W, ScaleY := Height / Layer.H
-            RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
-            PositionX := this.X - (Layer.X * RatioX), PositionY := this.Y - (Layer.Y * RatioY)
+            ScaleX := Width * (Layer.W / 100), ScaleY := Height * (Layer.H / 100)
 
-            Viewport.X := this.X + Layer.X, Viewport.Y := this.Y + Layer.Y
-            Viewport.W := this.W, Viewport.H := this.H
+            Viewport.X := Layer.X, Viewport.Y := Layer.Y
+            Viewport.W := Layer.W, Viewport.H := Layer.H
 
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
                 ;get the screen coordinates of the rectangle
-                Entity.ScreenX := (PositionX + (Entity.X * RatioX)) * ScaleX, Entity.ScreenY := (PositionY + (Entity.Y * RatioY)) * ScaleY
-                Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
+                Entity.ScreenX := (Entity.X - Layer.X) * ScaleX, Entity.ScreenY := (Entity.Y - Layer.Y) * ScaleY
+                Entity.ScreenW := Entity.W * ScaleX, Entity.ScreenH := Entity.H * ScaleY
 
                 Result := Entity.Step(Delta,Layer,Viewport)
                 If Result
@@ -168,11 +161,11 @@ class ProgressEngine
             If !Layer.Visible ;layer is hidden
                 Continue
 
-            Viewport.X := this.X + Layer.X, Viewport.Y := this.Y + Layer.Y
-            Viewport.W := this.W, Viewport.H := this.H
+            Viewport.X := Layer.X, Viewport.Y := Layer.Y
+            Viewport.W := Layer.W, Viewport.H := Layer.H ;wip: see if the viewport can just be replaced by the layer itself
 
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
-                Entity.Draw(this.hMemoryDC,Viewport)
+                Entity.Draw(this.hMemoryDC,Layer,Viewport)
         }
 
         If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
@@ -188,10 +181,6 @@ class ProgressEntities
         __New()
         {
             this.Layers := []
-            this.X := 0
-            this.Y := 0
-            this.W := 10
-            this.H := 10
         }
 
         Step(Delta,Layer,Viewport)
@@ -230,7 +219,7 @@ class ProgressEntities
             }
         }
 
-        Draw(hDC,Viewport)
+        Draw(hDC,Layer,Viewport)
         {
             static CurrentViewport := Object()
 
@@ -246,7 +235,7 @@ class ProgressEntities
                 CurrentViewport.W := this.W, CurrentViewport.H := this.H
 
                 For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
-                    Entity.Draw(hDC,CurrentViewport)
+                    Entity.Draw(hDC,Layer,CurrentViewport)
             }
         }
     }
@@ -277,11 +266,11 @@ class ProgressEntities
             ;wip
         }
 
-        Draw(hDC,Viewport)
+        Draw(hDC,Layer,Viewport)
         {
             ;check for entity moving out of bounds
-            If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
-                || (this.Y + this.H) < Viewport.Y || this.Y > (Viewport.Y + Viewport.H)
+            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > Viewport.ScreenW
+                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > Viewport.ScreenH
                 Return
 
             ;update the color if it has changed
@@ -486,7 +475,7 @@ class ProgressEntities
             this.Text := "Text"
         }
 
-        Draw(hDC,Viewport)
+        Draw(hDC,Layer,Viewport)
         {
             ;check for entity moving out of bounds ;wip: text objects do not have width and height properties
             ;If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
