@@ -26,6 +26,9 @@ class NotePlayer
         this.Device := new MIDIOutputDevice
         this.Device.Sound := Sound
         this.Device.SetVolume(100)
+
+        this.pCallback := RegisterCallback("NotePlayerPlayTimer","F","",&this)
+
         this.Actions := []
         this.Playing := 0
     }
@@ -50,8 +53,34 @@ class NotePlayer
         Return, this
     }
 
-    Play()
+    Play(Index,Length,DownVelocity = 60,UpVelocity = 60)
     {
+        ;play the note
+        this.Device.NoteOn(Index,DownVelocity)
+
+        ;set up the data the timer will need to do its task
+        TimerData := Object()
+        ObjAddRef(&TimerData)
+        TimerData.Index := Index
+        TimerData.Velocity := UpVelocity
+        TimerData.Device := this.Device
+
+        ;set up a timer to turn off the note
+        pCallback := RegisterCallback("NotePlayerNoteTimer","F","",&TimerData)
+        hTimer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",Length,"UPtr",pCallback,"UPtr")
+        If !hTimer
+            throw Exception("Could not create update timer.")
+        TimerData.pCallback := pCallback
+        TimerData.hTimer := hTimer
+
+        Return, this
+    }
+
+    Start()
+    {
+        If this.Playing ;note player is already playing
+            Return, this
+
         ;sort the notes into groups by their time offsets
         Timeline := [], Offset := 0
         For Index, Action In this.Actions
@@ -87,10 +116,9 @@ class NotePlayer
             this.Playing := 1
             this.Index := 1
 
-            ;set up the timer to execute the action set
-            this.pCallback := RegisterCallback("NotePlayerTimer","F","",&this)
-            this.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",this.Sequence[1][1],"UPtr",this.pCallback,"UPtr")
-            If !this.Timer
+            ;set up a timer to execute the action set
+            this.hTimer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",this.Sequence[1][1],"UPtr",this.pCallback,"UPtr")
+            If !this.hTimer
                 throw Exception("Could not create update timer.")
         }
         Return, this
@@ -98,38 +126,50 @@ class NotePlayer
 
     Stop()
     {
-        If this.Playing
-        {
-            ;clean up timers
-            If !DllCall("KillTimer","UPtr",0,"UInt",this.Timer)
-                throw Exception("Could not destroy update timer.")
-            DllCall("GlobalFree","UPtr",this.pCallback) ;free callback
+        If !this.Playing
+            Return
 
-            ;turn off any active notes
-            For Index In this.ActiveNotes
-                this.Device.NoteOff(Index,100)
-            this.Playing := 0
-        }
+        ;clean up timers
+        If !DllCall("KillTimer","UPtr",0,"UPtr",this.hTimer)
+            throw Exception("Could not destroy update timer.")
+
+        ;turn off any active notes
+        For Index In this.ActiveNotes
+            this.Device.NoteOff(Index,100)
+        this.Playing := 0
     }
 
-    __Delete()
+    __Delete() ;wip: stop the NotePlayer.Play() notes here too, since they don't obey Noteplayer.ActiveNotes
     {
         this.Stop()
+        DllCall("GlobalFree","UPtr",this.pCallback) ;free callback
     }
 }
 
-NotePlayerTimer(hWindow,Message,Event,TickCount)
+NotePlayerNoteTimer(hWindow,Message,Event,TickCount)
+{
+    TimerData := Object(A_EventInfo) ;retrieve the note player object
+    ObjRelease(A_EventInfo) ;release the extra reference created before
+
+    If !DllCall("KillTimer","UPtr",0,"UPtr",TimerData.hTimer)
+        throw Exception("Could not destroy update timer.")
+    DllCall("GlobalFree","UPtr",TimerData.pCallback) ;free callback
+
+    TimerData.Device.NoteOff(TimerData.Index,TimerData.Velocity)
+}
+
+NotePlayerPlayTimer(hWindow,Message,Event,TickCount)
 {
     NotePlayer := Object(A_EventInfo) ;retrieve the note player object
 
     ;remove the currently active timer
-    If !DllCall("KillTimer","UPtr",0,"UInt",NotePlayer.Timer)
+    If !DllCall("KillTimer","UPtr",0,"UPtr",NotePlayer.hTimer)
         throw Exception("Could not destroy update timer.")
 
     ;execute the set of actions
     For Index, Action In NotePlayer.Sequence[NotePlayer.Index] ;perform the current action set
     {
-        If Index != 1
+        If Index != 1 ;skip over the first field, which is the time offset
         {
             If (Action.Type = "NoteOn") ;note on action
             {
@@ -147,17 +187,15 @@ NotePlayerTimer(hWindow,Message,Event,TickCount)
     If (NotePlayer.Index < ObjMaxIndex(NotePlayer.Sequence)) ;set the next timer if available
     {
         NotePlayer.Index ++
-        NotePlayer.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",NotePlayer.Sequence[NotePlayer.Index][1],"UPtr",NotePlayer.pCallback,"UPtr")
+        NotePlayer.hTimer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",NotePlayer.Sequence[NotePlayer.Index][1],"UPtr",NotePlayer.pCallback,"UPtr")
     }
     Else If NotePlayer.Repeat ;repeat note sequence
     {
         NotePlayer.Index := 1
-        NotePlayer.Timer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",NotePlayer.Sequence[1][1],"UPtr",NotePlayer.pCallback,"UPtr")
+        NotePlayer.hTimer := DllCall("SetTimer","UPtr",0,"UPtr",0,"UInt",NotePlayer.Sequence[1][1],"UPtr",NotePlayer.pCallback,"UPtr")
     }
     Else ;stop playing
     {
-        DllCall("GlobalFree","UPtr",NotePlayer.pCallback) ;free callback
-
         ;turn off any active notes
         For Index In NotePlayer.ActiveNotes
             this.Device.NoteOff(Index,100)

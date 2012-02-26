@@ -37,7 +37,7 @@ Notes.Note(41,1000,70).Note(45,1000,70).Delay(1800)
 
 Notes.Delay(500)
 
-Notes.Play()
+Notes.Start()
 
 Game.Layers[1] := new ProgressEngine.Layer
 Game.Layers[2] := new ProgressEngine.Layer
