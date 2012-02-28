@@ -45,7 +45,7 @@ class ProgressEngine
 
     __Delete()
     {
-        If this.hOriginalBitmap && !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
+        If this.hOriginalBitmap && !DllCall("SelectObject","UPtr",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap from the device context
             throw Exception("Could not deselect bitmap from memory device context.")
         If this.hBitmap && !DllCall("DeleteObject","UPtr",this.hBitmap) ;delete the bitmap
             throw Exception("Could not delete bitmap.")
@@ -119,13 +119,13 @@ class ProgressEngine
         {
             If this.hOriginalBitmap
             {
-                If !DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap
+                If !DllCall("SelectObject","UPtr",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap
                     throw Exception("Could not select original bitmap into memory device context.")
             }
             this.hBitmap := DllCall("CreateCompatibleBitmap","UPtr",this.hDC,"Int",Width,"Int",Height,"UPtr") ;create a new bitmap
             If !this.hBitmap
                 throw Exception("Could not create bitmap.")
-            this.hOriginalBitmap := DllCall("SelectObject","UInt",this.hMemoryDC,"UPtr",this.hBitmap,"UPtr")
+            this.hOriginalBitmap := DllCall("SelectObject","UPtr",this.hMemoryDC,"UPtr",this.hBitmap,"UPtr")
             If !this.hOriginalBitmap
                 throw Exception("Could not select bitmap into memory device context.")
         }
@@ -289,10 +289,10 @@ class ProgressEntities
                 this.ColorModified := 0
             }
 
-            hOriginalPen := DllCall("SelectObject","UInt",hDC,"UPtr",this.hPen,"UPtr") ;select the pen
+            hOriginalPen := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hPen,"UPtr") ;select the pen
             If !hOriginalPen
                 throw Exception("Could not select pen into memory device context.")
-            hOriginalBrush := DllCall("SelectObject","UInt",hDC,"UPtr",this.hBrush,"UPtr") ;select the brush
+            hOriginalBrush := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hBrush,"UPtr") ;select the brush
             If !hOriginalBrush
                 throw Exception("Could not select brush into memory device context.")
 
@@ -302,9 +302,9 @@ class ProgressEntities
                     throw Exception("Could not draw rectangle.")
             }
 
-            If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
+            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
                 throw Exception("Could not deselect pen from the memory device context.")
-            If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
+            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
                 throw Exception("Could not deselect brush from the memory device context.")
         }
 
@@ -514,7 +514,7 @@ class ProgressEntities
             If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
                 throw Exception("Could not set text color.")
 
-            hOriginalFont := DllCall("SelectObject","UInt",hDC,"UPtr",this.hFont,"UPtr") ;select the font
+            hOriginalFont := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hFont,"UPtr") ;select the font
             If !hOriginalFont
                 throw Exception("Could not select font into memory device context.")
 
@@ -530,7 +530,7 @@ class ProgressEntities
                 }
             }
 
-            If !DllCall("SelectObject","UInt",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
+            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
                 throw Exception("Could not deselect font from memory device context.")
         }
 
