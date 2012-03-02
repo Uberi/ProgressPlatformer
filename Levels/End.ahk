@@ -64,8 +64,7 @@ class Credits extends ProgressEntities.Container
         Entities := this.Layers[1].Entities
 
         PositionY := 0
-        Entities.Insert(new this.EndHeading("Game Complete",PositionY)), PositionY += 1
-        Entities.Insert(new this.EndMessage("Press Space to exit",PositionY)), PositionY += 5
+        Entities.Insert(new this.EndHeading("Game Complete",PositionY)), PositionY += 5
         
         Entities.Insert(new this.CreditHeading("Design",PositionY)), PositionY += 1.2
         Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 1.8
@@ -77,7 +76,7 @@ class Credits extends ProgressEntities.Container
         Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 5.8
 
         Entities.Insert(new this.EndHeading("Achromatic",PositionY)), PositionY += 1
-        Entities.Insert(new this.EndMessage("2011-2012",PositionY))
+        Entities.Insert(new this.EndMessage("Press Space to exit.",PositionY))
 
         this.EndY := this.Y - PositionY
     }
