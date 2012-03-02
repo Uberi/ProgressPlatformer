@@ -273,6 +273,10 @@ class ProgressEntities
                 || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > Viewport.ScreenH
                 Return
 
+            ;check if the entity is visible
+            If !this.Visible
+                Return
+
             ;update the color if it has changed
             If this.ColorModified
             {
@@ -296,11 +300,8 @@ class ProgressEntities
             If !hOriginalBrush
                 throw Exception("Could not select brush into memory device context.")
 
-            If this.Visible
-            {
-                If !DllCall("Rectangle","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(this.ScreenY),"Int",Round(this.ScreenX + this.ScreenW),"Int",Round(this.ScreenY + this.ScreenH))
-                    throw Exception("Could not draw rectangle.")
-            }
+            If !DllCall("Rectangle","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(this.ScreenY),"Int",Round(this.ScreenX + this.ScreenW),"Int",Round(this.ScreenY + this.ScreenH))
+                throw Exception("Could not draw rectangle.")
 
             If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
                 throw Exception("Could not deselect pen from the memory device context.")

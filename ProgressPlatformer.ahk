@@ -120,12 +120,17 @@ class GameEntities
                 If Entity.__Class = "GameEntities.Player"
                     this.Player := Entity
             }
+            this.Player.Health := 100
         }
 
         Step(Delta,Layer,Viewport)
         {
             this.W := (Mod(this.Player.Health,100) / 100) * this.TotalWidth
             this.H := 0.08 * ((this.Player.Health // 100) + 1)
+
+            this.Player.Health -= Delta ;subtract health over time
+            If this.Player.Health <= 0
+                Return, 2 ;out of health
         }
     }
 
@@ -210,7 +215,6 @@ class GameEntities
             this.SpeedY := SpeedY
             this.Color := 0xAFAFAF
             this.LastContact := 0
-            this.Health := 100
         }
 
         Step(Delta,Layer,Viewport)
@@ -238,11 +242,6 @@ class GameEntities
                         this.Health -= 150 * Delta
                 }
             }
-
-            this.Health -= Delta
-
-            If this.Health <= 0
-                Return, 2 ;out of health
 
             Padding := 2.5
             If (this.X > (10 + Padding) || (this.X + this.W) < -Padding || this.Y > (10 + Padding) || (this.Y + this.H) < -Padding) ;out of bounds
