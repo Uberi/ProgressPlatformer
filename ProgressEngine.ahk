@@ -413,7 +413,11 @@ class ProgressEntities
                 If (&Entity = &this || !Entity.Physical) ;entity is the same as the current entity or is not physical
                     Continue
                 If this.Intersect(Entity,IntersectX,IntersectY) ;entity collided with the rectangle
-                    this.Collide(Delta,Entity,IntersectX,IntersectY)
+                {
+                    Result := this.Collide(Delta,Entity,IntersectX,IntersectY) ;collision callback
+                    If Result
+                        Return, Result
+                }
                 IntersectX := Abs(IntersectX), IntersectY := Abs(IntersectY)
                 If (IntersectY >= IntersectX) ;collision along top or bottom side
                     this.IntersectX += IntersectX
