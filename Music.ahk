@@ -139,7 +139,7 @@ class NotePlayer
         this.Playing := 0
     }
 
-    __Delete() ;wip: stop the NotePlayer.Play() notes here too, since they don't obey Noteplayer.ActiveNotes
+    __Delete()
     {
         this.Stop()
         DllCall("GlobalFree","UPtr",this.pCallback) ;free callback

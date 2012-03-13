@@ -187,32 +187,28 @@ class ProgressEntities
         {
             static CurrentViewport := Object()
 
-            CurrentViewport.ScreenX := 0, CurrentViewport.ScreenY := 0
-            CurrentViewport.ScreenW := Viewport.ScreenW, CurrentViewport.ScreenH := Viewport.ScreenH
+            CurrentViewport.ScreenX := this.ScreenX, CurrentViewport.ScreenY := this.ScreenY
+            CurrentViewport.ScreenW := this.ScreenW, CurrentViewport.ScreenH := this.ScreenH
 
-            For Index, Layer In this.Layers
+            For Index, CurrentLayer In this.Layers
             {
-                If !Layer.Visible ;layer is hidden
+                If !CurrentLayer.Visible ;layer is hidden
                     Continue
 
-                ScaleX := Viewport.ScreenW / Layer.W, ScaleY := Viewport.ScreenH / Layer.H
-                RatioX := this.W / Layer.W, RatioY := this.H / Layer.H
-                PositionX := this.X + (Layer.X * RatioX), PositionY := this.Y + (Layer.Y * RatioY)
+                ScaleX := Viewport.ScreenW / CurrentLayer.W, ScaleY := Viewport.ScreenH / CurrentLayer.H
+                RatioX := this.W / CurrentLayer.W, RatioY := this.H / CurrentLayer.H
+                PositionX := (this.X + (CurrentLayer.X * RatioX)) * ScaleX, PositionY := (this.Y + (CurrentLayer.Y * RatioY)) * ScaleY
 
-                For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
+                For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
                 {
                     ;get the screen coordinates of the rectangle
-                    Entity.ScreenX := (PositionX + (Entity.X * RatioX)) * ScaleX, Entity.ScreenY := (PositionY + (Entity.Y * RatioY)) * ScaleY
+                    Entity.ScreenX := PositionX + (Entity.X * RatioX * ScaleX), Entity.ScreenY := PositionY + (Entity.Y * RatioY * ScaleY)
                     Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
 
-                    CurrentViewport.X := this.X + Layer.X, CurrentViewport.Y := this.Y + Layer.Y
+                    CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
                     CurrentViewport.W := this.W, CurrentViewport.H := this.H
 
-                    TempLayer := new ProgressEngine.Layer ;wip: debug
-                    TempLayer.X := this.X + Layer.X, TempLayer.Y := this.Y + Layer.Y, TempLayer.W := RatioX, TempLayer.H := RatioY
-                    TempLayer.Entities := Layer.Entities
-
-                    Result := Entity.Step(Delta,TempLayer,CurrentViewport)
+                    Result := Entity.Step(Delta,CurrentLayer,CurrentViewport)
                     If Result
                         Return, Result
                 }
@@ -223,19 +219,19 @@ class ProgressEntities
         {
             static CurrentViewport := Object()
 
-            CurrentViewport.ScreenX := 0, CurrentViewport.ScreenY := 0
+            CurrentViewport.ScreenX := this.ScreenX, CurrentViewport.ScreenY := this.ScreenY
             CurrentViewport.ScreenW := Viewport.ScreenW, CurrentViewport.ScreenH := Viewport.ScreenH
 
-            For Index, Layer In this.Layers
+            For Index, CurrentLayer In this.Layers
             {
-                If !Layer.Visible ;layer is hidden
+                If !CurrentLayer.Visible ;layer is hidden
                     Continue
 
-                CurrentViewport.X := this.X + Layer.X, CurrentViewport.Y := this.Y + Layer.Y
+                CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
                 CurrentViewport.W := this.W, CurrentViewport.H := this.H
 
-                For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
-                    Entity.Draw(hDC,Layer,CurrentViewport)
+                For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
+                    Entity.Draw(hDC,CurrentLayer,CurrentViewport)
             }
         }
     }

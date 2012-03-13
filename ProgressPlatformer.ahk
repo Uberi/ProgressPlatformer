@@ -19,12 +19,12 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+;wip: different colored "worlds" based on a single hue
 ;wip: look into why the player sometimes can't kill an enemy while it is jumping
-;wip: text entities take the entire screen into account when doing line height calculations
 ;wip: container drawtype doesn't support multiple levels of nesting
 ;wip: total asynchronocity or parallelism (tasklets)
-;wip: input manager that supports keyboard and joystick input
-;wip: oncollide() callbacks for ProgressEntities.Dynamic, onclick() and onhover() callbacks for ProgressEntities.Default
+;wip: input manager that supports keyboard and joystick and mouse input
+;wip: onclick() and onhover() callbacks for ProgressEntities.Default
 
 #Include %A_ScriptDir%
 
