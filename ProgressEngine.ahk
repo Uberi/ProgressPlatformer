@@ -183,10 +183,9 @@ class ProgressEntities
             this.Layers := []
         }
 
-        Step(Delta,Layer,Viewport)
+        Step(Delta,Layer,Viewport,OffsetX = 0,OffsetY = 0)
         {
-            static CurrentViewport := Object()
-
+            CurrentViewport := Object()
             CurrentViewport.ScreenX := this.ScreenX, CurrentViewport.ScreenY := this.ScreenY
             CurrentViewport.ScreenW := this.ScreenW, CurrentViewport.ScreenH := this.ScreenH
 
@@ -197,7 +196,7 @@ class ProgressEntities
 
                 ScaleX := Viewport.ScreenW / CurrentLayer.W, ScaleY := Viewport.ScreenH / CurrentLayer.H
                 RatioX := this.W / CurrentLayer.W, RatioY := this.H / CurrentLayer.H
-                PositionX := (this.X + (CurrentLayer.X * RatioX)) * ScaleX, PositionY := (this.Y + (CurrentLayer.Y * RatioY)) * ScaleY
+                PositionX := OffsetX + (this.X + (CurrentLayer.X * RatioX)) * ScaleX, PositionY := OffsetY + (this.Y + (CurrentLayer.Y * RatioY)) * ScaleY
 
                 For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
                 {
@@ -208,7 +207,10 @@ class ProgressEntities
                     CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
                     CurrentViewport.W := this.W, CurrentViewport.H := this.H
 
-                    Result := Entity.Step(Delta,CurrentLayer,CurrentViewport)
+                    If Entity.base.base.__Class = "ProgressEntities.Container" ;wip: this is really really hacky, need to remove offsetx/offsety mechanism
+                        Result := Entity.Step(Delta,CurrentLayer,CurrentViewport,(OffsetX + this.X) * ScaleX,(OffsetY + this.Y) * ScaleY)
+                    Else
+                        Result := Entity.Step(Delta,CurrentLayer,CurrentViewport)
                     If Result
                         Return, Result
                 }
