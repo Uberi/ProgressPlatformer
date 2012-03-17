@@ -139,6 +139,13 @@ class NotePlayer
         this.Playing := 0
     }
 
+    Reset()
+    {
+        this.Stop()
+        this.Actions := []
+        this.Sequence := []
+    }
+
     __Delete()
     {
         this.Stop()
