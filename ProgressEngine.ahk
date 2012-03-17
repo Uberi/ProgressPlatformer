@@ -176,10 +176,88 @@ class ProgressEngine
 
 class ProgressEntities
 {
-    class Container
+    class Basis
     {
         __New()
         {
+            this.X := 0
+            this.Y := 0
+            this.W := 10
+            this.H := 10
+            this.ScreenX := 0
+            this.ScreenY := 0
+            this.ScreenW := 0
+            this.ScreenH := 0
+            this.Visible := 1
+        }
+
+        Step(Delta,Layer,Viewport)
+        {
+            
+        }
+
+        NearestEntities(Layer)
+        {
+            ;wip
+        }
+
+        Draw(hDC,Layer,Viewport)
+        {
+            
+        }
+
+        MouseHovering(Layer,Rectangle) ;wip
+        {
+            CoordMode, Mouse, Client
+            MouseGetPos, MouseX, MouseY
+            If (MouseX >= Rectangle.X && MouseX <= (Rectangle.X + Rectangle.W)
+                && MouseY >= Rectangle.Y && MouseY <= (Rectangle.Y + Rectangle.H))
+                Return, 1
+            Return, 0
+        }
+
+        Intersect(Rectangle,ByRef IntersectX,ByRef IntersectY)
+        {
+            Left1 := this.X, Left2 := Rectangle.X
+            Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
+            Top1 := this.Y, Top2 := Rectangle.Y
+            Bottom1 := Top1 + this.H, Bottom2 := Top2 + Rectangle.H
+
+            ;check for collision
+            If (Right1 < Left2 || Right2 < Left1 || Bottom1 < Top2 || Bottom2 < Top1)
+            {
+                IntersectX := 0, IntersectY := 0
+                Return, 0 ;no collision occurred
+            }
+
+            ;find width of intersection
+            If (Left1 < Left2)
+                IntersectX := ((Right1 < Right2) ? Right1 : Right2) - Left2
+            Else
+                IntersectX := Left1 - ((Right1 < Right2) ? Right1 : Right2)
+
+            ;find height of intersection
+            If (Top1 < Top2)
+                IntersectY := ((Bottom1 < Bottom2) ? Bottom1 : Bottom2) - Top2
+            Else
+                IntersectY := Top1 - ((Bottom1 < Bottom2) ? Bottom1 : Bottom2)
+            Return, 1 ;collision occurred
+        }
+
+        Inside(Rectangle)
+        {
+            Return, this.X >= Rectangle.X
+                    && (this.X + this.W) <= (Rectangle.X + Rectangle.W)
+                    && this.Y >= Rectangle.Y
+                    && (this.Y + this.H) <= (Rectangle.Y + Rectangle.H)
+        }
+    }
+
+    class Container extends ProgressEntities.Basis
+    {
+        __New()
+        {
+            base.__New()
             this.Layers := []
         }
 
@@ -238,41 +316,31 @@ class ProgressEntities
         }
     }
 
-    class Default
+    class Default extends ProgressEntities.Basis
     {
         __New()
         {
             ObjInsert(this,"",Object())
+            base.__New()
             this.X := 0
             this.Y := 0
             this.W := 10
             this.H := 10
             this.hPen := 0
             this.hBrush := 0
-            this.Visible := 1
             this.Color := 0xFFFFFF
             this.Physical := 0
         }
 
-        Step(Delta,Layer,Viewport)
-        {
-            
-        }
-
-        NearestEntities(Layer)
-        {
-            ;wip
-        }
-
         Draw(hDC,Layer,Viewport)
         {
+            ;check if the entity is visible
+            If !this.Visible
+                Return
+
             ;check for entity moving out of bounds
             If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > Viewport.ScreenW
                 || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > Viewport.ScreenH
-                Return
-
-            ;check if the entity is visible
-            If !this.Visible
                 Return
 
             ;update the color if it has changed
@@ -307,52 +375,6 @@ class ProgressEntities
                 throw Exception("Could not deselect brush from the memory device context.")
         }
 
-        MouseHovering(Layer,Rectangle) ;wip
-        {
-            CoordMode, Mouse, Client
-            MouseGetPos, MouseX, MouseY
-            If (MouseX >= Rectangle.X && MouseX <= (Rectangle.X + Rectangle.W)
-                && MouseY >= Rectangle.Y && MouseY <= (Rectangle.Y + Rectangle.H))
-                Return, 1
-            Return, 0
-        }
-
-        Intersect(Rectangle,ByRef IntersectX,ByRef IntersectY)
-        {
-            Left1 := this.X, Left2 := Rectangle.X
-            Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
-            Top1 := this.Y, Top2 := Rectangle.Y
-            Bottom1 := Top1 + this.H, Bottom2 := Top2 + Rectangle.H
-
-            ;check for collision
-            If (Right1 < Left2 || Right2 < Left1 || Bottom1 < Top2 || Bottom2 < Top1)
-            {
-                IntersectX := 0, IntersectY := 0
-                Return, 0 ;no collision occurred
-            }
-
-            ;find width of intersection
-            If (Left1 < Left2)
-                IntersectX := ((Right1 < Right2) ? Right1 : Right2) - Left2
-            Else
-                IntersectX := Left1 - ((Right1 < Right2) ? Right1 : Right2)
-
-            ;find height of intersection
-            If (Top1 < Top2)
-                IntersectY := ((Bottom1 < Bottom2) ? Bottom1 : Bottom2) - Top2
-            Else
-                IntersectY := Top1 - ((Bottom1 < Bottom2) ? Bottom1 : Bottom2)
-            Return, 1 ;collision occurred
-        }
-
-        Inside(Rectangle)
-        {
-            Return, this.X >= Rectangle.X
-                    && (this.X + this.W) <= (Rectangle.X + Rectangle.W)
-                    && this.Y >= Rectangle.Y
-                    && (this.Y + this.H) <= (Rectangle.Y + Rectangle.H)
-        }
-
         __Get(Key)
         {
             If (Key != "")
@@ -373,6 +395,179 @@ class ProgressEntities
                 throw Exception("Could not delete pen.")
             If this.hBrush && !DllCall("DeleteObject","UPtr",this.hBrush)
                 throw Exception("Could not delete brush.")
+        }
+    }
+
+    class Image extends ProgressEntities.Basis
+    {
+        __New()
+        {
+            ObjInsert(this,"",Object())
+            base.__New()
+            this.hBitmap := 0
+            this.Image := "(none)"
+            this.ImageW := 0
+            this.ImageH := 0
+            this.Physical := 0
+        }
+
+        Draw(hDC,Layer,Viewport)
+        {
+            ;check if the entity is visible
+            If !this.Visible
+                Return
+
+            ;check for entity moving out of bounds
+            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > Viewport.ScreenW
+                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > Viewport.ScreenH
+                Return
+
+            ;update the image if it has changed
+            If this.ImageModified
+            {
+                If this.hBitmap && !DllCall("DeleteObject","UPtr",this.hBitmap)
+                    throw Exception("Could not delete bitmap.")
+                this.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",this.Color,"UPtr") ;PS_SOLID
+                this.hBitmap := DllCall("LoadImage","UPtr",0,"Str",this.Image,"UInt",0,"Int",0,"Int",0,"UInt",0x10,"UPtr") ;IMAGE_BITMAP, LR_LOADFROMFILE
+                If !this.hBitmap
+                    throw Exception("Could not load bitmap.")
+                ;Length := A_PtrSize + 20, VarSetCapacity(Bitmap,Length)
+                Length := 12, VarSetCapacity(Bitmap,Length) ;wip
+                If !DllCall("GetObject","UPtr",this.hBitmap,"Int",Length,"UPtr",&Bitmap)
+                    throw Exception("Could not retrieve bitmap dimensions.")
+                this.ImageW := NumGet(Bitmap,4,"Int"), this.ImageH := NumGet(Bitmap,8,"Int")
+                this.ImageModified := 0
+            }
+
+            hTempDC := DllCall("CreateCompatibleDC","UPtr",hDC,"UPtr") ;create a temporary device context
+            hOriginalBitmap := DllCall("SelectObject","UPtr",hTempDC,"UPtr",this.hBitmap,"UPtr") ;select the bitmap
+
+            If !DllCall("AlphaBlend","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(this.ScreenY),"Int",Round(this.ScreenX + this.ScreenW),"Int",Round(this.ScreenY + this.ScreenH),"UPtr",hTempDC,"Int",0,"Int",0,"Int",this.ImageW,"Int",this.ImageH,"UInt",0x1000000) ;AC_SRC_OVER | (AC_SRC_ALPHA << 24)
+                throw Exception("Could not draw bitmap.")
+
+            If !DllCall("SelectObject","UPtr",hTempDC,"UPtr",hOriginalBitmap,"UPtr") ;deselect the bitmap
+                throw Exception("Could not deselect pen from the memory device context.")
+            If !DllCall("DeleteDC","UPtr",hTempDC) ;delete the temporary device context
+                throw Exception("Could not delete temporary device context.")
+        }
+
+        __Get(Key)
+        {
+            If (Key != "")
+                Return, this[""][Key]
+        }
+
+        __Set(Key,Value)
+        {
+            If (Key = "Image" && this[Key] != Value)
+                this.ImageModified := 1
+            ObjInsert(this[""],Key,Value)
+            Return, this
+        }
+
+        __Delete()
+        {
+            If this.hPen && !DllCall("DeleteObject","UPtr",this.hBitmap)
+                throw Exception("Could not delete bitmap.")
+        }
+    }
+
+    class Text extends ProgressEntities.Basis
+    {
+        __New()
+        {
+            ObjInsert(this,"",Object())
+            base.__New()
+            this.hFont := 0
+            this.PreviousViewportWidth := -1
+            this.Align := "Center"
+            this.Size := 5 ;wip: use height for this
+            this.Weight := 500
+            this.Italic := 0
+            this.Underline := 0
+            this.Strikeout := 0
+            this.Typeface := "Verdana"
+            this.Text := "Text"
+        }
+
+        Draw(hDC,Layer,Viewport)
+        {
+            If !this.Visible
+                Return
+
+            ;check for entity moving out of bounds ;wip: text objects do not have width and height properties
+            ;If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
+                ;|| (this.Y + this.H) < Viewport.Y || this.Y > (Viewport.Y + Viewport.H)
+                ;Return
+
+            If (this.Align = "Left")
+                AlignMode := 24 ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
+            Else If (this.Align = "Center")
+                AlignMode := 30 ;TA_CENTER | TA_BASELINE: align text to the center and the baseline
+            Else If (this.Align = "Right")
+                AlignMode := 26 ;TA_RIGHT | TA_BASELINE: align text to the right and the baseline
+            Else
+                throw Exception("Invalid text alignment: " . this.Align . ".")
+            DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
+
+            LineHeight := this.Size * Viewport.ScreenW * 0.01
+
+            ;update the font if it has changed or if the viewport size has changed
+            If this.FontModified || Viewport.ScreenW != this.PreviousViewportWidth
+            {
+                If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
+                    throw Exception("Could not delete font.")
+                ;wip: doesn't work
+                ;If this.Size Is Not Number
+                    ;throw Exception("Invalid font size: " . this.Size . ".")
+                ;If this.Weight Is Not Integer
+                    ;throw Exception("Invalid font weight: " . this.Weight . ".")
+                this.hFont := DllCall("CreateFont","Int",Round(LineHeight),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
+                If !this.hFont
+                    throw Exception("Could not create font.")
+                this.FontModified := 0
+            }
+            this.PreviousViewportWidth := Viewport.ScreenW
+
+            If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
+                throw Exception("Could not set text color.")
+
+            hOriginalFont := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hFont,"UPtr") ;select the font
+            If !hOriginalFont
+                throw Exception("Could not select font into memory device context.")
+
+            ;Loop, Parse, this.Text, `n ;wip
+            Text := this.Text, PositionY := this.ScreenY
+            Loop, Parse, Text, `n
+            {
+                If !DllCall("TextOut","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(PositionY),"Str",A_LoopField,"Int",StrLen(A_LoopField))
+                    throw Exception("Could not draw text.")
+                PositionY += LineHeight
+            }
+
+            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
+                throw Exception("Could not deselect font from memory device context.")
+        }
+
+        __Get(Key)
+        {
+            If (Key != "")
+                Return, this[""][Key]
+        }
+
+        __Set(Key,Value)
+        {
+            If ((Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
+                && this[Key] != Value)
+                ObjInsert(this[""],"FontModified",1)
+            ObjInsert(this[""],Key,Value)
+            Return, this
+        }
+
+        __Delete()
+        {
+            If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
+                throw Exception("Could not delete font.")
         }
     }
 
@@ -458,98 +653,6 @@ class ProgressEntities
                     this.SpeedX := -(this.SpeedX - Entity.SpeedX) * Restitution
                 this.X -= IntersectX ;move the entity out of the intersection area
             }
-        }
-    }
-
-    class Text extends ProgressEntities.Default
-    {
-        __New()
-        {
-            base.__New()
-            this.hFont := 0
-            this.PreviousViewportWidth := -1
-            this.Align := "Center"
-            this.Size := 5
-            this.Weight := 500
-            this.Italic := 0
-            this.Underline := 0
-            this.Strikeout := 0
-            this.Typeface := "Verdana"
-            this.Text := "Text"
-        }
-
-        Draw(hDC,Layer,Viewport)
-        {
-            ;check for entity moving out of bounds ;wip: text objects do not have width and height properties
-            ;If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
-                ;|| (this.Y + this.H) < Viewport.Y || this.Y > (Viewport.Y + Viewport.H)
-                ;Return
-
-            If (this.Align = "Left")
-                AlignMode := 24 ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
-            Else If (this.Align = "Center")
-                AlignMode := 30 ;TA_CENTER | TA_BASELINE: align text to the center and the baseline
-            Else If (this.Align = "Right")
-                AlignMode := 26 ;TA_RIGHT | TA_BASELINE: align text to the right and the baseline
-            Else
-                throw Exception("Invalid text alignment: " . this.Align . ".")
-            DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
-
-            LineHeight := this.Size * Viewport.ScreenW * 0.01
-
-            ;update the font if it has changed or if the viewport size has changed
-            If this.FontModified || Viewport.ScreenW != this.PreviousViewportWidth
-            {
-                If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
-                    throw Exception("Could not delete font.")
-                ;wip: doesn't work
-                ;If this.Size Is Not Number
-                    ;throw Exception("Invalid font size: " . this.Size . ".")
-                ;If this.Weight Is Not Integer
-                    ;throw Exception("Invalid font weight: " . this.Weight . ".")
-                this.hFont := DllCall("CreateFont","Int",Round(LineHeight),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
-                If !this.hFont
-                    throw Exception("Could not create font.")
-                this.FontModified := 0
-            }
-            this.PreviousViewportWidth := Viewport.ScreenW
-
-            If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
-                throw Exception("Could not set text color.")
-
-            hOriginalFont := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hFont,"UPtr") ;select the font
-            If !hOriginalFont
-                throw Exception("Could not select font into memory device context.")
-
-            If this.Visible
-            {
-                ;Loop, Parse, this.Text, `n ;wip
-                Text := this.Text, PositionY := this.ScreenY
-                Loop, Parse, Text, `n
-                {
-                    If !DllCall("TextOut","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(PositionY),"Str",A_LoopField,"Int",StrLen(A_LoopField))
-                        throw Exception("Could not draw text.")
-                    PositionY += LineHeight
-                }
-            }
-
-            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
-                throw Exception("Could not deselect font from memory device context.")
-        }
-
-        __Set(Key,Value)
-        {
-            If ((Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
-                && this[Key] != Value)
-                ObjInsert(this[""],"FontModified",1)
-            ObjInsert(this[""],Key,Value)
-            Return, this
-        }
-
-        __Delete()
-        {
-            If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
-                throw Exception("Could not delete font.")
         }
     }
 }
