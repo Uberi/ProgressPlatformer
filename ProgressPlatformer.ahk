@@ -75,8 +75,8 @@ Catch
 {
     
 }
-Notes.Stop() ;wip: also a garbage collection issue
-Try Notes.Device.__Delete() ;wip
+Notes.Stop()
+Try Notes.Device.__Delete() ;wip: also a garbage collection issue
 Catch
 {
     

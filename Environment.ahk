@@ -104,7 +104,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             global Game
             this.X += this.SpeedX * Delta
             If this.X > (Layer.X + 10)
-                this.X := Viewport.X - this.W
+                this.X := Layer.X - this.W
         }
     }
 }
