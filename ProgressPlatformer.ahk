@@ -1,7 +1,7 @@
 #NoEnv
 
 /*
-Copyright 2011 Anthony Zhang <azhang9@gmail.com>
+Copyright 2011-2012 Anthony Zhang <azhang9@gmail.com>
 
 This file is part of ProgressPlatformer. Source code is available at <https://github.com/Uberi/ProgressPlatformer>.
 
@@ -20,10 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 ;wip: different colored "worlds" based on a single hue
-;wip: look into why the player sometimes can't kill an enemy while it is jumping
+;wip: look into why the player sometimes can't kill an enemy while it is jumping (it's because we only set IntersectX and IntersectY on the first object to collide, when both colliding objects should be set)
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick and mouse input
 ;wip: onclick() and onhover() callbacks for ProgressEntities.Default
+;wip: rename ProgressEntities.Default to ProgressEntities.Rectangle and Static to RectangleStatic and Dynamic to DynamicRectangle
 
 #Include %A_ScriptDir%
 
