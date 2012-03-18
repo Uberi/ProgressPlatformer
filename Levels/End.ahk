@@ -64,18 +64,18 @@ class Credits extends ProgressEntities.Container
         Entities := this.Layers[1].Entities
 
         PositionY := 0
-        Entities.Insert(new this.EndHeading("Game Complete",PositionY)), PositionY += 5
+        Entities.Insert(new this.EndHeading("Game Complete",PositionY)), PositionY += 6
         
         Entities.Insert(new this.CreditHeading("Design",PositionY)), PositionY += 1.2
-        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 1.8
+        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 2.2
 
         Entities.Insert(new this.CreditHeading("Programming",PositionY)), PositionY += 1.2
-        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 1.8
+        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 2.2
 
         Entities.Insert(new this.CreditHeading("Content",PositionY)), PositionY += 1.2
-        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 5.8
+        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 7.2
 
-        Entities.Insert(new this.EndHeading("Achromatic",PositionY)), PositionY += 1
+        Entities.Insert(new this.EndHeading("Achromatic",PositionY)), PositionY += 1.2
         Entities.Insert(new this.EndMessage("Press Space to exit.",PositionY))
 
         this.EndY := this.Y - PositionY
@@ -95,7 +95,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 14
+            this.Size := 15
             this.Color := 0x444444
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -110,7 +110,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 3
+            this.Size := 3.8
             this.Color := 0x666666
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -135,7 +135,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 3
+            this.Size := 3.8
             this.Color := 0x666666
             this.Weight := 300
             this.Typeface := "Georgia"
@@ -150,7 +150,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 8
+            this.Size := 10
             this.Color := 0x444444
             this.Weight := 100
             this.Typeface := "Georgia"

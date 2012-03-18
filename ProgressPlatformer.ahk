@@ -76,7 +76,6 @@ Catch
 {
     
 }
-Notes.Stop()
 Try Notes.Device.__Delete() ;wip: also a garbage collection issue
 Catch
 {
