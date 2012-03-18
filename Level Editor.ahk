@@ -170,7 +170,7 @@ class EditingPane extends ProgressEntities.Container
             this.Y := 1
             this.W := 10
             this.H := 1
-            this.Size := 3
+            this.Size := 12
             this.Color := 0xFFFFFF
             this.Weight := 100
             this.Typeface := "Georgia"

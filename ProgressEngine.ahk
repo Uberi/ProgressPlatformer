@@ -139,10 +139,10 @@ class ProgressEngine
             If !Layer.Visible ;layer is hidden
                 Continue
 
-            ScaleX := Width * (Layer.W / 100), ScaleY := Height * (Layer.H / 100)
-
             Viewport.X := Layer.X, Viewport.Y := Layer.Y
-            Viewport.W := Layer.W, Viewport.H := Layer.H
+            Viewport.W := 10, Viewport.H := 10
+
+            ScaleX := Width * (Layer.W / 100), ScaleY := Height * (Layer.H / 100)
 
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
@@ -162,7 +162,7 @@ class ProgressEngine
                 Continue
 
             Viewport.X := Layer.X, Viewport.Y := Layer.Y
-            Viewport.W := Layer.W, Viewport.H := Layer.H ;wip: see if the viewport can just be replaced by the layer itself
+            Viewport.W := Layer.W, Viewport.H := Layer.H
 
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
                 Entity.Draw(this.hMemoryDC,Layer,Viewport)
@@ -253,7 +253,7 @@ class ProgressEntities
         }
     }
 
-    class Container extends ProgressEntities.Basis
+    class Container extends ProgressEntities.Basis ;wip: occlusion culling for this
     {
         __New()
         {
@@ -276,14 +276,14 @@ class ProgressEntities
                 RatioX := this.W / CurrentLayer.W, RatioY := this.H / CurrentLayer.H
                 PositionX := OffsetX + (this.X + (CurrentLayer.X * RatioX)) * ScaleX, PositionY := OffsetY + (this.Y + (CurrentLayer.Y * RatioY)) * ScaleY
 
+                CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
+                CurrentViewport.W := this.W, CurrentViewport.H := this.H
+
                 For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
                 {
                     ;get the screen coordinates of the rectangle
                     Entity.ScreenX := PositionX + (Entity.X * RatioX * ScaleX), Entity.ScreenY := PositionY + (Entity.Y * RatioY * ScaleY)
                     Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
-
-                    CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
-                    CurrentViewport.W := this.W, CurrentViewport.H := this.H
 
                     If Entity.base.base.__Class = "ProgressEntities.Container" ;wip: this is really really hacky, need to remove offsetx/offsety mechanism
                         Result := Entity.Step(Delta,CurrentLayer,CurrentViewport,(OffsetX + this.X) * ScaleX,(OffsetY + this.Y) * ScaleY)
@@ -300,7 +300,7 @@ class ProgressEntities
             static CurrentViewport := Object()
 
             CurrentViewport.ScreenX := this.ScreenX, CurrentViewport.ScreenY := this.ScreenY
-            CurrentViewport.ScreenW := Viewport.ScreenW, CurrentViewport.ScreenH := Viewport.ScreenH
+            CurrentViewport.ScreenW := this.ScreenW, CurrentViewport.ScreenH := this.ScreenH
 
             For Index, CurrentLayer In this.Layers
             {
@@ -339,8 +339,8 @@ class ProgressEntities
                 Return
 
             ;check for entity moving out of bounds
-            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > Viewport.ScreenW
-                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > Viewport.ScreenH
+            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > (Viewport.ScreenX + Viewport.ScreenW)
+                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > (Viewport.ScreenY + Viewport.ScreenH)
                 Return
 
             ;update the color if it has changed
@@ -398,7 +398,7 @@ class ProgressEntities
         }
     }
 
-    class Image extends ProgressEntities.Basis
+    class Image extends ProgressEntities.Basis ;wip
     {
         __New()
         {
@@ -418,8 +418,8 @@ class ProgressEntities
                 Return
 
             ;check for entity moving out of bounds
-            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > Viewport.ScreenW
-                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > Viewport.ScreenH
+            If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > (Viewport.ScreenX + Viewport.ScreenW)
+                || (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > (Viewport.ScreenY + Viewport.ScreenH)
                 Return
 
             ;update the image if it has changed
@@ -496,8 +496,8 @@ class ProgressEntities
                 Return
 
             ;check for entity moving out of bounds ;wip: text objects do not have width and height properties
-            ;If (this.X + this.W) < Viewport.X || this.X > (Viewport.X + Viewport.W)
-                ;|| (this.Y + this.H) < Viewport.Y || this.Y > (Viewport.Y + Viewport.H)
+            ;If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > (Viewport.ScreenX + Viewport.ScreenW)
+                ;|| (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > (Viewport.ScreenY + Viewport.ScreenH)
                 ;Return
 
             If (this.Align = "Left")
@@ -610,12 +610,12 @@ class ProgressEntities
                     Result := this.Collide(Delta,Entity,IntersectX,IntersectY) ;collision callback
                     If Result
                         Return, Result
+                    IntersectX := Abs(IntersectX), IntersectY := Abs(IntersectY)
+                    If (IntersectY >= IntersectX) ;collision along top or bottom side
+                        this.IntersectX += IntersectX, Entity.IntersectX += IntersectX ;wip: this just gets reset back to 0 when the entity is stepped itself
+                    Else
+                        this.IntersectY += IntersectY, Entity.IntersectY += IntersectY
                 }
-                IntersectX := Abs(IntersectX), IntersectY := Abs(IntersectY)
-                If (IntersectY >= IntersectX) ;collision along top or bottom side
-                    this.IntersectX += IntersectX
-                Else
-                    this.IntersectY += IntersectY
             }
             If this.IntersectY ;handle collision along top or bottom side
                 this.SpeedX *= (Friction * this.IntersectY) ** Delta
