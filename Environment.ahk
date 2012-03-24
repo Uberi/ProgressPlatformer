@@ -87,9 +87,9 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         {
             base.__New()
             this.Color := 0xE8E8E8
-            Random, Temp1, -10, 10
+            Random, Temp1, 0.0, 10.0
             this.X := Temp1
-            Random, Temp1, 0.0, 10
+            Random, Temp1, 0.0, 10.0
             this.Y := Temp1
             Random, Temp1, 1.0, 2.5
             this.W := Temp1
