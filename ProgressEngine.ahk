@@ -216,7 +216,7 @@ class ProgressEntities
             Return, 0
         }
 
-        Intersect(Rectangle,ByRef IntersectX,ByRef IntersectY)
+        Intersect(Rectangle,ByRef IntersectX = "",ByRef IntersectY = "")
         {
             Left1 := this.X, Left2 := Rectangle.X
             Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
