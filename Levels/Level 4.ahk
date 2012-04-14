@@ -1,7 +1,7 @@
 #NoEnv
 
 /*
-Copyright 2011-2012 Anthony Zhang <azhang9@gmail.com>
+Copyright 2011 Anthony Zhang <azhang9@gmail.com>
 
 This file is part of ProgressPlatformer. Source code is available at <https://github.com/Uberi/ProgressPlatformer>.
 
@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 StartLevel := 1
+MessageScreen(Game,"Level 4","The glitched platforms is a programmed challenge. We are not fixing it.")
 Loop
 {
     If StartLevel
@@ -32,22 +33,15 @@ Loop
         Environment.Clouds(Game.Layers[1])
 
         Entities := Game.Layers[2].Entities
-        Entities.Insert(new GameEntities.Block(0.889,5.222,0.222,1.333))
-        Entities.Insert(new GameEntities.Block(0.111,6.333,0.778,0.222))
-        Entities.Insert(new GameEntities.Block(0.889,5.000,6.889,0.222))
-        Entities.Insert(new GameEntities.Block(8.444,3.000,0.222,1.111))
-        Entities.Insert(new GameEntities.Block(7.000,1.778,0.222,1.000))
-        Entities.Insert(new GameEntities.Block(2.667,0.889,6.111,0.222))
-        Entities.Insert(new GameEntities.Block(3.333,1.667,0.222,0.889))
-        Entities.Insert(new GameEntities.Block(3.556,2.333,1.111,0.222))
-        Entities.Insert(new GameEntities.Block(4.667,1.667,0.222,0.889))
-        Entities.Insert(new GameEntities.Block(1.889,0.778,0.222,1.222))
-        Entities.Insert(new GameEntities.Goal(8.111,0.111,0.556,0.778))
-        Entities.Insert(new GameEntities.Player(0.322,5.111,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(3.889,4.444,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(6.667,4.444,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(3.778,1.667,0.333,0.444,0.000,0.000))
+        Entities.Insert(new GameEntities.Block(8,7,0.778,0.222))
+        Entities.Insert(new GameEntities.Block(8,5.000,2,0.222))
+        Entities.Insert(new GameEntities.Block(1.778,3.000,0.222,1.111))
+        Entities.Insert(new GameEntities.Block(3.222,1.778,0.222,1.000))
+        Entities.Insert(new GameEntities.Goal(2.445,0.111,0.556,0.778))
+        Entities.Insert(new GameEntities.Player(8,5,0.333,0.444,0.000,0.000))
+        Entities.Insert(new GameEntities.Enemy(8,2,0.333,0.444,0.000,0.000))
 
+        Entities.Insert(new TutorialText("Go left",5,8))
         Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
     Result := Game.Start()

@@ -63,6 +63,7 @@ Notes.Start()
 #Include Levels/Level 1.ahk
 #Include Levels/Level 2.ahk
 #Include Levels/Level 3.ahk
+#Include Levels/Level 4.ahk
 
 Notes.Stop()
 Notes.Device.__Delete() ;wip
@@ -93,6 +94,12 @@ class KeyboardController
 
         If GetKeyState("Tab","P") ;slow motion
             Delta *= 0.25
+
+        If GetKeyState("F5","P")
+        {
+            KeyWait, F5
+            Return, 1 ;skip level
+        }
 
         If GetKeyState("Space","P") ;pause
         {
@@ -142,7 +149,7 @@ class GameEntities
             this.Y := Y
             this.W := W
             this.H := H
-            this.Color := 0x333333
+            this.Color := 0x444444
         }
     }
 
@@ -175,7 +182,7 @@ class GameEntities
             this.X += this.Speed * Delta * this.Direction
         }
     }
-    
+
     class Box extends ProgressEntities.Dynamic
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
@@ -240,6 +247,8 @@ class GameEntities
                     Else
                         this.Health -= 150 * Delta
                 }
+                If (Entity.__Class = "GameEntities.KillBlock" && this.Intersect(Entity)) ;player collided with a kill block
+                    Return, 5 ;slain by kill block
             }
 
             Padding := 2.5
@@ -290,6 +299,19 @@ class GameEntities
             this.W := W
             this.H := H
             this.Color := 0xFFFFFF
+        }
+    }
+
+    class KillBlock extends ProgressEntities.Default
+    {
+        __New(X,Y,W,H)
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.Color := 0x000000
         }
     }
 

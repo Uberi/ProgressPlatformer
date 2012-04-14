@@ -58,10 +58,12 @@ Loop
     If Result = 1 ;reached goal
         Break
     If Result = 2 ;out of health
-        MessageScreen(Game,"Try again","Press Space to restart the level.")
+        MessageScreen(Game,"- You have experienced -","pair annihilation")
     Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds","Press Space to restart the level.")
+        MessageScreen(Game,"- You have experienced -","What happens when you think outside the box")
     Else If Result = 4 ;game paused
-        MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
+        MessageScreen(Game,"- You are experiencing -","A space-time paradox"), StartLevel := 0
+    Else If Result = 5 ;slain by kill block
+        MessageScreen(Game,"- You have experienced -","an UNBIASED pair annihilation")
 }
 Game.Layers := []

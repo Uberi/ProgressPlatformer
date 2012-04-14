@@ -1,3 +1,13 @@
+ProgressPlatformer
+==================
+ProgressPlatformer is a game. More specifically, a platformer game. Try it out!
+
+Usage
+-----
+If not compiled, this program requires [AutoHotkey](http://www.autohotkey.com/), specifically a version above 1.1.05.00, although the latest version is recommended.
+
+To start, simply open ProgressPlatformer.exe or ProgressPlatformer.ahk, and enjoy the game!
+
 ProgressEngine
 ==============
 Behind the jumping, scrolling, dynamic world of [Achromatic/ProgressPlatformer](http://www.autohotkey.com/forum/topic69424.html) lies ProgressEngine, a simple and elegant game engine. Designed for ease of use, this extensible library takes care of the boilerplate and the low-level stuff so you don't have to.
@@ -8,7 +18,7 @@ Features
 * Basic physics engine built in.
 * Unlimited, movable, scalable layers.
 * Consistent coordinate system - viewports can be freely resized.
-* MIDI music support with an asynchronous API.
+* MIDI music support with an asynchronous API and conversion tools.
 * Brushes, contexts, bitmaps, and other resources are managed automatically.
 * Easy customisation of existing drawtypes and the ability to create your own drawtypes.
 * Container entities for grouping several entities together.
