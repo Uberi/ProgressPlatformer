@@ -19,6 +19,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+MessageScreen(Game,"Level 2","Don``t hate the game just yet. Wait a few more levels.")
+
 StartLevel := 1
 Loop
 {

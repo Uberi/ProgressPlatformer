@@ -19,8 +19,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-StartLevel := 1
 MessageScreen(Game,"Level 4","The glitched platforms is a programmed challenge. We are not fixing it.")
+
+StartLevel := 1
 Loop
 {
     If StartLevel
