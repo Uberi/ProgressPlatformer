@@ -111,11 +111,11 @@ Notes.Device.__Delete() ;wip
 
 class TutorialText extends ProgressEntities.Text
 {
-    __New(Text)
+    __New(Text,X = 5,Y = 3.6)
     {
         base.__New()
-        this.X := 5
-        this.Y := 3.6
+        this.X := X
+        this.Y := Y
         this.Size := 5
         this.Color := 0x444444
         this.Weight := 100
