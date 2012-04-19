@@ -115,57 +115,72 @@ class ProgressEngine
             throw Exception("Could not obtain client area dimensions.")
         Width := NumGet(ClientRectangle,8,"Int"), Height := NumGet(ClientRectangle,12,"Int")
 
-        If (Width != Width1 || Height != Height1) ;window was resized
+        ;update bitmap if window was resized
+        If (Width != Width1 || Height != Height1)
         {
+            ;deselect the old bitmap if present
             If this.hOriginalBitmap
             {
-                If !DllCall("SelectObject","UPtr",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr") ;deselect the bitmap
+                If !DllCall("SelectObject","UPtr",this.hMemoryDC,"UPtr",this.hOriginalBitmap,"UPtr")
                     throw Exception("Could not select original bitmap into memory device context.")
             }
-            this.hBitmap := DllCall("CreateCompatibleBitmap","UPtr",this.hDC,"Int",Width,"Int",Height,"UPtr") ;create a new bitmap
+
+            ;create a new bitmap with the correct dimensions
+            this.hBitmap := DllCall("CreateCompatibleBitmap","UPtr",this.hDC,"Int",Width,"Int",Height,"UPtr")
             If !this.hBitmap
                 throw Exception("Could not create bitmap.")
+
+            ;select the new bitmap into the device context
             this.hOriginalBitmap := DllCall("SelectObject","UPtr",this.hMemoryDC,"UPtr",this.hBitmap,"UPtr")
             If !this.hOriginalBitmap
                 throw Exception("Could not select bitmap into memory device context.")
         }
         Width1 := Width, Height1 := Height
 
+        ;initialize the viewport
         Viewport.ScreenX := 0, Viewport.ScreenY := 0
         Viewport.ScreenW := Width, Viewport.ScreenH := Height
 
+        ;iterate through each layer
         For Index, Layer In this.Layers ;step entities
         {
-            If !Layer.Visible ;layer is hidden
+            ;check for layer visibility
+            If !Layer.Visible
                 Continue
 
+            ;set up the viewport
             Viewport.X := Layer.X, Viewport.Y := Layer.Y
             Viewport.W := 10, Viewport.H := 10
 
             ScaleX := Width * (Layer.W / 100), ScaleY := Height * (Layer.H / 100)
 
+            ;iterate through each entity in the layer
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
                 ;get the screen coordinates of the rectangle
                 Entity.ScreenX := (Entity.X - Layer.X) * ScaleX, Entity.ScreenY := (Entity.Y - Layer.Y) * ScaleY
                 Entity.ScreenW := Entity.W * ScaleX, Entity.ScreenH := Entity.H * ScaleY
 
-                Result := Entity.Step(Delta,Layer,Viewport)
+                Result := Entity.Step(Delta,Layer,Viewport) ;step the entity
                 If Result
                     Return, Result
             }
         }
 
-        For Index, Layer In this.Layers ;draw entities
+        ;iterate through each layer
+        For Index, Layer In this.Layers
         {
-            If !Layer.Visible ;layer is hidden
+            ;check for layer visibility
+            If !Layer.Visible
                 Continue
 
+            ;set up the viewport
             Viewport.X := Layer.X, Viewport.Y := Layer.Y
             Viewport.W := Layer.W, Viewport.H := Layer.H
 
+            ;iterate through each entity in the layer
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
-                Entity.Draw(this.hMemoryDC,Layer,Viewport)
+                Entity.Draw(this.hMemoryDC,Layer,Viewport) ;draw the entity
         }
 
         If !DllCall("BitBlt","UPtr",this.hDC,"Int",0,"Int",0,"Int",Width,"Int",Height,"UPtr",this.hMemoryDC,"Int",0,"Int",0,"UInt",0xCC0020) ;SRCCOPY
@@ -184,11 +199,11 @@ class ProgressEntities
             this.Y := 0
             this.W := 10
             this.H := 10
+            this.Visible := 1
             this.ScreenX := 0
             this.ScreenY := 0
             this.ScreenW := 0
             this.ScreenH := 0
-            this.Visible := 1
         }
 
         Step(Delta,Layer,Viewport)
@@ -216,7 +231,7 @@ class ProgressEntities
             Return, 0
         }
 
-        Intersect(Rectangle,ByRef IntersectX = "",ByRef IntersectY = "")
+        Intersect(Rectangle,ByRef IntersectX,ByRef IntersectY)
         {
             Left1 := this.X, Left2 := Rectangle.X
             Right1 := Left1 + this.W, Right2 := Left2 + Rectangle.W
@@ -263,22 +278,28 @@ class ProgressEntities
 
         Step(Delta,Layer,Viewport,OffsetX = 0,OffsetY = 0)
         {
+            ;initialize the current viewport
             CurrentViewport := Object()
             CurrentViewport.ScreenX := this.ScreenX, CurrentViewport.ScreenY := this.ScreenY
             CurrentViewport.ScreenW := this.ScreenW, CurrentViewport.ScreenH := this.ScreenH
 
+            ;iterate through each layer
             For Index, CurrentLayer In this.Layers
             {
-                If !CurrentLayer.Visible ;layer is hidden
+                ;check for layer visibility
+                If !CurrentLayer.Visible
                     Continue
 
+                ;calculate viewport transformations
                 ScaleX := Viewport.ScreenW / CurrentLayer.W, ScaleY := Viewport.ScreenH / CurrentLayer.H
                 RatioX := this.W / CurrentLayer.W, RatioY := this.H / CurrentLayer.H
                 PositionX := OffsetX + (this.X + (CurrentLayer.X * RatioX)) * ScaleX, PositionY := OffsetY + (this.Y + (CurrentLayer.Y * RatioY)) * ScaleY
 
+                ;set up the current viewport
                 CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
                 CurrentViewport.W := this.W, CurrentViewport.H := this.H
 
+                ;iterate through each entity in the layer
                 For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
                 {
                     ;get the screen coordinates of the rectangle
@@ -286,9 +307,9 @@ class ProgressEntities
                     Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
 
                     If Entity.base.base.__Class = "ProgressEntities.Container" ;wip: this is really really hacky, need to remove offsetx/offsety mechanism
-                        Result := Entity.Step(Delta,CurrentLayer,CurrentViewport,(OffsetX + this.X) * ScaleX,(OffsetY + this.Y) * ScaleY)
+                        Result := Entity.Step(Delta,CurrentLayer,CurrentViewport,(OffsetX + this.X) * ScaleX,(OffsetY + this.Y) * ScaleY) ;step the entity
                     Else
-                        Result := Entity.Step(Delta,CurrentLayer,CurrentViewport)
+                        Result := Entity.Step(Delta,CurrentLayer,CurrentViewport) ;step the entity
                     If Result
                         Return, Result
                 }
@@ -297,21 +318,25 @@ class ProgressEntities
 
         Draw(hDC,Layer,Viewport)
         {
-            static CurrentViewport := Object()
-
+            ;initialize the current viewport
+            CurrentViewport := Object()
             CurrentViewport.ScreenX := this.ScreenX, CurrentViewport.ScreenY := this.ScreenY
             CurrentViewport.ScreenW := this.ScreenW, CurrentViewport.ScreenH := this.ScreenH
 
+            ;iterate through each layer
             For Index, CurrentLayer In this.Layers
             {
-                If !CurrentLayer.Visible ;layer is hidden
+                ;check for layer visibility
+                If !CurrentLayer.Visible
                     Continue
 
+                ;set up current viewport
                 CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
                 CurrentViewport.W := this.W, CurrentViewport.H := this.H
 
+                ;iterate through each entity in the layer
                 For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
-                    Entity.Draw(hDC,CurrentLayer,CurrentViewport)
+                    Entity.Draw(hDC,CurrentLayer,CurrentViewport) ;draw the entity
             }
         }
     }
@@ -322,19 +347,15 @@ class ProgressEntities
         {
             ObjInsert(this,"",Object())
             base.__New()
-            this.X := 0
-            this.Y := 0
-            this.W := 10
-            this.H := 10
-            this.hPen := 0
-            this.hBrush := 0
             this.Color := 0xFFFFFF
             this.Physical := 0
+            this.hPen := 0
+            this.hBrush := 0
         }
 
         Draw(hDC,Layer,Viewport)
         {
-            ;check if the entity is visible
+            ;check for entity visibility
             If !this.Visible
                 Return
 
@@ -346,32 +367,43 @@ class ProgressEntities
             ;update the color if it has changed
             If this.ColorModified
             {
+                ;delete the old pen and brush if present
                 If this.hPen && !DllCall("DeleteObject","UPtr",this.hPen)
                     throw Exception("Could not delete pen.")
                 If this.hBrush && !DllCall("DeleteObject","UPtr",this.hBrush)
                     throw Exception("Could not delete brush.")
+
+                ;create the pen and brush
                 this.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",this.Color,"UPtr") ;PS_SOLID
                 If !this.hPen
                     throw Exception("Could not create pen.")
                 this.hBrush := DllCall("CreateSolidBrush","UInt",this.Color,"UPtr")
                 If !this.hBrush
                     throw Exception("Could not create brush.")
-                this.ColorModified := 0
+
+                this.ColorModified := 0 ;reset the color modified flag
             }
 
-            hOriginalPen := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hPen,"UPtr") ;select the pen
+            ;select the pen and brush
+            hOriginalPen := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hPen,"UPtr")
             If !hOriginalPen
                 throw Exception("Could not select pen into memory device context.")
-            hOriginalBrush := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hBrush,"UPtr") ;select the brush
+            hOriginalBrush := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hBrush,"UPtr")
             If !hOriginalBrush
                 throw Exception("Could not select brush into memory device context.")
 
-            If !DllCall("Rectangle","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(this.ScreenY),"Int",Round(this.ScreenX + this.ScreenW),"Int",Round(this.ScreenY + this.ScreenH))
+            ;draw the rectangle
+            If !DllCall("Rectangle","UPtr",hDC
+                ,"Int",Round(this.ScreenX)
+                ,"Int",Round(this.ScreenY)
+                ,"Int",Round(this.ScreenX + this.ScreenW)
+                ,"Int",Round(this.ScreenY + this.ScreenH))
                 throw Exception("Could not draw rectangle.")
 
-            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalPen,"UPtr") ;deselect the pen
+            ;deselect the pen and brush
+            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalPen,"UPtr")
                 throw Exception("Could not deselect pen from the memory device context.")
-            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalBrush,"UPtr") ;deselect the brush
+            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalBrush,"UPtr")
                 throw Exception("Could not deselect brush from the memory device context.")
         }
 
@@ -404,8 +436,10 @@ class ProgressEntities
         {
             ObjInsert(this,"",Object())
             base.__New()
+            this.Image := ""
+            this.TransparentColor := 0xFFFFFF
             this.hBitmap := 0
-            this.Image := "(none)"
+            this.ImageModified := 1
             this.ImageW := 0
             this.ImageH := 0
             this.Physical := 0
@@ -413,7 +447,7 @@ class ProgressEntities
 
         Draw(hDC,Layer,Viewport)
         {
-            ;check if the entity is visible
+            ;check for entity visibility
             If !this.Visible
                 Return
 
@@ -425,24 +459,34 @@ class ProgressEntities
             ;update the image if it has changed
             If this.ImageModified
             {
+                ;delete the old bitmap if present
                 If this.hBitmap && !DllCall("DeleteObject","UPtr",this.hBitmap)
                     throw Exception("Could not delete bitmap.")
-                this.hPen := DllCall("CreatePen","Int",0,"Int",0,"UInt",this.Color,"UPtr") ;PS_SOLID
+
+                ;load the bitmap
                 this.hBitmap := DllCall("LoadImage","UPtr",0,"Str",this.Image,"UInt",0,"Int",0,"Int",0,"UInt",0x10,"UPtr") ;IMAGE_BITMAP, LR_LOADFROMFILE
                 If !this.hBitmap
                     throw Exception("Could not load bitmap.")
-                ;Length := A_PtrSize + 20, VarSetCapacity(Bitmap,Length)
-                Length := 12, VarSetCapacity(Bitmap,Length) ;wip
+
+                ;retrieve the image dimensions
+                Length := 20 + A_PtrSize, VarSetCapacity(Bitmap,Length)
                 If !DllCall("GetObject","UPtr",this.hBitmap,"Int",Length,"UPtr",&Bitmap)
                     throw Exception("Could not retrieve bitmap dimensions.")
                 this.ImageW := NumGet(Bitmap,4,"Int"), this.ImageH := NumGet(Bitmap,8,"Int")
-                this.ImageModified := 0
+
+                this.ImageModified := 0 ;reset image modified flag
             }
 
             hTempDC := DllCall("CreateCompatibleDC","UPtr",hDC,"UPtr") ;create a temporary device context
             hOriginalBitmap := DllCall("SelectObject","UPtr",hTempDC,"UPtr",this.hBitmap,"UPtr") ;select the bitmap
 
-            If !DllCall("AlphaBlend","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(this.ScreenY),"Int",Round(this.ScreenX + this.ScreenW),"Int",Round(this.ScreenY + this.ScreenH),"UPtr",hTempDC,"Int",0,"Int",0,"Int",this.ImageW,"Int",this.ImageH,"UInt",0x1000000) ;AC_SRC_OVER | (AC_SRC_ALPHA << 24)
+            ;draw the image with a color drawn as transparent
+            If !DllCall("Msimg32\TransparentBlt","UPtr",hDC
+                ,"Int",Round(this.ScreenX)
+                ,"Int",Round(this.ScreenY)
+                ,"Int",Round(this.ScreenW)
+                ,"Int",Round(this.ScreenH)
+                ,"UPtr",hTempDC,"Int",0,"Int",0,"Int",this.ImageW,"Int",this.ImageH,"UInt",this.TransparentColor)
                 throw Exception("Could not draw bitmap.")
 
             If !DllCall("SelectObject","UPtr",hTempDC,"UPtr",hOriginalBitmap,"UPtr") ;deselect the bitmap
@@ -478,20 +522,21 @@ class ProgressEntities
         {
             ObjInsert(this,"",Object())
             base.__New()
-            this.hFont := 0
-            this.PreviousViewportWidth := -1
+            this.Text := "Text"
+            this.Typeface := "Verdana"
             this.Align := "Center"
             this.Size := 5 ;wip: use height for this
             this.Weight := 500
             this.Italic := 0
             this.Underline := 0
             this.Strikeout := 0
-            this.Typeface := "Verdana"
-            this.Text := "Text"
+            this.hFont := 0
+            this.PreviousViewportWidth := -1
         }
 
         Draw(hDC,Layer,Viewport)
         {
+            ;check for entity visibility
             If !this.Visible
                 Return
 
@@ -500,6 +545,7 @@ class ProgressEntities
                 ;|| (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > (Viewport.ScreenY + Viewport.ScreenH)
                 ;Return
 
+            ;set the text alignment
             If (this.Align = "Left")
                 AlignMode := 24 ;TA_LEFT | TA_BASELINE: align text to the left and the baseline
             Else If (this.Align = "Center")
@@ -513,10 +559,13 @@ class ProgressEntities
             LineHeight := this.Size * Viewport.ScreenW * 0.01
 
             ;update the font if it has changed or if the viewport size has changed
-            If this.FontModified || Viewport.ScreenW != this.PreviousViewportWidth
+            If this.FontModified || this.PreviousViewportWidth != Viewport.ScreenW
             {
+                ;delete the old font if present
                 If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
                     throw Exception("Could not delete font.")
+
+                ;create the font
                 ;wip: doesn't work
                 ;If this.Size Is Not Number
                     ;throw Exception("Invalid font size: " . this.Size . ".")
@@ -525,17 +574,21 @@ class ProgressEntities
                 this.hFont := DllCall("CreateFont","Int",Round(LineHeight),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
                 If !this.hFont
                     throw Exception("Could not create font.")
-                this.FontModified := 0
-            }
-            this.PreviousViewportWidth := Viewport.ScreenW
 
+                this.FontModified := 0 ;reset font modified flag
+                this.PreviousViewportWidth := Viewport.ScreenW ;reset the previous viewport width
+            }
+
+            ;set the text color
             If (DllCall("SetTextColor","UPtr",hDC,"UInt",this.Color) = 0xFFFFFFFF) ;CLR_INVALID
                 throw Exception("Could not set text color.")
 
-            hOriginalFont := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hFont,"UPtr") ;select the font
+            ;select the font
+            hOriginalFont := DllCall("SelectObject","UPtr",hDC,"UPtr",this.hFont,"UPtr")
             If !hOriginalFont
                 throw Exception("Could not select font into memory device context.")
 
+            ;draw the text
             ;Loop, Parse, this.Text, `n ;wip
             Text := this.Text, PositionY := this.ScreenY
             Loop, Parse, Text, `n
@@ -545,7 +598,8 @@ class ProgressEntities
                 PositionY += LineHeight
             }
 
-            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalFont,"UPtr") ;deselect the font
+            ;deselect the font
+            If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalFont,"UPtr")
                 throw Exception("Could not deselect font from memory device context.")
         }
 
@@ -576,12 +630,12 @@ class ProgressEntities
         __New()
         {
             base.__New()
-            this.Physical := 1
-            this.Dynamic := 0
-            this.Density := 1
-            this.Restitution := 0.7
             this.SpeedX := 0
             this.SpeedY := 0
+            this.Density := 1
+            this.Restitution := 0.7
+            this.Physical := 1
+            this.Dynamic := 0
         }
     }
 

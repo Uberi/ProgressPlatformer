@@ -19,7 +19,6 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-;wip: different colored "worlds" based on a single hue
 ;wip: look into why the player sometimes can't kill an enemy while it is jumping (it's because we only set IntersectX and IntersectY on the first object to collide, when both colliding objects should be set)
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick and mouse input
@@ -45,8 +44,12 @@ Gui, Show, w800 h600, ProgressPlatformer
 
 Game := new ProgressEngine(WinExist())
 
+Game.Hue := 4, Game.Saturation := 0.0
+
 #Include Levels/Title.ahk
 #Include Levels/Tutorial.ahk
+
+Game.Saturation := 0.1
 
 Notes := new NotePlayer(0)
 
@@ -95,7 +98,7 @@ class KeyboardController
         If GetKeyState("Tab","P") ;slow motion
             Delta *= 0.25
 
-        If GetKeyState("F5","P")
+        If GetKeyState("F5","P") ;level skip
         {
             KeyWait, F5
             Return, 1 ;skip level
@@ -116,7 +119,7 @@ class GameEntities
         __New(Layer)
         {
             base.__New()
-            this.Color := 0x555555
+            this.Color := ColorTint(0x555555)
             this.X := 1
             this.Y := 9.5
             this.TotalWidth := 8
@@ -149,7 +152,7 @@ class GameEntities
             this.Y := Y
             this.W := W
             this.H := H
-            this.Color := 0x444444
+            this.Color := ColorTint(0x333333)
         }
     }
 
@@ -169,7 +172,7 @@ class GameEntities
                 this.RangeX := X, this.RangeY := Start, this.RangeW := 0, this.RangeH := Length
             this.Speed := Speed
             this.Direction := 1
-            this.Color := 0x777777
+            this.Color := ColorTint(0x777777)
         }
 
         Step(Delta,Layer,Viewport)
@@ -182,7 +185,7 @@ class GameEntities
             this.X += this.Speed * Delta * this.Direction
         }
     }
-
+    
     class Box extends ProgressEntities.Dynamic
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
@@ -194,7 +197,7 @@ class GameEntities
             this.H := H
             this.SpeedX := SpeedX
             this.SpeedY := SpeedY
-            this.Color := 0x777777
+            this.Color := ColorTint(0x777777)
             this.Density := 0.5
         }
 
@@ -219,7 +222,7 @@ class GameEntities
             this.FullH := H
             this.SpeedX := SpeedX
             this.SpeedY := SpeedY
-            this.Color := 0xAFAFAF
+            this.Color := ColorTint(0xAFAFAF)
             this.LastContact := 0
         }
 
@@ -247,7 +250,7 @@ class GameEntities
                     Else
                         this.Health -= 150 * Delta
                 }
-                If (Entity.__Class = "GameEntities.KillBlock" && this.Intersect(Entity)) ;player collided with a kill block
+                If Entity.__Class = "GameEntities.KillBlock" && this.Intersect(Entity) ;player collided with kill block
                     Return, 5 ;slain by kill block
             }
 
@@ -298,7 +301,7 @@ class GameEntities
             this.Y := Y
             this.W := W
             this.H := H
-            this.Color := 0xFFFFFF
+            this.Color := ColorTint(0xFFFFFF)
         }
     }
 
@@ -326,7 +329,7 @@ class GameEntities
             this.H := H
             this.SpeedX := SpeedX
             this.SpeedY := SpeedY
-            this.Color := 0x777777
+            this.Color := ColorTint(0x777777)
         }
 
         Step(Delta,Layer,Viewport)
@@ -436,4 +439,62 @@ class MessageScreenEntities
             }
         }
     }
+}
+
+ColorTint(Color)
+{
+    global Game
+    Hue := Game.Hue, Saturation := Game.Saturation
+
+    Red := Color >> 16, Green := (Color >> 8) & 0xFF, Blue := Color & 0xFF
+
+    Value := (Red > Green) ? ((Red > Blue) ? Red : Blue) : ((Green > Blue) ? Green : Blue)
+    Sector := Floor(Hue)
+    FractionalHue := Hue - Sector
+    Component1 := Round(Value * (1 - Saturation))
+    Component2 := Round(Value * (1 - (Saturation * FractionalHue)))
+    Component3 := Round(Value * (1 - (Saturation * (1 - FractionalHue))))
+
+    If Sector = 0 ;zeroth sector
+        Red := Value, Green := Component3, Blue := Component1
+    Else If Sector = 1 ;first sector
+        Red := Component2, Green := Value, Blue := Component1
+    Else If Sector = 2 ;second sector
+        Red := Component1, Green := Value, Blue := Component3
+    Else If Sector = 3 ;third sector
+        Red := Component1, Green := Component2, Blue := Value
+    Else If Sector = 4 ;fourth sector
+        Red := Component3, Green := Component1, Blue := Value
+    Else ;If Sector = 5 ;fifth sector
+        Red := Value, Green := Component1, Blue := Component2
+
+    Return, (Red << 16) | (Green << 8) | Blue
+}
+
+/*
+ColorTint(Color,Hue,Saturation = 0.5)
+{
+    Red := Color >> 16, Green := (Color >> 8) & 0xFF, Blue := Color & 0xFF
+
+    Value := (Red > Green) ? ((Red > Blue) ? Red : Blue) : ((Green > Blue) ? Green : Blue)
+    Sector := Floor(Hue)
+    FractionalHue := Hue - Sector
+    Component1 := Round(Value * (1 - Saturation))
+    Component2 := Round(Value * (1 - (Saturation * FractionalHue)))
+    Component3 := Round(Value * (1 - (Saturation * (1 - FractionalHue))))
+
+    If Sector = 0 ;zeroth sector
+        Red := Value, Green := Component3, Blue := Component1
+    Else If Sector = 1 ;first sector
+        Red := Component2, Green := Value, Blue := Component1
+    Else If Sector = 2 ;second sector
+        Red := Component1, Green := Value, Blue := Component3
+    Else If Sector = 3 ;third sector
+        Red := Component1, Green := Component2, Blue := Value
+    Else If Sector = 4 ;fourth sector
+        Red := Component3, Green := Component1, Blue := Value
+    Else ;If Sector = 5 ;fifth sector
+        Red := Value, Green := Component1, Blue := Component2
+
+    Return, (Red << 16) | (Green << 8) | Blue
 }

@@ -205,8 +205,8 @@ NotePlayerPlayTimer(hWindow,Message,Event,TickCount)
     {
         ;turn off any active notes
         For Index In NotePlayer.ActiveNotes
-            this.Device.NoteOff(Index,100)
-        this.Playing := 0
+            NotePlayer.Device.NoteOff(Index,100)
+        NotePlayer.Playing := 0
     }
 }
 

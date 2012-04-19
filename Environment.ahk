@@ -46,7 +46,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             this.Y := 0
             this.W := 10
             this.H := 10
-            this.Color := 0xCCCCCC
+            this.Color := ColorTint(0xCCCCCC)
         }
     }
 
@@ -55,7 +55,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         __New(Layer)
         {
             base.__New()
-            this.Color := 0xE8E8E8
+            this.Color := ColorTint(0xE8E8E8)
             Random, Temp1, 0.0, 10
             this.X := Temp1
             Random, Temp1, -10, 10
@@ -86,7 +86,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         __New(Layer)
         {
             base.__New()
-            this.Color := 0xE8E8E8
+            this.Color := ColorTint(0xE8E8E8)
             Random, Temp1, 0.0, 10.0
             this.X := Temp1
             Random, Temp1, 0.0, 10.0
