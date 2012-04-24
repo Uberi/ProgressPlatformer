@@ -5,7 +5,7 @@ ProgressPlatformer is a game. More specifically, a platformer game. Try it out!
 Screenshot
 ----------
 
-![ProgressPlatformer Screenshot](http://www.autohotkey.net/~Uberi/Images/AchromaticTitle.png "Title screen.")
+![ProgressPlatformer Screenshot](Achromatic.png "Title screen.")
 
 Usage
 -----
@@ -105,7 +105,7 @@ Now let's start the engine!
 
 You will get something like this:
 
-![ProgressEngine Demo](http://www.autohotkey.net/~Uberi/Images/ProgressEngine.png "Test game.")
+![ProgressEngine Demo](ProgressEngine.png "Test game.")
 
 Here's the code in its entirety:
 
