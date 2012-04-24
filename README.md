@@ -2,6 +2,11 @@ ProgressPlatformer
 ==================
 ProgressPlatformer is a game. More specifically, a platformer game. Try it out!
 
+Screenshot
+----------
+
+![ProgressPlatformer Screenshot](http://www.autohotkey.net/~Uberi/Images/AchromaticTitle.png "Title screen.")
+
 Usage
 -----
 If not compiled, this program requires [AutoHotkey](http://www.autohotkey.com/), specifically a version above 1.1.05.00, although the latest version is recommended.
@@ -100,7 +105,7 @@ Now let's start the engine!
 
 You will get something like this:
 
-![ProgressEngine Demo](http://www.autohotkey.net/~Uberi/Images/ProgressEngine.png "ProgressEngine Demo")
+![ProgressEngine Demo](http://www.autohotkey.net/~Uberi/Images/ProgressEngine.png "Test game.")
 
 Here's the code in its entirety:
 
@@ -170,9 +175,9 @@ Let's add some notes. NotePlayer offers the following methods:
 * NotePlayer.Play(Index,Length = 500,DownVelocity = 60,UpVelocity = 60): works similar to NotePlayer.Note, except the note begins playing immediately rather than after explicitly playing the noteplayer. This is useful for sound effects and other notes that must be played at specific times. It accepts the same parameters as NotePlayer.Note and uses them in the same way.
 * NotePlayer.Start(): begins playing the notes and delays in the order they were added, and sets the Playing property to true.
 * NotePlayer.Stop(): stops a currently playing noteplayer, cutting off notes if any are active at the time it is called.
-* NotePlayer.Reset(): resets a noteplayer to its initial state; that is, it stops the noteplayer and deletes the notes in it so a new tune can be added.[/list]
+* NotePlayer.Reset(): resets a noteplayer to its initial state; that is, it stops the noteplayer and deletes the notes in it so a new tune can be added.
 
-The noteplayer is asynchronous; that means that when you call any of the above methods, it stores the action and [i]returns immediately[/i]. Then, when you play the noteplayer, it occasionally does its own thing in the background, without disrupting the rest of the script.
+The noteplayer is asynchronous; that means that when you call any of the above methods, it stores the action and _returns immediately_. Then, when you play the noteplayer, it occasionally does its own thing in the background, without disrupting the rest of the script.
 
 Time for some music! The following is taken directly from ProgressPlatformer:
 
