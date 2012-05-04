@@ -376,8 +376,8 @@ Gui, +Delimiter`n
 Gui, Add, DropDownList, x90 y440 w400 h20 vInstrument R30 Choose1 AltSubmit, %Instruments%
 
 Gui, Font, s12
-Gui, Add, Button, x10 y470 w320 h30 vPlayButton gPlay Default, Play
-Gui, Add, Button, x340 y470 w150 h30 vConvertButton gConvert, Convert
+Gui, Add, Button, x10 y470 w320 h30 vPlayButton gPlay Default, &Play
+Gui, Add, Button, x340 y470 w150 h30 vConvertButton gConvert, &Convert
 
 Gui, +Resize +MinSize350x200
 Gui, Show, w500 h510, Note Editor
@@ -401,7 +401,7 @@ GuiControlGet, Tune,, Tune
 If InStr(Tune,"NotePlayer") ;input is code
 {
     ;set instrument if present
-    If RegExMatch(Tune,"iS)new\s+NotePlayer\(\s*(\d+)\s*\)",Value)
+    If RegExMatch(Tune,"iS)\w\.Instrument(\s*(\d+)\s*)",Value)
         GuiControl, Choose, Instrument, % Value1 + 1
 
     Notes := new NotePlayer(Value1) ;create a noteplayer with the correct instrument
@@ -461,7 +461,7 @@ GuiControlGet, Tune,, Tune
 If InStr(Tune,"NotePlayer") ;input is code
 {
     ;set instrument if present
-    If RegExMatch(Tune,"iS)new\s+NotePlayer\(\s*(\d+)\s*\)",Value)
+    If RegExMatch(Tune,"iS)\w\.Instrument(\s*(\d+)\s*)",Value)
         GuiControl, Choose, Instrument, % Value1 + 1
 
     Result := ""
@@ -491,7 +491,7 @@ Else
     StringLower, Name, Name
 
     ;generate the code
-    Result := "Notes := new NotePlayer(" . (Instrument - 1) . ") `;" . Name . "`n"
+    Result := "Notes := new NotePlayer`nNotes.Instrument(" . (Instrument - 1) . ") `;" . Name . "`n"
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
         If RegExMatch(A_LoopField,"iS)^\s*(#|\d+)\s*(.*)$",Field)
