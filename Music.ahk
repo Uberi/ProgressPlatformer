@@ -21,10 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class NotePlayer
 {
-    __New(Sound = 0)
+    __New()
     {
         this.Device := new MIDIOutputDevice
-        this.Device.Sound := Sound
         this.Device.SetVolume(100)
 
         this.pCallback := RegisterCallback("NotePlayerPlayTimer","F","",&this)
@@ -33,22 +32,32 @@ class NotePlayer
         this.Playing := 0
     }
 
-    Note(Index,Length = 500,DownVelocity = 60,UpVelocity = 60)
+    Instrument(Sound)
     {
         Action := Object()
-        Action.Index := Index
-        Action.Length := Length
-        Action.DownVelocity := DownVelocity
-        Action.UpVelocity := UpVelocity
+        Action.Type := "Instrument"
+        Action.Sound := Sound
         this.Actions.Insert(Action)
         Return, this
     }
 
-    Delay(Length = 1000)
+    Delay(Length)
     {
         Action := Object()
-        Action.Index := -1
+        Action.Type := "Delay"
         Action.Length := Length
+        this.Actions.Insert(Action)
+        Return, this
+    }
+
+    Note(Index,Length,DownVelocity = 60,UpVelocity = 60)
+    {
+        Action := Object()
+        Action.Type := "Note"
+        Action.Index := Index
+        Action.Length := Length
+        Action.DownVelocity := DownVelocity
+        Action.UpVelocity := UpVelocity
         this.Actions.Insert(Action)
         Return, this
     }
@@ -85,9 +94,15 @@ class NotePlayer
         Timeline := [], Offset := 0
         For Index, Action In this.Actions
         {
-            If Action.Index = -1 ;delay
+            If Action.Type = "Instrument"
+            {
+                If !ObjHasKey(Timeline,Offset)
+                    Timeline[Offset] := []
+                Timeline[Offset].Insert(Object("Type","Instrument","Sound",Action.Sound))
+            }
+            Else If Action.Type = "Delay"
                 Offset += Action.Length
-            Else ;note
+            Else ;If Action.Type = "Note"
             {
                 If !ObjHasKey(Timeline,Offset)
                     Timeline[Offset] := []
@@ -178,12 +193,14 @@ NotePlayerPlayTimer(hWindow,Message,Event,TickCount)
     {
         If Index != 1 ;skip over the first field, which is the time offset
         {
-            If (Action.Type = "NoteOn") ;note on action
+            If Action.Type = "Instrument" ;instrument change
+                NotePlayer.Device.Sound := Action.Sound
+            Else If Action.Type = "NoteOn" ;note on action
             {
                 NotePlayer.Device.NoteOn(Action.Index,Action.Velocity)
                 NotePlayer.ActiveNotes[Action.Index] := 1
             }
-            Else If (Action.Type = "NoteOff") ;note off action
+            Else If Action.Type = "NoteOff" ;note off action
             {
                 NotePlayer.Device.NoteOff(Action.Index,Action.Velocity)
                 NotePlayer.ActiveNotes.Remove(Action.Index,"")

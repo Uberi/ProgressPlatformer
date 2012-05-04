@@ -170,16 +170,19 @@ Now we'll enable looping, so it plays over and over:
 
 Let's add some notes. NotePlayer offers the following methods:
 
-* NotePlayer.Note(Index,Length = 500,DownVelocity = 60,UpVelocity = 60): Adds a single note to the current noteplayer, which plays for Length milliseconds, is pressed with a velocity of DownVelocity, and is released with a velocity of UpVelocity. All velocities are numbers between 0 and 100.
-* NotePlayer.Delay(Length = 1000): delays playing of the next note for Length milliseconds while the noteplayer is playing.
-* NotePlayer.Play(Index,Length = 500,DownVelocity = 60,UpVelocity = 60): works similar to NotePlayer.Note, except the note begins playing immediately rather than after explicitly playing the noteplayer. This is useful for sound effects and other notes that must be played at specific times. It accepts the same parameters as NotePlayer.Note and uses them in the same way.
-* NotePlayer.Start(): begins playing the notes and delays in the order they were added, and sets the Playing property to true.
-* NotePlayer.Stop(): stops a currently playing noteplayer, cutting off notes if any are active at the time it is called.
-* NotePlayer.Reset(): resets a noteplayer to its initial state; that is, it stops the noteplayer and deletes the notes in it so a new tune can be added.
+* NotePlayer.Note(Index,Length,DownVelocity = 60,UpVelocity = 60): Adds a single note to the noteplayer, which plays for Length milliseconds, is pressed with a velocity of DownVelocity, and is released with a velocity of UpVelocity. All velocities are numbers between 0 and 100.
+* NotePlayer.Instrument(Sound): Sets the instrument of the noteplayer to a given sound, which is also known as a "program" or a "patch" in MIDI terminology. This can be used to play multiple notes at once with differing instruments for each.
+* NotePlayer.Delay(Length): Delays playing of the next note for Length milliseconds while the noteplayer is playing.
+* NotePlayer.Play(Index,Length,DownVelocity = 60,UpVelocity = 60): Works similarly to NotePlayer.Note, except the note begins playing immediately rather than after explicitly playing the noteplayer. This is useful for sound effects and other notes that must be played at specific times. It accepts the same parameters as NotePlayer.Note and uses them in the same way.
+* NotePlayer.Start(): Begins playing the notes and delays in the order they were added, and sets the Playing property to true.
+* NotePlayer.Stop(): Stops a currently playing noteplayer, cutting off notes if any are active at the time it is called.
+* NotePlayer.Reset(): Resets a noteplayer to its initial state; that is, it stops the noteplayer and deletes the notes in it so a new tune can be added.
 
 The noteplayer is asynchronous; that means that when you call any of the above methods, it stores the action and _returns immediately_. Then, when you play the noteplayer, it occasionally does its own thing in the background, without disrupting the rest of the script.
 
 Time for some music! The following is taken directly from ProgressPlatformer:
+
+    Notes.Instrument(0)
 
     Notes.Note(40,1000,70).Note(48,1000,70).Delay(1800)
     Notes.Note(41,1000,70).Note(47,1000,70).Delay(1800)
@@ -197,7 +200,7 @@ Time for some music! The following is taken directly from ProgressPlatformer:
 
 And now we play it:
 
-    Notes.Play()
+    Notes.Start()
 
 All together now:
 

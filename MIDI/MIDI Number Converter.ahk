@@ -408,7 +408,7 @@ If InStr(Tune,"NotePlayer") ;input is code
 
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
-        If RegExMatch(A_LoopField,"iS)^\s*\w+((?:\.Note\(\s*\d+\s*(?:,\s*\d+\s*){0,3}\))*)\.Delay\(\s*(\d+)\s*\)",Field)
+        If RegExMatch(A_LoopField,"iS)^\s*\w+((?:\.Note\(\s*\d+\s*(?:,\s*\d+\s*){1,3}\))*)\.Delay\(\s*(\d+)\s*\)",Field)
         {
             Field1 := SubStr(Field1,2) ;remove first dot
             Loop, Parse, Field1, . ;process each note
@@ -467,7 +467,7 @@ If InStr(Tune,"NotePlayer") ;input is code
     Result := ""
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
-        If RegExMatch(A_LoopField,"iS)^\s*\w+((?:\.Note\(\s*\d+\s*(?:,\s*\d+\s*){0,3}\))*)\.Delay\(\s*(\d+)\s*\)",Field)
+        If RegExMatch(A_LoopField,"iS)^\s*\w+((?:\.Note\(\s*\d+\s*(?:,\s*\d+\s*){1,3}\))*)\.Delay\(\s*(\d+)\s*\)",Field)
         {
             Result .= Field2 ;insert the duration
             Field1 := SubStr(Field1,2) ;remove first dot
