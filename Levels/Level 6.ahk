@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-MessageScreen(Game,"Level 3","Remember: Black hurts. White is your friend.")
+MessageScreen(Game,"Level 6","Stuck in prison")
 
 StartLevel := 1
 Loop
@@ -34,23 +34,21 @@ Loop
         Environment.Clouds(Game.Layers[1])
 
         Entities := Game.Layers[2].Entities
-        Entities.Insert(new GameEntities.Block(0.889,5.222,0.222,1.333))
-        Entities.Insert(new GameEntities.Block(0.111,6.333,0.778,0.222))
-        Entities.Insert(new GameEntities.Block(0.889,5.000,6.889,0.222))
-        Entities.Insert(new GameEntities.Block(8.444,3.000,0.222,1.111))
-        Entities.Insert(new GameEntities.Block(7.000,1.778,0.222,1.000))
-        Entities.Insert(new GameEntities.Block(2.667,0.889,6.111,0.222))
-        Entities.Insert(new GameEntities.Block(3.333,1.667,0.222,0.889))
-        Entities.Insert(new GameEntities.Block(3.556,2.333,1.111,0.222))
-        Entities.Insert(new GameEntities.Block(4.667,1.667,0.222,0.889))
-        Entities.Insert(new GameEntities.Block(1.889,0.778,0.222,1.222))
-        Entities.Insert(new GameEntities.Goal(8.111,0.111,0.556,0.778))
-        Entities.Insert(new GameEntities.KillBlock(8.778,0.889,0.1,0.222))
-        Entities.Insert(new GameEntities.Player(0.322,5.111,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(3.889,4.444,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(6.667,4.444,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(3.778,1.667,0.333,0.444,0.000,0.000))
+        Entities.Insert(new GameEntities.Block(1,9,8,0.5))
+        Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
+        Entities.Insert(new GameEntities.Player(4.5,8.556,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(6,8.556,0.333,0.444,0,0))
 
+        Entities.Insert(new GameEntities.Box(4.5,4.066,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(4.5,4.466,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(4.5,5.066,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(4.5,5.466,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(4.5,6.066,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(4.5,6.466,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(4.5,7.066,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(4.5,7.466,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(4.5,8.066,0.333,0.5,0,0))
+        
         Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
     Result := Game.Start()
@@ -63,7 +61,5 @@ Loop
         MessageScreen(Game,"- You have experienced -","What happens when you think outside the box")
     Else If Result = 4 ;game paused
         MessageScreen(Game,"- You are experiencing -","A space-time paradox"), StartLevel := 0
-    Else If Result = 5 ;slain by kill block
-        MessageScreen(Game,"- You have experienced -","an UNBIASED pair annihilation")
 }
 Game.Layers := []

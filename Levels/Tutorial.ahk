@@ -19,29 +19,9 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-Notes := new NotePlayer(28)
+#Include Music/Green.ahk
 
-Notes.Repeat := 1
-
-Loop, 2
-{
-    Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
-    Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
-    Notes.Note(47,2000,45).Note(51,2000,45).Delay(3000)
-    Notes.Note(45,2000,40).Note(49,2000,40).Delay(3400)
-}
-
-Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
-Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
-Notes.Note(56,2000,45).Note(59,2000,45).Delay(3000)
-Notes.Note(51,2000,40).Note(57,2000,40).Delay(3400)
-
-Notes.Note(49,2000,50).Note(52,2000,50).Delay(3200)
-Notes.Note(52,2000,70).Note(56,2000,70).Delay(3200)
-Notes.Note(47,2000,45).Note(51,2000,45).Delay(3000)
-Notes.Note(54,2000,40).Note(57,2000,40).Delay(3400)
-
-Notes.Start()
+MessageScreen(Game,"Let's Play Achromatic and fail!","Press space to skip messages and pause the action")
 
 StartLevel := 1
 Loop
@@ -50,6 +30,7 @@ Loop
     {
         Game.Layers[1] := new ProgressEngine.Layer
         Game.Layers[2] := new ProgressEngine.Layer
+        Game.Layers[3] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
         Entities := Game.Layers[2].Entities
@@ -57,16 +38,20 @@ Loop
         Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
         Entities.Insert(new GameEntities.Player(1.5,7,0.333,0.444,0,0))
 
-        Entities.Insert(new TutorialText("Let's warm up."))
+        Entities.Insert(new TutorialText("Use the arrow keys to move, duck and jump",5,5))
+
+    Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
     Result := Game.Start()
     StartLevel := 1
     If Result = 1 ;reached goal
         Break
-    If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds","Press Space to restart the level.")
-    Else If Result = 4 ;paused
-        MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
+    If Result = 2 ;out of health
+        MessageScreen(Game,"You ran out of time","Press space to restart level")
+    Else If Result = 3 ;out of bounds
+        MessageScreen(Game,"Out of bounds","Press space to restart level")
+    Else If Result = 4 ;game paused
+        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
 }
 Game.Layers := []
 
@@ -77,34 +62,117 @@ Loop
     {
         Game.Layers[1] := new ProgressEngine.Layer
         Game.Layers[2] := new ProgressEngine.Layer
+        Game.Layers[3] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
         Entities := Game.Layers[2].Entities
-        Entities.Insert(new GameEntities.Block(1,9,8,0.5))
-        Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
+        Entities.Insert(new GameEntities.Block(1,9,4,0.5))
+        Entities.Insert(new GameEntities.Block(7,9,2,0.5))
+        Entities.Insert(new GameEntities.Goal(8,8.2,0.5,0.8))
         Entities.Insert(new GameEntities.Player(1.5,7,0.333,0.444,0,0))
 
-        Entities.Insert(new GameEntities.Box(3,7,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,6.5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,6,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,5.5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,4.5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,4,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,3.5,0.5,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(3,3,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(7,5,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(7,4.5,0.5,0.5,0,0))
+        Entities.Insert(new GameEntities.Box(7,4,0.5,0.5,0,0))
 
-        Entities.Insert(new TutorialText("That was too easy."))
+        Entities.Insert(new TutorialText("Momentum is a very big part of this game"))
+
+        Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
     Result := Game.Start()
     StartLevel := 1
     If Result = 1 ;reached goal
         Break
-    If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds","Press Space to restart the level.")
-    Else If Result = 4 ;paused
-        MessageScreen(Game,"Paused","Press Space to resume."), StartLevel := 0
+    If Result = 2 ;out of health
+        MessageScreen(Game,"You ran out of time","Press space to restart level")
+    Else If Result = 3 ;out of bounds
+        MessageScreen(Game,"Out of bounds","Press space to restart level")
+    Else If Result = 4 ;game paused
+        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
 }
+Game.Layers := []
+
+StartLevel := 1
+Loop
+{
+    If StartLevel
+    {
+        Game.Layers[1] := new ProgressEngine.Layer
+        Game.Layers[2] := new ProgressEngine.Layer
+        Game.Layers[3] := new ProgressEngine.Layer
+        Game.Layers[1].Entities.Insert(new KeyboardController)
+        Environment.Clouds(Game.Layers[1])
+        Entities := Game.Layers[2].Entities
+        Entities.Insert(new GameEntities.Block(3,6,5,0.5))
+        Entities.Insert(new GameEntities.Block(8,1,0.5,5.5))
+        Entities.Insert(new GameEntities.Block(3,1,5,0.5))
+        Entities.Insert(new GameEntities.Goal(5,1.5,0.5,0.8))
+        Entities.Insert(new GameEntities.Player(4.5,3,0.333,0.444,0,0))
+
+        Entities.Insert(new TutorialText("Hold a direction to stick to it.",5,5))
+
+        Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
+    }
+    Result := Game.Start()
+    StartLevel := 1
+    If Result = 1 ;reached goal
+        Break
+    If Result = 2 ;out of health
+        MessageScreen(Game,"You ran out of time","Press space to restart level")
+    Else If Result = 3 ;out of bounds
+        MessageScreen(Game,"Out of bounds","Press space to restart level")
+    Else If Result = 4 ;game paused
+        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+}
+Game.Layers := []
+
+StartLevel := 1
+Loop
+{
+    If StartLevel
+    {
+        Game.Layers[1] := new ProgressEngine.Layer
+        Game.Layers[2] := new ProgressEngine.Layer
+        Game.Layers[3] := new ProgressEngine.Layer
+        Game.Layers[1].Entities.Insert(new KeyboardController)
+        Environment.Clouds(Game.Layers[1])
+        Entities := Game.Layers[2].Entities
+        Entities.Insert(new GameEntities.Block(1,7,5,0.5))
+        Entities.Insert(new GameEntities.Block(4,8,5,0.5))
+        Entities.Insert(new GameEntities.Block(3,1,8,0.2))
+
+        Entities.Insert(new GameEntities.Block(1,2,0.5,5,0,0))
+        Entities.Insert(new GameEntities.Block(2,3,0.5,4,0,0))
+        Entities.Insert(new GameEntities.KillBlock(3,4,0.5,3,0,0))
+        Entities.Insert(new GameEntities.Block(4,5,0.5,2,0,0))
+        Entities.Insert(new GameEntities.Block(5,6,0.5,1,0,0))
+
+        Entities.Insert(new GameEntities.Enemy(4,0.2,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Goal(9,0.2,0.5,0.8))
+        Entities.Insert(new GameEntities.Player(2,7.499,0.333,0.444,0,0))
+
+        Entities.Insert(new TutorialText("A couple more things.",2,9))
+        Entities.Insert(new TutorialText("Beware black.",4.1,3.6))
+        Entities.Insert(new TutorialText("Sometimes,",8.5,5.5))
+        Entities.Insert(new TutorialText("There is more than one solution.",8.4,6.5))
+        Entities.Insert(new TutorialText("Jump on enemies to kill them",0.6,2))
+
+        Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
+    }
+    Result := Game.Start()
+    StartLevel := 1
+    If Result = 1 ;reached goal
+        Break
+    If Result = 2 ;out of health
+        MessageScreen(Game,"It got you there","Press space to restart level")
+    Else If Result = 3 ;out of bounds
+        MessageScreen(Game,"Stay within the bounds please","Press space to restart level")
+    Else If Result = 5
+        MessageScreen(Game,"*face palm*","That's an instant kill block for you")
+    Else If Result = 4 ;game paused
+        MessageScreen(Game,"Game paused","Just a bit more, until your done the tutorial"), StartLevel := 0
+}
+Game.Layers := []
 
 Notes.Stop()
 Notes.Device.__Delete() ;wip

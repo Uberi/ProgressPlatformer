@@ -49,7 +49,6 @@ Loop
         Entities.Insert(new GameEntities.Enemy(3.889,5.556,0.333,0.444,0.0,0.0))
         Entities.Insert(new GameEntities.Enemy(6.111,2.000,0.333,0.444,0.0,0.0))
         Entities.Insert(new GameEntities.Enemy(5.556,0.556,0.333,0.444,0.0,0.0))
-        Entities.Insert(new GameEntities.KillBlock(9.222,4.667,0.333,0.444))
 
         Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
@@ -63,7 +62,5 @@ Loop
         MessageScreen(Game,"- You have experienced -","What happens when you think outside the box")
     Else If Result = 4 ;game paused
         MessageScreen(Game,"- You are experiencing -","A space-time paradox"), StartLevel := 0
-    Else If Result = 5 ;slain by kill block
-        MessageScreen(Game,"- You have experienced -","an UNBIASED pair annihilation")
 }
 Game.Layers := []

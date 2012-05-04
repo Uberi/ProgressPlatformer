@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-MessageScreen(Game,"Level 3","Remember: Black hurts. White is your friend.")
+MessageScreen(Game,"Level 5","I know it's cheap. Deal with it.")
 
 StartLevel := 1
 Loop
@@ -34,22 +34,21 @@ Loop
         Environment.Clouds(Game.Layers[1])
 
         Entities := Game.Layers[2].Entities
-        Entities.Insert(new GameEntities.Block(0.889,5.222,0.222,1.333))
-        Entities.Insert(new GameEntities.Block(0.111,6.333,0.778,0.222))
-        Entities.Insert(new GameEntities.Block(0.889,5.000,6.889,0.222))
-        Entities.Insert(new GameEntities.Block(8.444,3.000,0.222,1.111))
-        Entities.Insert(new GameEntities.Block(7.000,1.778,0.222,1.000))
-        Entities.Insert(new GameEntities.Block(2.667,0.889,6.111,0.222))
-        Entities.Insert(new GameEntities.Block(3.333,1.667,0.222,0.889))
-        Entities.Insert(new GameEntities.Block(3.556,2.333,1.111,0.222))
-        Entities.Insert(new GameEntities.Block(4.667,1.667,0.222,0.889))
-        Entities.Insert(new GameEntities.Block(1.889,0.778,0.222,1.222))
-        Entities.Insert(new GameEntities.Goal(8.111,0.111,0.556,0.778))
-        Entities.Insert(new GameEntities.KillBlock(8.778,0.889,0.1,0.222))
-        Entities.Insert(new GameEntities.Player(0.322,5.111,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(3.889,4.444,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(6.667,4.444,0.333,0.444,0.000,0.000))
-        Entities.Insert(new GameEntities.Enemy(3.778,1.667,0.333,0.444,0.000,0.000))
+        Entities.Insert(new GameEntities.Block(1,8,9,0.2)) ;floor
+        Entities.Insert(new GameEntities.Block(3.5,6.5,4,0.2)) ;middle block
+        Entities.Insert(new GameEntities.Block(9,5,0.2,2)) ;top right vertical
+        Entities.Insert(new GameEntities.Block(9,5,2,0.2)) ;top right horizontal
+        Entities.Insert(new GameEntities.Block(2,2,5,0.2)) ;top block
+        Entities.Insert(new GameEntities.Block(8,3.14,0.5,0.5)) ;stepping block
+        Entities.Insert(new GameEntities.Block(2.5,3.8,1.4,0.2)) ;left top block
+        Entities.Insert(new GameEntities.Block(1.2,6,1.6,0.2)) ;left bottom block
+        Entities.Insert(new GameEntities.KillBlock(6,2,0.2,6)) ;kill
+        Entities.Insert(new GameEntities.Enemy(3.5,5.732,0.333,0.444,0.0,0.0))
+        Entities.Insert(new GameEntities.Enemy(5,7.566,0.333,0.444,0.0,0.0))
+        Entities.Insert(new GameEntities.Enemy(8,2,0.333,0.444,0.0,0.0))
+        Entities.Insert(new GameEntities.Enemy(5,5.732,0.333,0.444,0.0,0.0))
+        Entities.Insert(new GameEntities.Goal(5,5.732,0.556,0.778))
+        Entities.Insert(new GameEntities.Player(8,7.566,0.333,0.444,0.000,0.000))
 
         Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
