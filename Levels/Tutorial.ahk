@@ -153,9 +153,8 @@ Loop
 
         Entities.Insert(new TutorialText("A couple more things.",2,9))
         Entities.Insert(new TutorialText("Beware black.",4.1,3.6))
-        Entities.Insert(new TutorialText("Sometimes,",8.5,5.5))
-        Entities.Insert(new TutorialText("There is more than one solution.",8.4,6.5))
-        Entities.Insert(new TutorialText("Jump on enemies to kill them",0.6,2))
+        Entities.Insert(new TutorialText("There may be more than one solution.",8.4,5.5))
+        Entities.Insert(new TutorialText("Jump on enemies to kill them",0.6,1.8))
 
         Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }

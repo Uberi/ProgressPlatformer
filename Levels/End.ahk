@@ -68,14 +68,14 @@ class Credits extends ProgressEntities.Container
         Entities.Insert(new this.EndHeading("Game Complete",PositionY)), PositionY += 6
         
         Entities.Insert(new this.CreditHeading("Design",PositionY)), PositionY += 1.2
-        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 2.2
+        Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 1.2
         Entities.Insert(new this.CreditMessage("Henry Lu",PositionY)), PositionY += 2.2
 
         Entities.Insert(new this.CreditHeading("Programming",PositionY)), PositionY += 1.2
         Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 2.2
 
         Entities.Insert(new this.CreditHeading("Content",PositionY)), PositionY += 1.2
-        Entities.Insert(new this.CreditMessage("Henry Lu",PositionY)), PositionY += 2.2
+        Entities.Insert(new this.CreditMessage("Henry Lu",PositionY)), PositionY += 1.2
         Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 7.2
 
         Entities.Insert(new this.EndHeading("Achromatic",PositionY)), PositionY += 1.2
