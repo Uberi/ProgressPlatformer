@@ -145,21 +145,25 @@ class ProgressEngine
         For Index, Layer In this.Layers ;step entities
         {
             ;check for layer visibility
-            If !Layer.Visible
+            If !Layer.Visible ;wip: two properties: Layer.Active and Layer.Visible, as well as for entities, which determine whether to step and whether to draw, respectively
                 Continue
 
             ;set up the viewport
             Viewport.X := Layer.X, Viewport.Y := Layer.Y
             Viewport.W := 10, Viewport.H := 10
 
-            ScaleX := Width * (Layer.W / 100), ScaleY := Height * (Layer.H / 100)
+            ProportionX := Width * (Layer.W / 100), ProportionY := Height * (Layer.H / 100)
 
             ;iterate through each entity in the layer
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
-                ;get the screen coordinates of the rectangle
-                Entity.ScreenX := (Entity.X - Layer.X) * ScaleX, Entity.ScreenY := (Entity.Y - Layer.Y) * ScaleY
-                Entity.ScreenW := Entity.W * ScaleX, Entity.ScreenH := Entity.H * ScaleY
+                ;set the screen coordinates of the bounding rectangle
+                Entity.ScreenX := (Entity.X - Layer.X) * ProportionX, Entity.ScreenY := (Entity.Y - Layer.Y) * ProportionY
+                Entity.ScreenW := Entity.W * ProportionX, Entity.ScreenH := Entity.H * ProportionY
+
+                ;set the coordinate transformations of the bounding rectangle
+                Entity.OffsetX := 0, Entity.OffsetY := 0
+                Entity.ScaleX := ProportionX, Entity.ScaleY := ProportionY
 
                 Result := Entity.Step(Delta,Layer,Viewport) ;step the entity
                 If Result
@@ -276,7 +280,7 @@ class ProgressEntities
             this.Layers := []
         }
 
-        Step(Delta,Layer,Viewport,OffsetX = 0,OffsetY = 0)
+        Step(Delta,Layer,Viewport)
         {
             ;initialize the current viewport
             CurrentViewport := Object()
@@ -291,9 +295,9 @@ class ProgressEntities
                     Continue
 
                 ;calculate viewport transformations
-                ScaleX := Viewport.ScreenW / CurrentLayer.W, ScaleY := Viewport.ScreenH / CurrentLayer.H
+                ProportionX := Viewport.ScreenW / CurrentLayer.W, ProportionY := Viewport.ScreenH / CurrentLayer.H
                 RatioX := this.W / CurrentLayer.W, RatioY := this.H / CurrentLayer.H
-                PositionX := OffsetX + (this.X + (CurrentLayer.X * RatioX)) * ScaleX, PositionY := OffsetY + (this.Y + (CurrentLayer.Y * RatioY)) * ScaleY
+                PositionX := this.OffsetX + (this.X + (CurrentLayer.X * RatioX)) * ProportionX, PositionY := this.OffsetY + (this.Y + (CurrentLayer.Y * RatioY)) * ProportionY
 
                 ;set up the current viewport
                 CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
@@ -302,14 +306,15 @@ class ProgressEntities
                 ;iterate through each entity in the layer
                 For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
                 {
-                    ;get the screen coordinates of the rectangle
-                    Entity.ScreenX := PositionX + (Entity.X * RatioX * ScaleX), Entity.ScreenY := PositionY + (Entity.Y * RatioY * ScaleY)
-                    Entity.ScreenW := Entity.W * ScaleX * RatioX, Entity.ScreenH := Entity.H * ScaleY * RatioY
+                    ;set the coordinate transformations of the bounding rectangle
+                    Entity.OffsetX := (this.OffsetX + this.X) * ProportionX, Entity.OffsetY := (this.OffsetY + this.Y) * ProportionY
+                    Entity.ScaleX := ProportionX * RatioX, Entity.ScaleY := ProportionY * RatioY
 
-                    If Entity.base.base.__Class = "ProgressEntities.Container" ;wip: this is really really hacky, need to remove offsetx/offsety mechanism
-                        Result := Entity.Step(Delta,CurrentLayer,CurrentViewport,(OffsetX + this.X) * ScaleX,(OffsetY + this.Y) * ScaleY) ;step the entity
-                    Else
-                        Result := Entity.Step(Delta,CurrentLayer,CurrentViewport) ;step the entity
+                    ;set the screen coordinates of the bounding rectangle
+                    Entity.ScreenX := PositionX + (Entity.X * Entity.ScaleX), Entity.ScreenY := PositionY + (Entity.Y * Entity.ScaleY)
+                    Entity.ScreenW := Entity.W * Entity.ScaleX, Entity.ScreenH := Entity.H * Entity.ScaleY
+
+                    Result := Entity.Step(Delta,CurrentLayer,CurrentViewport) ;step the entity
                     If Result
                         Return, Result
                 }
@@ -430,7 +435,7 @@ class ProgressEntities
         }
     }
 
-    class Image extends ProgressEntities.Basis ;wip
+    class Image extends ProgressEntities.Basis
     {
         __New()
         {
@@ -556,8 +561,6 @@ class ProgressEntities
                 throw Exception("Invalid text alignment: " . this.Align . ".")
             DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
 
-            LineHeight := this.Size * Viewport.ScreenW * 0.01
-
             ;update the font if it has changed or if the viewport size has changed
             If this.FontModified || this.PreviousViewportWidth != Viewport.ScreenW
             {
@@ -565,13 +568,30 @@ class ProgressEntities
                 If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
                     throw Exception("Could not delete font.")
 
+                this.LineHeight := this.Size * Viewport.ScreenW * 0.01
+
                 ;create the font
                 ;wip: doesn't work
-                ;If this.Size Is Not Number
+                ;If this.H Is Not Number
                     ;throw Exception("Invalid font size: " . this.Size . ".")
                 ;If this.Weight Is Not Integer
                     ;throw Exception("Invalid font weight: " . this.Weight . ".")
-                this.hFont := DllCall("CreateFont","Int",Round(LineHeight),"Int",0,"Int",0,"Int",0,"Int",this.Weight,"UInt",this.Italic,"UInt",this.Underline,"UInt",this.Strikeout,"UInt",1,"UInt",0,"UInt",0,"UInt",4,"UInt",0,"Str",this.Typeface,"UPtr") ;DEFAULT_CHARSET, ANTIALIASED_QUALITY
+                this.hFont := DllCall("CreateFont"
+                    ,"Int",Round(this.LineHeight) ;height
+                    ,"Int",0 ;width
+                    ,"Int",0 ;angle of string (0.1 degrees)
+                    ,"Int",0 ;angle of each character (0.1 degrees)
+                    ,"Int",this.Weight ;font weight
+                    ,"UInt",this.Italic ;font italic
+                    ,"UInt",this.Underline ;font underline
+                    ,"UInt",this.Strikeout ;font strikeout
+                    ,"UInt",1 ;DEFAULT_CHARSET: character set
+                    ,"UInt",0 ;OUT_DEFAULT_PRECIS: output precision
+                    ,"UInt",0 ;CLIP_DEFAULT_PRECIS: clipping precision
+                    ,"UInt",4 ;ANTIALIASED_QUALITY: output quality
+                    ,"UInt",0 ;DEFAULT_PITCH | (FF_DONTCARE << 16): font pitch and family
+                    ,"Str",this.Typeface ;typeface name
+                    ,"UPtr")
                 If !this.hFont
                     throw Exception("Could not create font.")
 
@@ -589,14 +609,25 @@ class ProgressEntities
                 throw Exception("Could not select font into memory device context.")
 
             ;draw the text
-            ;Loop, Parse, this.Text, `n ;wip
-            Text := this.Text, PositionY := this.ScreenY
+            Text := this.Text ;wip: Loop, Parse, this.Text, `n
+            PositionY := this.ScreenY
+            VarSetCapacity(Size,8), Width := 0, Height := 0
             Loop, Parse, Text, `n
             {
+                ;draw the current line of text
                 If !DllCall("TextOut","UPtr",hDC,"Int",Round(this.ScreenX),"Int",Round(PositionY),"Str",A_LoopField,"Int",StrLen(A_LoopField))
                     throw Exception("Could not draw text.")
-                PositionY += LineHeight
+                PositionY += this.LineHeight ;move down by the height of the line
+
+                ;obtain the dimensions of the text
+                If !DllCall("GetTextExtentPoint32","UPtr",hDC,"Str",Text,"Int",StrLen(Text),"UPtr",&Size)
+                    throw Exception("Could not retrieve text dimensions.")
+                Temp1 := NumGet(Size,0,"UInt"), (Temp1 > Width) ? (Width := Temp1) : ""
             }
+
+            ;update entity dimensions
+            this.W := Width / this.ScaleX
+            this.H := (PositionY - this.ScreenY) / this.ScaleY
 
             ;deselect the font
             If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalFont,"UPtr")
