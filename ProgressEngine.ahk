@@ -215,14 +215,16 @@ class ProgressEntities
             
         }
 
-        NearestEntities(Layer)
-        {
-            ;wip
-        }
-
         Draw(hDC,Layer,Viewport)
         {
             
+        }
+
+        NearestEntities(Layer,Distance = 2)
+        {
+            ;wip: use occlusion culling to return only entities within the distance
+            ;wip: accept a rectangle object instead of a distance
+            Return, Layer.Entities
         }
 
         MouseHovering(Layer,Rectangle) ;wip
