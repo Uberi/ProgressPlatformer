@@ -47,16 +47,9 @@ Now we create two layers to store our entities in, to keep things organized:
     Engine.Layers[1] := new ProgressEngine.Layer
     Engine.Layers[2] := new ProgressEngine.Layer
 
-Layers at higher indices draw above layers at lower indices. Layers have the following usable properties: X, Y, W, H, and Visible, which affect the position along the X axis, the position along the Y axis, the width, the height, and the visibility of the layer, respectively. All coordinates follow the same coordinate system: orgin at the top left corner, and defaulting to 10 units in width and height.
+Layers at higher indices draw above layers at lower indices. Layers have the following usable properties: X, Y, W, H, and Visible, which affect the position along the X axis, the position along the Y axis, the width, the height, and the visibility of the layer, respectively. All coordinates follow the same coordinate system: orgin at the top left corner, and 10 units in width and height.
 
-ProgressEngine works on the concept of entities - objects that implement stepping, drawing, and other functionality. Built in entities can be found in the ProgressEntities class:
-
-* ProgressEntities.Default: a simple rectangle drawtype, that draws a single rectangle. Possesses the following usable properties: X, Y, W, H, Visible, and Color, which affects the position along the X axis, the position along the Y axis, the width, the height, the visibility, and the color of the entity, respectively.
-* ProgressEntities.Static: similar to ProgressEntities.Default, this entity type is also a rectangle, except it affects physics simulations. That is, it can influence dynamic objects and collide with other entities. It possesses all the same usable properties as ProgressEntities.Default, along with Density and Restitution, which affect the object's density and how bouncy it is, respectively.
-* ProgressEntities.Dynamic: Similar to ProgressEntities.Dynamic, this entity type is still a rectangle and is still affected by physics, except that it can move, collide, and be affected by forces. In addition to all the usable properties of ProgressEntities.Static, two other properties are available: SpeedX and SpeedY, which affect the entity's speed along the X axis and speed along the Y axis, respectively.
-* ProgressEntities.Text: A generic text drawtype, that can draw a string of text. Possesses the following usable properties: Align, Size, Weight, Italic, Underline, Strikeout, Typeface, and Text, which affect the text alignment, size, weight, whether it is italic, underlined, or struck out, the typeface, and the text it displays, respectively.
-
-Now that we have the basic built-in types, we can start to create specialized entities.
+ProgressEngine works on the concept of entities - objects that implement stepping, drawing, and other functionality. Built-in entities can be found in the ProgressEntities class. A more detailed description can be found in the "Built-in Entities" section. We extend these entities to create specialized entities with custom behavior or appearances.
 
 We'll usually want a background:
 
@@ -168,17 +161,7 @@ Now we'll enable looping, so it plays over and over:
 
     Notes.Repeat := 1
 
-Let's add some notes. NotePlayer offers the following methods:
-
-* NotePlayer.Note(Index,Length,DownVelocity = 60,UpVelocity = 60): Adds a single note to the noteplayer, which plays for Length milliseconds, is pressed with a velocity of DownVelocity, and is released with a velocity of UpVelocity. All velocities are numbers between 0 and 100.
-* NotePlayer.Instrument(Sound): Sets the instrument of the noteplayer to a given sound, which is also known as a "program" or a "patch" in MIDI terminology. This can be used to play multiple notes at once with differing instruments for each.
-* NotePlayer.Delay(Length): Delays playing of the next note for Length milliseconds while the noteplayer is playing.
-* NotePlayer.Play(Index,Length,DownVelocity = 60,UpVelocity = 60): Works similarly to NotePlayer.Note, except the note begins playing immediately rather than after explicitly playing the noteplayer. This is useful for sound effects and other notes that must be played at specific times. It accepts the same parameters as NotePlayer.Note and uses them in the same way.
-* NotePlayer.Start(): Begins playing the notes and delays in the order they were added, and sets the Playing property to true.
-* NotePlayer.Stop(): Stops a currently playing noteplayer, cutting off notes if any are active at the time it is called.
-* NotePlayer.Reset(): Resets a noteplayer to its initial state; that is, it stops the noteplayer and deletes the notes in it so a new tune can be added.
-
-The noteplayer is asynchronous; that means that when you call any of the above methods, it stores the action and _returns immediately_. Then, when you play the noteplayer, it occasionally does its own thing in the background, without disrupting the rest of the script.
+NotePlayer functions are documented in the "NotePlayer Properties" section. The noteplayer is asynchronous; that means that when you call any of the above methods, it stores the action and _returns immediately_. Then, when you play the noteplayer, it occasionally does its own thing in the background, without disrupting the rest of the script.
 
 Time for some music! The following is taken directly from ProgressPlatformer:
 
@@ -273,3 +256,128 @@ All together now:
     }
 
 There we have it! ProgressEngine takes care of the rest.
+
+Built-in Entities
+-----------------
+
+### ProgressEntities.Default
+A drawtype that appears as a filled, borderless rectangle.
+
+| Property    | Purpose                                | Modifiable |
+|:------------|:---------------------------------------|:-----------|
+| X           | Position along X-axis (units)          | Yes        |
+| Y           | Position along Y-axis (units)          | Yes        |
+| W           | Width (units)                          | Yes        |
+| H           | Height (units)                         | Yes        |
+| ScreenX     | Position along X-axis (pixels)         | No         |
+| ScreenY     | Position along Y-axis (pixels)         | No         |
+| ScreenW     | Width (pixels)                         | No         |
+| ScreenH     | Height (pixels)                        | No         |
+| Visible     | Entity visibility (True or False)      | Yes        |
+| Color       | Fill color (RGB hex)                   | Yes        |
+
+### ProgressEntities.Static
+A drawtype that appears as a filled, borderless rectangle and is considered in physics simulations; entities that are dynamic are able to collide with it.
+
+| Property    | Purpose                                | Modifiable |
+|:------------|:---------------------------------------|:-----------|
+| X           | Position along X-axis (units)          | Yes        |
+| Y           | Position along Y-axis (units)          | Yes        |
+| W           | Width (units)                          | Yes        |
+| H           | Height (units)                         | Yes        |
+| ScreenX     | Position along X-axis (pixels)         | No         |
+| ScreenY     | Position along Y-axis (pixels)         | No         |
+| ScreenW     | Width (pixels)                         | No         |
+| ScreenH     | Height (pixels)                        | No         |
+| Visible     | Entity visibility (True or False)      | Yes        |
+| Color       | Fill color (RGB hex)                   | Yes        |
+| Density     | Material density (mass/volume)         | Yes        |
+| Restitution | Material bounciness (rebound/incoming) | Yes        |
+
+### ProgressEntities.Dynamic
+A drawtype that appears as a filled, borderless rectangle and is active in physics simulations; it moves and collides according to forces acting upon it.
+Similar to ProgressEntities.Dynamic, this entity type is still a rectangle and is still affected by physics, except that it can move, collide, and be affected by forces. In addition to all the usable properties of ProgressEntities.Static, two other properties are available: SpeedX and SpeedY, which affect the entity's speed along the X axis and speed along the Y axis, respectively.
+
+| Property    | Purpose                                | Modifiable |
+|:------------|:---------------------------------------|:-----------|
+| X           | Position along X-axis (units)          | Yes        |
+| Y           | Position along Y-axis (units)          | Yes        |
+| W           | Width (units)                          | Yes        |
+| H           | Height (units)                         | Yes        |
+| ScreenX     | Position along X-axis (pixels)         | No         |
+| ScreenY     | Position along Y-axis (pixels)         | No         |
+| ScreenW     | Width (pixels)                         | No         |
+| ScreenH     | Height (pixels)                        | No         |
+| Visible     | Entity visibility (True or False)      | Yes        |
+| Color       | Fill color (RGB hex)                   | Yes        |
+| Density     | Material density (mass/volume)         | Yes        |
+| Restitution | Material bounciness (rebound/incoming) | Yes        |
+| SpeedX      | Speed along X-axis (units/s)           | Yes        |
+| SpeedY      | Speed along Y-axis (units/s)           | Yes        |
+
+### ProgressEntities.Text
+A drawtype that appears as text with a transparent background.
+
+| Property  | Purpose                                       | Modifiable |
+|:----------|:----------------------------------------------|:-----------|
+| X         | Position along X-axis (units)                 | Yes        |
+| Y         | Position along Y-axis (units)                 | Yes        |
+| W         | Width (units)                                 | No         |
+| H         | Height (units)                                | No         |
+| ScreenX   | Position along X-axis (pixels)                | No         |
+| ScreenY   | Position along Y-axis (pixels)                | No         |
+| ScreenW   | Width (pixels)                                | No         |
+| ScreenH   | Height (pixels)                               | No         |
+| Visible   | Entity visibility (True or False)             | Yes        |
+| Align     | Text alignment ("Left", "Center", or "Right") | Yes        |
+| Size      | Font size (units)                             | Yes        |
+| Weight    | Font weight (0 to 1000)                       | Yes        |
+| Italic    | Font italic flag (True or False)              | Yes        |
+| Underline | Font underline flag (True or False)           | Yes        |
+| Strikeout | Font strikeout flag (True or False)           | Yes        |
+| Typeface  | Text typeface (typeface name)                 | Yes        |
+| Text      | Text to display (string)                      | Yes        |
+
+NotePlayer Properties
+---------------------
+
+### NotePlayer.Playing
+
+Flag indicating whether the NotePlayer instance is currently playing stored notes.
+
+Useful for determining when the note sequence has ended.
+
+### NotePlayer.Note(Index,Length,DownVelocity = 60,UpVelocity = 60)
+Adds a single note, determined by MIDI note number _Index_, to the NotePlayer instance, which plays for _Length_ milliseconds, is pressed with a velocity of _DownVelocity_, and is released with a velocity of _UpVelocity_, where velocities are numbers between 0 and 100.
+
+Useful for creating sequences of notes that are to be played together.
+
+### NotePlayer.Instrument(Sound)
+Sets the instrument of the noteplayer to _Sound_, which is also known as a "program" or a "patch" in MIDI terminology.
+
+Useful for playing multiple notes using different instruments.
+
+### NotePlayer.Delay(Length)
+Delays playing of the next note for _Length_ milliseconds while the NotePlayer instance is playing.
+
+Useful for adding a pause or delaying the playing of following notes.
+
+### NotePlayer.Play(Index,Length,DownVelocity = 60,UpVelocity = 60)
+Immediately begins playing a single note, determined by MIDI note number _Index_, which plays for _Length_ milliseconds, is pressed with a velocity of _DownVelocity_, and is released with a velocity of _UpVelocity_, where velocities are numbers between 0 and 100.
+
+Useful for sound effects and other notes that must be played at specific times.
+
+### NotePlayer.Start()
+Begins playing the notes and delays in the order they were added.
+
+Useful for playing the notes stored in the NotePlayer instance.
+
+### NotePlayer.Stop()
+Stops a currently playing noteplayer, cutting off notes if any are active at the time it is called.
+
+Useful for abruptly ending a sequence of notes.
+
+### NotePlayer.Reset()
+Resets a noteplayer to its initial state; that is, it stops the noteplayer and deletes the notes in it.
+
+Useful for removing all notes stored in a NotePlayer instrument in order to add another sequence of notes to it.
