@@ -688,7 +688,7 @@ class ProgressEntities
             this.IntersectX := 0, this.IntersectY := 0
             For Index, Entity In Layer.Entities
             {
-                If (&Entity = &this || !Entity.Physical) ;entity is the same as the current entity or is not physical
+                If (Entity = this || !Entity.Physical) ;entity is the same as the current entity or is not physical
                     Continue
                 If this.Intersect(Entity,IntersectX,IntersectY) ;entity collided with the rectangle
                 {
