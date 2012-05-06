@@ -34,6 +34,8 @@ Gui, Show, w800 h600, ProgressPlatformer
 
 Editor := new ProgressEngine(WinExist())
 
+Editor.Hue := 0.05, Editor.Saturation := 0.1
+
 Editor.Layers[1] := new ProgressEngine.Layer
 Environment[LevelBackground](Editor.Layers[1])
 
@@ -206,4 +208,34 @@ class Button extends ProgressEntities.Container
             this.Color := 0x888888
         }
     }
+}
+
+ColorTint(Color)
+{
+    global Editor
+    Hue := Editor.Hue, Saturation := Editor.Saturation
+
+    Red := Color >> 16, Green := (Color >> 8) & 0xFF, Blue := Color & 0xFF
+
+    Value := (Red > Green) ? ((Red > Blue) ? Red : Blue) : ((Green > Blue) ? Green : Blue)
+    Sector := Floor(Hue)
+    FractionalHue := Hue - Sector
+    Component1 := Round(Value * (1 - Saturation))
+    Component2 := Round(Value * (1 - (Saturation * FractionalHue)))
+    Component3 := Round(Value * (1 - (Saturation * (1 - FractionalHue))))
+
+    If Sector = 0 ;zeroth sector
+        Red := Value, Green := Component3, Blue := Component1
+    Else If Sector = 1 ;first sector
+        Red := Component2, Green := Value, Blue := Component1
+    Else If Sector = 2 ;second sector
+        Red := Component1, Green := Value, Blue := Component3
+    Else If Sector = 3 ;third sector
+        Red := Component1, Green := Component2, Blue := Value
+    Else If Sector = 4 ;fourth sector
+        Red := Component3, Green := Component1, Blue := Value
+    Else ;If Sector = 5 ;fifth sector
+        Red := Value, Green := Component1, Blue := Component2
+
+    Return, (Red << 16) | (Green << 8) | Blue
 }
