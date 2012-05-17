@@ -53,7 +53,7 @@ ProgressEngine works on the concept of entities - objects that implement steppin
 
 We'll usually want a background:
 
-    class Background extends ProgressEntities.Default
+    class Background extends ProgressEntities.Rectangle
     {
         __New()
         {
@@ -120,7 +120,7 @@ Here's the code in its entirety:
     GuiClose:
     ExitApp
 
-    class Background extends ProgressEntities.Default
+    class Background extends ProgressEntities.Rectangle
     {
         __New()
         {
@@ -226,7 +226,7 @@ All together now:
     GuiClose:
     ExitApp
 
-    class Background extends ProgressEntities.Default
+    class Background extends ProgressEntities.Rectangle
     {
         __New()
         {
@@ -367,7 +367,7 @@ Returns True to indicate that the entity is completely inside the rectangle, Fal
 Built-in Entities
 -----------------
 
-### ProgressEntities.Default
+### ProgressEntities.Rectangle
 
 A drawtype that appears as a filled, borderless rectangle.
 

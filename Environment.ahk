@@ -37,7 +37,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
             Layer.Entities.Insert(new Environment.Cloud(Layer))
     }
 
-    class Background extends ProgressEntities.Default
+    class Background extends ProgressEntities.Rectangle
     {
         __New()
         {
@@ -50,7 +50,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         }
     }
 
-    class Snowflake extends ProgressEntities.Default
+    class Snowflake extends ProgressEntities.Rectangle
     {
         __New(Layer)
         {
@@ -81,7 +81,7 @@ class Environment ;wip: effects should use density instead of upper/lower bounds
         }
     }
 
-    class Cloud extends ProgressEntities.Default
+    class Cloud extends ProgressEntities.Rectangle
     {
         __New(Layer)
         {

@@ -150,7 +150,7 @@ class EditingPane extends ProgressEntities.Container
         this.Layers[1].Entities.Insert(new Button(0.5,1.5,9,1,"Add"))
     }
 
-    class Background extends ProgressEntities.Default
+    class Background extends ProgressEntities.Rectangle
     {
         __New()
         {
@@ -196,7 +196,7 @@ class Button extends ProgressEntities.Container
         this.Layers[1].Entities.Insert(new this.Background)
     }
 
-    class Background extends ProgressEntities.Default
+    class Background extends ProgressEntities.Rectangle
     {
         __New()
         {

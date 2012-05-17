@@ -348,7 +348,7 @@ class ProgressEntities
         }
     }
 
-    class Default extends ProgressEntities.Basis
+    class Rectangle extends ProgressEntities.Basis
     {
         __New()
         {
@@ -658,7 +658,7 @@ class ProgressEntities
         }
     }
 
-    class Static extends ProgressEntities.Default
+    class StaticRectangle extends ProgressEntities.Rectangle
     {
         __New()
         {
@@ -672,7 +672,7 @@ class ProgressEntities
         }
     }
 
-    class Dynamic extends ProgressEntities.Static
+    class DynamicRectangle extends ProgressEntities.StaticRectangle
     {
         __New()
         {

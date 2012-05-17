@@ -19,14 +19,14 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-;wip: look into why the player sometimes can't kill an enemy while it is jumping (it's because we only set IntersectX and IntersectY on the first object to collide, when both colliding objects should be set)
+;wip: player sometimes can't kill an enemy while it is jumping, because we only set IntersectX and IntersectY on the first object to collide, when both colliding objects should be set
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick and mouse input
-;wip: onclick() and onhover() callbacks for ProgressEntities.Default
-;wip: rename ProgressEntities.Default to ProgressEntities.Rectangle and Static to RectangleStatic and Dynamic to DynamicRectangle
+;wip: onclick() and onhover() callbacks for ProgressEntities.Rectangle
 ;wip: animated and partially transparent images support
 ;wip: support changing instruments in the MIDI noteplayer
 ;wip: save and load progress
+;wip: use better text size unit that uses ScaleY and etc.
 
 #Include %A_ScriptDir%
 
@@ -107,7 +107,7 @@ class KeyboardController
 
 class GameEntities
 {
-    class HealthBar extends ProgressEntities.Default
+    class HealthBar extends ProgressEntities.Rectangle
     {
         __New(Layer)
         {
@@ -136,7 +136,7 @@ class GameEntities
         }
     }
 
-    class Block extends ProgressEntities.Static
+    class Block extends ProgressEntities.StaticRectangle
     {
         __New(X,Y,W,H)
         {
@@ -149,7 +149,7 @@ class GameEntities
         }
     }
 
-    class Platform extends ProgressEntities.Static
+    class Platform extends ProgressEntities.StaticRectangle
     {
         __New(X,Y,W,H,Horizontal,Start,Length,Speed)
         {
@@ -179,7 +179,7 @@ class GameEntities
         }
     }
     
-    class Box extends ProgressEntities.Dynamic
+    class Box extends ProgressEntities.DynamicRectangle
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
         {
@@ -203,7 +203,7 @@ class GameEntities
         }
     }
 
-    class Player extends ProgressEntities.Dynamic
+    class Player extends ProgressEntities.DynamicRectangle
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
         {
@@ -285,7 +285,7 @@ class GameEntities
         }
     }
 
-    class Goal extends ProgressEntities.Default ;wip: have this detect the player instead of the player detecting this
+    class Goal extends ProgressEntities.Rectangle ;wip: have this detect the player instead of the player detecting this
     {
         __New(X,Y,W,H)
         {
@@ -298,7 +298,7 @@ class GameEntities
         }
     }
 
-    class KillBlock extends ProgressEntities.Default
+    class KillBlock extends ProgressEntities.Rectangle
     {
         __New(X,Y,W,H)
         {
@@ -311,7 +311,7 @@ class GameEntities
         }
     }
 
-    class Enemy extends ProgressEntities.Dynamic
+    class Enemy extends ProgressEntities.DynamicRectangle
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
         {
@@ -332,7 +332,7 @@ class GameEntities
             JumpSpeed := MoveSpeed * 0.25
 
             ;move towards the player
-            For Key, Entity In Layer.Entities ;wip: use NearestEntities(), add a findentity() function
+            For Key, Entity In this.NearestEntities(Layer,4) ;find all entities within 4 units
             {
                 If (Entity.__Class = "GameEntities.Player")
                 {
@@ -380,7 +380,7 @@ MessageScreen(ByRef Game,Title = "",Message = "")
 
 class MessageScreenEntities
 {
-    class Background extends ProgressEntities.Default
+    class Background extends ProgressEntities.Rectangle
     {
         __New()
         {
