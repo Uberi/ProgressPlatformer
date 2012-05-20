@@ -547,10 +547,10 @@ class ProgressEntities
             If !this.Visible
                 Return
 
-            ;check for entity moving out of bounds ;wip: text objects do not have width and height properties
-            ;If (this.ScreenX + this.ScreenW) < 0 || this.ScreenX > (Viewport.ScreenX + Viewport.ScreenW)
-                ;|| (this.ScreenY + this.ScreenH) < 0 || this.ScreenY > (Viewport.ScreenY + Viewport.ScreenH)
-                ;Return
+            ;check for entity moving out of bounds
+            If (this.ScreenX + this.ScreenW) < 0 || (this.ScreenX - this.ScreenW) > (Viewport.ScreenX + Viewport.ScreenW)
+                || (this.ScreenY + this.ScreenH) < 0 || (this.ScreenY - this.ScreenH) > (Viewport.ScreenY + Viewport.ScreenH)
+                Return
 
             ;set the text alignment
             If (this.Align = "Left")
@@ -630,6 +630,8 @@ class ProgressEntities
             ;update entity dimensions
             this.W := Width / this.ScaleX
             this.H := (PositionY - this.ScreenY) / this.ScaleY
+            this.ScreenW := Width
+            this.ScreenH := Height
 
             ;deselect the font
             If !DllCall("SelectObject","UPtr",hDC,"UPtr",hOriginalFont,"UPtr")

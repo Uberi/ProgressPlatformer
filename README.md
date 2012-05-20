@@ -440,9 +440,9 @@ Delays playing of the next note for _Length_ milliseconds while the NotePlayer i
 
 Useful for adding a pause or delaying the playing of following notes.
 
-### NotePlayer.Play(Index,Length,DownVelocity = 60,UpVelocity = 60)
+### NotePlayer.Play(Index,Length,Sound,DownVelocity = 60,UpVelocity = 60)
 
-Immediately begins playing a single note, determined by MIDI note number _Index_, which plays for _Length_ milliseconds, is pressed with a velocity of _DownVelocity_, and is released with a velocity of _UpVelocity_, where velocities are numbers between 0 and 100.
+Immediately begins playing a single note, determined by MIDI note number _Index_, which plays for _Length_ milliseconds, with the instrument _Sound_ (also known as a "program" or "patch" in MIDI terminology), is pressed with a velocity of _DownVelocity_, and is released with a velocity of _UpVelocity_, where velocities are numbers between 0 and 100.
 
 Useful for sound effects and other notes that must be played at specific times.
 

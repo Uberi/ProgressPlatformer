@@ -62,10 +62,13 @@ class NotePlayer
         Return, this
     }
 
-    Play(Index,Length,DownVelocity = 60,UpVelocity = 60)
+    Play(Index,Length,Sound,DownVelocity = 60,UpVelocity = 60)
     {
-        ;play the note
+        ;play the note with the given sound
+        PreviousSound := this.Device.Sound
+        this.Device.Sound := Sound
         this.Device.NoteOn(Index,DownVelocity)
+        this.Device.Sound := PreviousSound
 
         ;set up the data the timer will need to do its task
         TimerData := Object()
