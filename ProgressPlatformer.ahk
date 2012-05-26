@@ -24,9 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;wip: input manager that supports keyboard and joystick and mouse input
 ;wip: onclick() and onhover() callbacks for ProgressEntities.Rectangle
 ;wip: animated and partially transparent images support
-;wip: support changing instruments in the MIDI noteplayer
 ;wip: save and load progress
 ;wip: use better text size unit that uses ScaleY and etc.
+;wip: slow down player movespeed when in the air
+;wip: use target speed and weighted average instead of raw acceleration: NewSpeed := CurrentSpeed * 0.6 + TargetSpeed * 0.4
 
 #Include %A_ScriptDir%
 
@@ -278,8 +279,9 @@ class GameEntities
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
-            Layer.X += (((this.X + (this.W / 2)) - (Layer.X + 5)) * 0.03)
-            Layer.Y += (((this.Y + (this.H / 2)) - (Layer.Y + 5)) * 0.03)
+            Weight := 0.95
+            Layer.X := (Layer.X * Weight) + ((this.X + (this.W * 0.5) - 5) * (1 - Weight))
+            Layer.Y := (Layer.Y * Weight) + ((this.Y + (this.H * 0.5) - 5) * (1 - Weight))
 
             base.Step(Delta,Layer,Viewport)
         }
