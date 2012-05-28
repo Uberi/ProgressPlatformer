@@ -279,7 +279,17 @@ class GameEntities
             If this.IntersectY ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
-            Weight := 0.95
+            SpeedLimit := 8
+            If this.SpeedX > SpeedLimit
+                this.SpeedX := SpeedLimit
+            If this.SpeedX < -SpeedLimit
+                this.SpeedX := -SpeedLimit
+            If this.SpeedY > SpeedLimit
+                this.SpeedY := SpeedLimit
+            If this.SpeedY < -SpeedLimit
+                this.SpeedY := -SpeedLimit
+
+            Weight := 0.97
             Layer.X := (Layer.X * Weight) + ((this.X + (this.W * 0.5) - 5) * (1 - Weight))
             Layer.Y := (Layer.Y * Weight) + ((this.Y + (this.H * 0.5) - 5) * (1 - Weight))
 
