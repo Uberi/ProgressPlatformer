@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MessageScreen(Game,"Level 5","I know it's cheap. Deal with it.")
 
+LayerX := 0, LayerY := 0
 StartLevel := 1
 Loop
 {
@@ -33,6 +34,7 @@ Loop
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
 
+        Game.Layers[2].X := LayerX, Game.Layers[2].Y := LayerY
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,8,9,0.2)) ;floor
         Entities.Insert(new GameEntities.Block(3.5,6.5,4,0.2)) ;middle block
@@ -56,13 +58,9 @@ Loop
     StartLevel := 1
     If Result = 1 ;reached goal
         Break
-    If Result = 2 ;out of health
-        MessageScreen(Game,"- You have experienced -","pair annihilation")
-    Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"- You have experienced -","What happens when you think outside the box")
     Else If Result = 4 ;game paused
-        MessageScreen(Game,"- You are experiencing -","A space-time paradox"), StartLevel := 0
-    Else If Result = 5 ;slain by kill block
-        MessageScreen(Game,"- You have experienced -","an UNBIASED pair annihilation")
+        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+    Else
+        LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
 }
 Game.Layers := []

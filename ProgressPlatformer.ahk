@@ -27,7 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;wip: save and load progress
 ;wip: use better text size unit that uses ScaleY and etc.
 ;wip: slow down player movespeed when in the air
-;wip: use target speed and weighted average instead of raw acceleration: NewSpeed := CurrentSpeed * 0.6 + TargetSpeed * 0.4
 
 #Include %A_ScriptDir%
 
@@ -118,6 +117,7 @@ class GameEntities
             this.Y := 9.5
             this.TotalWidth := 8
             this.W := this.TotalWidth
+            this.H := 0
             For Key, Entity In Layer.Entities
             {
                 If Entity.__Class = "GameEntities.Player"
@@ -248,7 +248,7 @@ class GameEntities
                     Return, 5 ;slain by kill block
             }
 
-            Padding := 2.5
+            Padding := 8
             If (this.X > (10 + Padding) || (this.X + this.W) < -Padding || this.Y > (10 + Padding) || (this.Y + this.H) < -Padding) ;out of bounds
                 Return, 3 ;out of bounds
 
@@ -289,9 +289,11 @@ class GameEntities
             If this.SpeedY < -SpeedLimit
                 this.SpeedY := -SpeedLimit
 
-            Weight := 0.97
-            Layer.X := (Layer.X * Weight) + ((this.X + (this.W * 0.5) - 5) * (1 - Weight))
-            Layer.Y := (Layer.Y * Weight) + ((this.Y + (this.H * 0.5) - 5) * (1 - Weight))
+            Weight := Delta * 2
+            If Weight > 1
+                Weight := 1
+            Layer.X := (Layer.X * (1 - Weight)) + ((this.X + (this.W * 0.5) - 5) * Weight)
+            Layer.Y := (Layer.Y * (1 - Weight)) + ((this.Y + (this.H * 0.5) - 5) * Weight)
 
             base.Step(Delta,Layer,Viewport)
         }

@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MessageScreen(Game,"Let's Play Achromatic and fail!","Press space to skip messages and pause the action")
 
+LayerX := 0, LayerY := 0
 StartLevel := 1
 Loop
 {
@@ -33,6 +34,8 @@ Loop
         Game.Layers[3] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
+
+        Game.Layers[2].X := LayerX, Game.Layers[2].Y := LayerY
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,9,8,0.5))
         Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
@@ -46,15 +49,14 @@ Loop
     StartLevel := 1
     If Result = 1 ;reached goal
         Break
-    If Result = 2 ;out of health
-        MessageScreen(Game,"You ran out of time","Press space to restart level")
-    Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds","Press space to restart level")
     Else If Result = 4 ;game paused
         MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+    Else
+        LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
 }
 Game.Layers := []
 
+LayerX := 0, LayerY := 0
 StartLevel := 1
 Loop
 {
@@ -65,6 +67,8 @@ Loop
         Game.Layers[3] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
+
+        Game.Layers[2].X := LayerX, Game.Layers[2].Y := LayerY
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,9,4,0.5))
         Entities.Insert(new GameEntities.Block(7,9,2,0.5))
@@ -83,15 +87,14 @@ Loop
     StartLevel := 1
     If Result = 1 ;reached goal
         Break
-    If Result = 2 ;out of health
-        MessageScreen(Game,"You ran out of time","Press space to restart level")
-    Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds","Press space to restart level")
     Else If Result = 4 ;game paused
         MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+    Else
+        LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
 }
 Game.Layers := []
 
+LayerX := 0, LayerY := 0
 StartLevel := 1
 Loop
 {
@@ -102,6 +105,8 @@ Loop
         Game.Layers[3] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
+
+        Game.Layers[2].X := LayerX, Game.Layers[2].Y := LayerY
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(3,6,5,0.5))
         Entities.Insert(new GameEntities.Block(8,1,0.5,5.5))
@@ -117,15 +122,14 @@ Loop
     StartLevel := 1
     If Result = 1 ;reached goal
         Break
-    If Result = 2 ;out of health
-        MessageScreen(Game,"You ran out of time","Press space to restart level")
-    Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"Out of bounds","Press space to restart level")
     Else If Result = 4 ;game paused
         MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+    Else
+        LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
 }
 Game.Layers := []
 
+LayerX := 0, LayerY := 0
 StartLevel := 1
 Loop
 {
@@ -136,6 +140,8 @@ Loop
         Game.Layers[3] := new ProgressEngine.Layer
         Game.Layers[1].Entities.Insert(new KeyboardController)
         Environment.Clouds(Game.Layers[1])
+
+        Game.Layers[2].X := LayerX, Game.Layers[2].Y := LayerY
         Entities := Game.Layers[2].Entities
         Entities.Insert(new GameEntities.Block(1,7,5,0.5))
         Entities.Insert(new GameEntities.Block(4,8,5,0.5))
@@ -162,14 +168,10 @@ Loop
     StartLevel := 1
     If Result = 1 ;reached goal
         Break
-    If Result = 2 ;out of health
-        MessageScreen(Game,"It got you there","Press space to restart level")
-    Else If Result = 3 ;out of bounds
-        MessageScreen(Game,"Stay within the bounds please","Press space to restart level")
-    Else If Result = 5
-        MessageScreen(Game,"*face palm*","That's an instant kill block for you")
     Else If Result = 4 ;game paused
         MessageScreen(Game,"Game paused","Just a bit more, until your done the tutorial"), StartLevel := 0
+    Else
+        LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
 }
 Game.Layers := []
 
