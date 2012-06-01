@@ -111,7 +111,7 @@ class ProgressEngine
         static Width1 := -1, Height1 := -1, Viewport := Object()
         ;obtain the dimensions of the client area
         VarSetCapacity(ClientRectangle,16)
-        If !DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle)
+        If !DllCall("GetClientRect","UPtr",this.hWindow,"UPtr",&ClientRectangle) ;wip: also support controls rather than just windows
             throw Exception("Could not obtain client area dimensions.")
         Width := NumGet(ClientRectangle,8,"Int"), Height := NumGet(ClientRectangle,12,"Int")
 
@@ -538,7 +538,7 @@ class ProgressEntities
             this.Underline := 0
             this.Strikeout := 0
             this.hFont := 0
-            this.PreviousViewportWidth := -1
+            this.PreviousViewportH := -1
         }
 
         Draw(hDC,Layer,Viewport)
@@ -564,13 +564,13 @@ class ProgressEntities
             DllCall("SetTextAlign","UPtr",hDC,"UInt",AlignMode)
 
             ;update the font if it has changed or if the viewport size has changed
-            If this.FontModified || this.PreviousViewportWidth != Viewport.ScreenW
+            If this.FontModified || this.PreviousViewportH != Viewport.ScreenH
             {
+                this.LineHeight := this.Size * (Viewport.ScreenH / 10)
+
                 ;delete the old font if present
                 If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
                     throw Exception("Could not delete font.")
-
-                this.LineHeight := this.Size * Viewport.ScreenW * 0.01
 
                 ;create the font
                 ;wip: doesn't work
@@ -598,7 +598,7 @@ class ProgressEntities
                     throw Exception("Could not create font.")
 
                 this.FontModified := 0 ;reset font modified flag
-                this.PreviousViewportWidth := Viewport.ScreenW ;reset the previous viewport width
+                this.PreviousViewportH := Viewport.ScreenH ;reset the previous viewport width
             }
 
             ;set the text color

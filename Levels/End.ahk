@@ -66,7 +66,7 @@ class Credits extends ProgressEntities.Container
 
         PositionY := 0
         Entities.Insert(new this.EndHeading("Game Complete",PositionY)), PositionY += 6
-        
+
         Entities.Insert(new this.CreditHeading("Design",PositionY)), PositionY += 1.2
         Entities.Insert(new this.CreditMessage("Anthony Zhang",PositionY)), PositionY += 1.2
         Entities.Insert(new this.CreditMessage("Henry Lu",PositionY)), PositionY += 2.2
@@ -87,7 +87,8 @@ class Credits extends ProgressEntities.Container
     Step(Delta,Layer,Viewport)
     {
         If this.Y > this.EndY
-            this.Y -= 0.7 * Delta
+            ;this.Y -= 0.7 * Delta
+            this.Y -= 1.5 * Delta
         Return, base.Step(Delta,Layer,Viewport)
     }
 
@@ -98,7 +99,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 15
+            this.Size := 1.7
             this.Color := 0x444444
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -113,7 +114,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 3.8
+            this.Size := 0.4
             this.Color := 0x666666
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -138,7 +139,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 3.8
+            this.Size := 0.5
             this.Color := 0x666666
             this.Weight := 300
             this.Typeface := "Georgia"
@@ -153,7 +154,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 10
+            this.Size := 1.1
             this.Color := 0x444444
             this.Weight := 100
             this.Typeface := "Georgia"

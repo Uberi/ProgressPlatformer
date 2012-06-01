@@ -39,7 +39,7 @@ class TitleHeading extends ProgressEntities.Text
         base.__New()
         this.X := 5
         this.Y := 5
-        this.Size := 14
+        this.Size := 2
         this.Color := 0x444444
         this.Weight := 100
         this.Typeface := "Georgia"
@@ -54,7 +54,7 @@ class TitleMessage extends ProgressEntities.Text
         base.__New()
         this.X := 5
         this.Y := 6
-        this.Size := 3
+        this.Size := 0.4
         this.Color := 0x666666
         this.Weight := 100
         this.Typeface := "Georgia"

@@ -25,7 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;wip: onclick() and onhover() callbacks for ProgressEntities.Rectangle
 ;wip: animated and partially transparent images support
 ;wip: save and load progress
-;wip: use better text size unit that uses ScaleY and etc.
 ;wip: slow down player movespeed when in the air
 
 #Include %A_ScriptDir%
@@ -50,7 +49,7 @@ Game := new ProgressEngine(WinExist())
 Game.Hue := 4, Game.Saturation := 0.0
 
 #Include Levels/Title.ahk
-#Include Levels/Tutorial.ahk
+/*#Include Levels/Tutorial.ahk
 
 Game.Saturation := 0.05
 
@@ -63,6 +62,7 @@ Game.Saturation := 0.05
 
 Notes.Stop()
 Notes.Device.__Delete() ;wip
+*/
 
 #Include Levels/End.ahk
 ExitApp
@@ -282,11 +282,11 @@ class GameEntities
             SpeedLimit := 8
             If this.SpeedX > SpeedLimit
                 this.SpeedX := SpeedLimit
-            If this.SpeedX < -SpeedLimit
+            Else If this.SpeedX < -SpeedLimit
                 this.SpeedX := -SpeedLimit
             If this.SpeedY > SpeedLimit
                 this.SpeedY := SpeedLimit
-            If this.SpeedY < -SpeedLimit
+            Else If this.SpeedY < -SpeedLimit
                 this.SpeedY := -SpeedLimit
 
             Weight := Delta * 2
@@ -414,7 +414,7 @@ class MessageScreenEntities
             base.__New()
             this.X := 5
             this.Y := 4.5
-            this.Size := 8
+            this.Size := 1
             this.Color := 0xD0D0D0
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -429,7 +429,7 @@ class MessageScreenEntities
             base.__New()
             this.X := 5
             this.Y := 5.5
-            this.Size := 3
+            this.Size := 0.4
             this.Color := 0xF5F5F5
             this.Weight := 100
             this.Typeface := "Georgia"

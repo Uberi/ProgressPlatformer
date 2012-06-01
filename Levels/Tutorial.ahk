@@ -185,7 +185,7 @@ class TutorialText extends ProgressEntities.Text
         base.__New()
         this.X := X
         this.Y := Y
-        this.Size := 5
+        this.Size := 0.7
         this.Color := 0x444444
         this.Weight := 100
         this.Typeface := "Georgia"
