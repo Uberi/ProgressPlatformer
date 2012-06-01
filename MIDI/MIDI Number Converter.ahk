@@ -404,7 +404,8 @@ If InStr(Tune,"NotePlayer") ;input is code
     If RegExMatch(Tune,"iS)\w\.Instrument(\s*(\d+)\s*)",Value)
         GuiControl, Choose, Instrument, % Value1 + 1
 
-    Notes := new NotePlayer(Value1) ;create a noteplayer with the correct instrument
+    Notes := new NotePlayer ;create a noteplayer with the correct instrument
+    Notes.Instrument(Value1)
 
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
@@ -432,7 +433,8 @@ Else
 {
     GuiControlGet, Instrument,, Instrument ;retrieve the instrument index
 
-    Notes := new NotePlayer(Instrument - 1) ;create a noteplayer with the correct instrument
+    Notes := new NotePlayer ;create a noteplayer with the correct instrument
+    Notes.Instrument(Instrument - 1)
 
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
