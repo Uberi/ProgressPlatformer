@@ -138,7 +138,7 @@ class ProgressEngine
         Width1 := Width, Height1 := Height
 
         ;initialize the viewport
-        Viewport.ScreenX := 0, Viewport.ScreenY := 0
+        Viewport.ScreenX := 0, Viewport.ScreenY := 0 ;wip: change to allow controls as viewports that are not at the top left corner of the client area
         Viewport.ScreenW := Width, Viewport.ScreenH := Height
 
         ;iterate through each layer
@@ -227,12 +227,14 @@ class ProgressEntities
             Return, Layer.Entities
         }
 
-        MouseHovering(Layer,Rectangle) ;wip
+        MouseHovering(Viewport)
         {
             CoordMode, Mouse, Client
             MouseGetPos, MouseX, MouseY
-            If (MouseX >= Rectangle.X && MouseX <= (Rectangle.X + Rectangle.W)
-                && MouseY >= Rectangle.Y && MouseY <= (Rectangle.Y + Rectangle.H))
+            MouseX -= Viewport.ScreenX
+            MouseY -= Viewport.ScreenY
+            If (MouseX >= this.ScreenX && MouseX <= (this.ScreenX + this.ScreenW)
+                && MouseY >= this.ScreenY && MouseY <= (this.ScreenY + this.ScreenH))
                 Return, 1
             Return, 0
         }
