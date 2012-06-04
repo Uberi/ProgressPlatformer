@@ -192,8 +192,8 @@ class Button extends ProgressEntities.Container
         this.H := H
 
         this.Layers[1] := new ProgressEngine.Layer
-        ;wip: button stuff here
         this.Layers[1].Entities.Insert(new this.Background)
+        this.Layers[1].Entities.Insert(new this.Label(Text))
     }
 
     class Background extends ProgressEntities.Rectangle
@@ -206,6 +206,31 @@ class Button extends ProgressEntities.Container
             this.W := 10
             this.H := 10
             this.Color := 0x888888
+        }
+
+        Step(Delta,Layer,Viewport)
+        {
+            If GetKeyState("LButton","P") && this.MouseHovering
+                ToolTip Hovering!
+            Else
+                ToolTip Not hovering!
+        }
+    }
+
+    class Label extends ProgressEntities.Text
+    {
+        __New(Text)
+        {
+            base.__New()
+            this.X := 5
+            this.Y := 1
+            this.W := 10
+            this.H := 1
+            this.Size := 2
+            this.Color := 0xFFFFFF
+            this.Weight := 100
+            this.Typeface := "Georgia"
+            this.Text := Text
         }
     }
 }
