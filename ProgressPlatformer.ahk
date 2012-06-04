@@ -19,6 +19,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+;wip: calculate proper dynamic friction, taking the speed of both colliding entities into account
+;wip: tex size unit doesn't support containers
 ;wip: player sometimes can't kill an enemy while it is jumping, because we only set IntersectX and IntersectY on the first object to collide, when both colliding objects should be set
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick and mouse input
@@ -26,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;wip: animated and partially transparent images support
 ;wip: save and load progress
 ;wip: slow down player movespeed when in the air
+;wip: entities completely outside of containers do not draw; should use screen clipping
 
 #Include %A_ScriptDir%
 
@@ -49,9 +52,9 @@ Game := new ProgressEngine(WinExist())
 Game.Hue := 4, Game.Saturation := 0.0
 
 #Include Levels/Title.ahk
-/*#Include Levels/Tutorial.ahk
+#Include Levels/Tutorial.ahk
 
-Game.Saturation := 0.05
+Game.Saturation := 0.1
 
 #Include Music/Red.ahk
 
@@ -62,7 +65,6 @@ Game.Saturation := 0.05
 
 Notes.Stop()
 Notes.Device.__Delete() ;wip
-*/
 
 #Include Levels/End.ahk
 ExitApp
