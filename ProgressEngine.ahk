@@ -737,19 +737,18 @@ class ProgressEntities
 
         Step(Delta,Layer,Viewport)
         {
-            ;wip: use spatial acceleration structure
-            Friction := 0.98
+            Friction := 0.5
 
             this.X += this.SpeedX * Delta, this.Y -= this.SpeedY * Delta ;process momentum
 
             this.IntersectX := 0, this.IntersectY := 0
-            For Index, Entity In Layer.Entities
+            For Index, Entity In Layer.Entities ;wip: use spatial acceleration structure
             {
                 If (Entity = this || !Entity.Physical) ;entity is the same as the current entity or is not physical
                     Continue
                 If this.Intersect(Entity,IntersectX,IntersectY) ;entity collided with the rectangle
                 {
-                    Result := this.Collide(Delta,Entity,IntersectX,IntersectY) ;collision callback
+                    Result := this.Collide(Delta,Entity,Layer,IntersectX,IntersectY) ;collision callback
                     If Result
                         Return, Result
                     IntersectX := Abs(IntersectX), IntersectY := Abs(IntersectY)
@@ -759,13 +758,13 @@ class ProgressEntities
                         this.IntersectY += IntersectY, Entity.IntersectY += IntersectY
                 }
             }
-            If this.IntersectY ;handle collision along top or bottom side
-                this.SpeedX *= (Friction * this.IntersectY) ** Delta
-            If this.IntersectX ;handle collision along left or right side
-                this.SpeedY *= (Friction * this.IntersectX) ** Delta
+            If this.IntersectX ;handle collision along top or bottom side
+                this.SpeedX *= (Friction * this.IntersectX) ** Delta
+            If this.IntersectY ;handle collision along left or right side
+                this.SpeedY *= (Friction * this.IntersectY) ** Delta
         }
 
-        Collide(Delta,Entity,IntersectX,IntersectY)
+        Collide(Delta,Entity,Layer,IntersectX,IntersectY)
         {
             Restitution := this.Restitution * Entity.Restitution
             CurrentMass := this.W * this.H * this.Density

@@ -21,7 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;wip: sleeping for physical entities
 ;wip: text size unit doesn't support containers
-;wip: player sometimes can't kill an enemy while it is jumping, because we only set IntersectX and IntersectY on the first object to collide, when both colliding objects should be set
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick and mouse input
 ;wip: onclick() and onhover() callbacks for ProgressEntities.Rectangle
@@ -56,7 +55,7 @@ Game.Hue := 4, Game.Saturation := 0.0
 
 Game.Saturation := 0.1
 
-#Include Music/Red.ahk
+;#Include Music/Red.ahk
 
 #Include Levels/Level 1.ahk
 #Include Levels/Level 2.ahk
@@ -84,7 +83,7 @@ ExitApp
 
 class KeyboardController
 {
-    Step(ByRef Delta,Layer,Viewport)
+    Start(ByRef Delta,Layer,Viewport)
     {
         global Game
         If !WinActive("ahk_id " . Game.hWindow)
@@ -181,7 +180,7 @@ class GameEntities
             this.X += this.Speed * Delta * this.Direction
         }
     }
-    
+
     class Box extends ProgressEntities.DynamicRectangle
     {
         __New(X,Y,W,H,SpeedX,SpeedY)
@@ -219,33 +218,16 @@ class GameEntities
             this.SpeedX := SpeedX
             this.SpeedY := SpeedY
             this.Color := ColorTint(0xAFAFAF)
+            this.CanClimb := 0
             this.LastContact := 0
         }
 
-        Step(Delta,Layer,Viewport)
+        Start(Delta,Layer,Viewport)
         {
-            global Gravity
-            MoveSpeed := 10
-
-            Left := GetKeyState("Left","P")
-            Right := GetKeyState("Right","P")
-            Jump := GetKeyState("Up","P")
-            Crouch := GetKeyState("Down","P")
-
             For Key, Entity In Layer.Entities ;wip: use NearestEntities()
             {
                 If (Entity.__Class = "GameEntities.Goal" && this.Inside(Entity)) ;player is inside the goal
                     Return, 1 ;reached goal
-                If (Entity.__Class = "GameEntities.Enemy" && this.Intersect(Entity,IntersectX,IntersectY)) ;player collided with an enemy
-                {
-                    If (Abs(IntersectY) < Abs(IntersectX) && this.Y < Entity.Y)
-                    {
-                        Layer.Entities.Remove(Key) ;wip: can't do this in a For loop (maybe would be better in an oncollide callback)
-                        this.Health += 30
-                    }
-                    Else
-                        this.Health -= 150 * Delta
-                }
                 If Entity.__Class = "GameEntities.KillBlock" && this.Intersect(Entity) ;player collided with kill block
                     Return, 5 ;slain by kill block
             }
@@ -253,6 +235,20 @@ class GameEntities
             Padding := 8
             If (this.X > (10 + Padding) || (this.X + this.W) < -Padding || this.Y > (10 + Padding) || (this.Y + this.H) < -Padding) ;out of bounds
                 Return, 3 ;out of bounds
+
+            base.Start(Delta,Layer,Viewport)
+        }
+
+        Step(Delta,Layer,Viewport)
+        {
+            global Gravity
+            static MoveSpeed := 10
+            static JumpSpeed := MoveSpeed * 0.3
+
+            Left := GetKeyState("Left","P")
+            Right := GetKeyState("Right","P")
+            Jump := GetKeyState("Up","P")
+            Crouch := GetKeyState("Down","P")
 
             If Crouch
             {
@@ -266,20 +262,21 @@ class GameEntities
                 this.SpeedX -= MoveSpeed * Delta ;move left
             If Right
                 this.SpeedX += MoveSpeed * Delta ;move right
-            If (Left || Right) && this.IntersectX ;wall grab
+
+            If (Left || Right) && this.CanClimb ;climb
             {
-                this.SpeedX *= 0.05
+                this.SpeedX *= 0.05 ;slow down player horizontal motion while wall grabbing
                 If Jump
                     this.SpeedY += MoveSpeed * Delta
+                If this.SpeedY > JumpSpeed
+                    this.SpeedY := JumpSpeed
             }
-            Else
+            Else ;jump
             {
                 this.SpeedY += Gravity * Delta ;process gravity
                 If Jump && (A_TickCount - this.LastContact) < 500 ;jump
-                    this.SpeedY += MoveSpeed * 0.3, this.LastContact := 0
+                    this.SpeedY += JumpSpeed, this.LastContact := 0
             }
-            If this.IntersectX ;contacting top or bottom of a block
-                this.LastContact := A_TickCount
 
             SpeedLimit := 8
             If this.SpeedX > SpeedLimit
@@ -297,7 +294,35 @@ class GameEntities
             Layer.X := (Layer.X * (1 - Weight)) + ((this.X + (this.W * 0.5) - 5) * Weight)
             Layer.Y := (Layer.Y * (1 - Weight)) + ((this.Y + (this.H * 0.5) - 5) * Weight)
 
+            this.CanClimb := 0
             base.Step(Delta,Layer,Viewport)
+        }
+
+        Collide(Delta,Entity,Layer,IntersectX,IntersectY)
+        {
+            If (Entity.__Class = "GameEntities.Enemy") ;player collided with an enemy
+            {
+                If (Abs(IntersectY) < Abs(IntersectX) && this.Y < Entity.Y)
+                {
+                    ;remove the enemy ;wip: not very efficient
+                    For Index, LayerEntity In Layer.Entities
+                    {
+                        If (Entity = LayerEntity)
+                        {
+                            Layer.Entities.Remove(Index)
+                            Break
+                        }
+                    }
+                    this.Health += 30
+                }
+                Else
+                    this.Health -= 150 * Delta
+            }
+            If (Abs(IntersectX) >= Abs(IntersectY))
+                this.LastContact := A_TickCount
+            Else
+                this.CanClimb := 1
+            base.Collide(Delta,Entity,Layer,IntersectX,IntersectY)
         }
     }
 
@@ -341,11 +366,17 @@ class GameEntities
             this.Color := ColorTint(0x777777)
         }
 
+        Start(Delta,Layer,Viewport)
+        {
+            If this.IntersectY ;contacting top or bottom of a block
+                this.LastContact := A_TickCount
+        }
+
         Step(Delta,Layer,Viewport)
         {
             global Gravity
-            MoveSpeed := 8
-            JumpSpeed := MoveSpeed * 0.25
+            static MoveSpeed := 8
+            static JumpSpeed := MoveSpeed * 0.25
 
             ;move towards the player
             For Key, Entity In this.NearestEntities(Layer,4) ;find all entities within 4 units
@@ -356,7 +387,7 @@ class GameEntities
                     {
                         If (this.Y >= Entity.Y)
                         {
-                            If this.IntersectX
+                            If this.CanClimb
                             {
                                 this.SpeedY -= Gravity * Delta
                                 this.SpeedY += MoveSpeed * Delta
@@ -372,11 +403,18 @@ class GameEntities
                 }
             }
 
-            If this.IntersectY ;contacting top or bottom of a block
-                this.LastContact := A_TickCount
-
             this.SpeedY += Gravity * Delta ;process gravity
+            this.CanClimb := 0
             base.Step(Delta,Layer,Viewport)
+        }
+
+        Collide(Delta,Entity,Layer,IntersectX,IntersectY)
+        {
+            If (Abs(IntersectX) >= Abs(IntersectY))
+                this.LastContact := A_TickCount
+            Else
+                this.CanClimb := 1
+            base.Collide(Delta,Entity,Layer,IntersectX,IntersectY)
         }
     }
 }
@@ -438,7 +476,7 @@ class MessageScreenEntities
             this.Text := Text
         }
 
-        Step(Delta,Layer,Viewport)
+        Start(Delta,Layer,Viewport)
         {
             global Game
             If GetKeyState("Space","P") && WinActive("ahk_id " . Game.hWindow)
