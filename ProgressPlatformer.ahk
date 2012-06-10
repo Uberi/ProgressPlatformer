@@ -19,8 +19,8 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-;wip: calculate proper dynamic friction, taking the speed of both colliding entities into account
-;wip: tex size unit doesn't support containers
+;wip: sleeping for physical entities
+;wip: text size unit doesn't support containers
 ;wip: player sometimes can't kill an enemy while it is jumping, because we only set IntersectX and IntersectY on the first object to collide, when both colliding objects should be set
 ;wip: total asynchronocity or parallelism (tasklets)
 ;wip: input manager that supports keyboard and joystick and mouse input
@@ -278,7 +278,7 @@ class GameEntities
                 If Jump && (A_TickCount - this.LastContact) < 500 ;jump
                     this.SpeedY += MoveSpeed * 0.3, this.LastContact := 0
             }
-            If this.IntersectY ;contacting top or bottom of a block
+            If this.IntersectX ;contacting top or bottom of a block
                 this.LastContact := A_TickCount
 
             SpeedLimit := 8
@@ -416,7 +416,7 @@ class MessageScreenEntities
             base.__New()
             this.X := 5
             this.Y := 4.5
-            this.Size := 1
+            this.H := 1
             this.Color := 0xD0D0D0
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -431,7 +431,7 @@ class MessageScreenEntities
             base.__New()
             this.X := 5
             this.Y := 5.5
-            this.Size := 0.4
+            this.H := 0.4
             this.Color := 0xF5F5F5
             this.Weight := 100
             this.Typeface := "Georgia"

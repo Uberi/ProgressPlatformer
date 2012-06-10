@@ -76,7 +76,7 @@ And now let's define a text in a big title style:
             this.X := X
             this.Y := Y
             this.Align := "Center" ;center aligned
-            this.Size := 14 ;large font size
+            this.H := 14 ;large font size
             this.Color := 0x444444 ;dark grey color
             this.Weight := 100 ;light weight
             this.Typeface := "Arial" ;typeface is Arial
@@ -141,7 +141,7 @@ Here's the code in its entirety:
             this.X := X
             this.Y := Y
             this.Align := "Center" ;center aligned
-            this.Size := 14 ;large font size
+            this.H := 14 ;large font size
             this.Color := 0x444444 ;dark grey color
             this.Weight := 100 ;light weight
             this.Typeface := "Arial" ;typeface is Arial
@@ -247,7 +247,7 @@ All together now:
             this.X := X
             this.Y := Y
             this.Align := "Center" ;center aligned
-            this.Size := 14 ;large font size
+            this.H := 14 ;large font size
             this.Color := 0x444444 ;dark grey color
             this.Weight := 100 ;light weight
             this.Typeface := "Arial" ;typeface is Arial
@@ -318,9 +318,33 @@ All entities possess certain properties by default:
 
 There are also a number of functions available to each entity. These functions are implemented in the ProgressEntities.Basis class, from which all entities should inherit. All entity functions are overridable.
 
+### ProgressEntities.Basis.Start(Delta,Layer,Viewport)
+
+Defines entity frame start logic, such as setup or initialization.
+
+| Parameter | Purpose                                          |
+|:----------|:-------------------------------------------------|
+| Delta     | Time since last invocation of callback (seconds) |
+| Layer     | Layer the entity resides in (layer object)       |
+| Viewport  | Current viewport (viewport object)               |
+
+Returns a truthy value to stop the game engine, otherwise a falsy value.
+
 ### ProgressEntities.Basis.Step(Delta,Layer,Viewport)
 
-Defines entity behavior, such as movement or logic.
+Defines entity behavior, such as movement or game logic.
+
+| Parameter | Purpose                                          |
+|:----------|:-------------------------------------------------|
+| Delta     | Time since last invocation of callback (seconds) |
+| Layer     | Layer the entity resides in (layer object)       |
+| Viewport  | Current viewport (viewport object)               |
+
+Returns a truthy value to stop the game engine, otherwise a falsy value.
+
+### ProgressEntities.Basis.End(Delta,Layer,Viewport)
+
+Defines entity frame end logic, such as cleanup or uninitialization.
 
 | Parameter | Purpose                                          |
 |:----------|:-------------------------------------------------|
@@ -378,10 +402,12 @@ A drawtype that appears as a filled, borderless rectangle.
 ### ProgressEntities.Static
 A drawtype that appears as a filled, borderless rectangle and is considered in physics simulations; entities that are dynamic are able to collide with it.
 
-| Property    | Purpose                                | Modifiable |
-|:------------|:---------------------------------------|:-----------|| Color       | Fill color (RGB hex)                   | Yes        |
-| Density     | Material density (mass/volume)         | Yes        |
-| Restitution | Material bounciness (rebound/incoming) | Yes        |
+| Property    | Purpose                                                  | Modifiable |
+|:------------|:---------------------------------------------------------|:-----------|
+| Color       | Fill color (RGB hex)                                     | Yes        |
+| Density     | Material density (mass/volume)                           | Yes        |
+| Restitution | Material bounciness (rebound speed/incoming speed        | Yes        |
+| Friction    | Material coefficient of friction (friction/normal force) | Yes        |
 
 ### ProgressEntities.Dynamic
 
@@ -403,9 +429,8 @@ A drawtype that appears as text with a transparent background.
 | Property  | Purpose                                       | Modifiable |
 |:----------|:----------------------------------------------|:-----------|
 | W         | Width (units)                                 | No         |
-| H         | Height (units)                                | No         |
+| H         | Height (units)                                | Yes        |
 | Align     | Text alignment ("Left", "Center", or "Right") | Yes        |
-| Size      | Font size (units)                             | Yes        |
 | Weight    | Font weight (0 to 1000)                       | Yes        |
 | Italic    | Font italic flag (True or False)              | Yes        |
 | Underline | Font underline flag (True or False)           | Yes        |

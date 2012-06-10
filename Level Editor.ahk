@@ -171,8 +171,7 @@ class EditingPane extends ProgressEntities.Container
             this.X := 5
             this.Y := 1
             this.W := 10
-            this.H := 1
-            this.Size := 2
+            this.H := 2
             this.Color := 0xFFFFFF
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -225,8 +224,7 @@ class Button extends ProgressEntities.Container
             this.X := 5
             this.Y := 1
             this.W := 10
-            this.H := 1
-            this.Size := 2
+            this.H := 2
             this.Color := 0xFFFFFF
             this.Weight := 100
             this.Typeface := "Georgia"

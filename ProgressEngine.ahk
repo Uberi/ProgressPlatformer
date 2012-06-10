@@ -154,7 +154,7 @@ class ProgressEngine
 
             ProportionX := Width * (Layer.W / 100), ProportionY := Height * (Layer.H / 100)
 
-            ;iterate through each entity in the layer
+            ;set up properties of each entity in the layer
             For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
             {
                 ;set the screen coordinates of the bounding rectangle
@@ -164,8 +164,28 @@ class ProgressEngine
                 ;set the coordinate transformations of the bounding rectangle
                 Entity.OffsetX := 0, Entity.OffsetY := 0
                 Entity.ScaleX := ProportionX, Entity.ScaleY := ProportionY
+            }
 
+            ;start each entity in the layer
+            For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
+            {
+                Result := Entity.Start(Delta,Layer,Viewport) ;step the entity
+                If Result
+                    Return, Result
+            }
+
+            ;step each entity in the layer
+            For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
+            {
                 Result := Entity.Step(Delta,Layer,Viewport) ;step the entity
+                If Result
+                    Return, Result
+            }
+
+            ;end each entity in the layer
+            For Key, Entity In Layer.Entities ;wip: log(n) occlusion culling here
+            {
+                Result := Entity.End(Delta,Layer,Viewport) ;step the entity
                 If Result
                     Return, Result
             }
@@ -210,7 +230,17 @@ class ProgressEntities
             this.ScreenH := 0
         }
 
+        Start(Delta,Layer,Viewport)
+        {
+            
+        }
+
         Step(Delta,Layer,Viewport)
+        {
+            
+        }
+
+        End(Delta,Layer,Viewport)
         {
             
         }
@@ -307,8 +337,8 @@ class ProgressEntities
                 CurrentViewport.X := this.X + CurrentLayer.X, CurrentViewport.Y := this.Y + CurrentLayer.Y
                 CurrentViewport.W := this.W, CurrentViewport.H := this.H
 
-                ;iterate through each entity in the layer
-                For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
+                ;set up properties of each object in the layer
+                For Key, Entity In CurrentLayer.Entities
                 {
                     ;set the coordinate transformations of the bounding rectangle
                     Entity.OffsetX := (this.OffsetX + this.X) * ProportionX, Entity.OffsetY := (this.OffsetY + this.Y) * ProportionY
@@ -317,8 +347,28 @@ class ProgressEntities
                     ;set the screen coordinates of the bounding rectangle
                     Entity.ScreenX := PositionX + (Entity.X * Entity.ScaleX), Entity.ScreenY := PositionY + (Entity.Y * Entity.ScaleY)
                     Entity.ScreenW := Entity.W * Entity.ScaleX, Entity.ScreenH := Entity.H * Entity.ScaleY
+                }
 
+                ;start each entity in the layer
+                For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
+                {
+                    Result := Entity.Start(Delta,CurrentLayer,CurrentViewport) ;step the entity
+                    If Result
+                        Return, Result
+                }
+
+                ;step each entity in the layer
+                For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
+                {
                     Result := Entity.Step(Delta,CurrentLayer,CurrentViewport) ;step the entity
+                    If Result
+                        Return, Result
+                }
+
+                ;end each entity in the layer
+                For Key, Entity In CurrentLayer.Entities ;wip: log(n) occlusion culling here
+                {
+                    Result := Entity.End(Delta,CurrentLayer,CurrentViewport) ;step the entity
                     If Result
                         Return, Result
                 }
@@ -534,7 +584,6 @@ class ProgressEntities
             this.Text := "Text"
             this.Typeface := "Verdana"
             this.Align := "Center"
-            this.Size := 5 ;wip: use height for this
             this.Weight := 500
             this.Italic := 0
             this.Underline := 0
@@ -568,7 +617,7 @@ class ProgressEntities
             ;update the font if it has changed or if the viewport size has changed
             If this.FontModified || this.PreviousViewportH != Viewport.ScreenH
             {
-                this.LineHeight := this.Size * (Viewport.ScreenH / 10)
+                this.LineHeight := this.H * (Viewport.ScreenH / 10)
 
                 ;delete the old font if present
                 If this.hFont && !DllCall("DeleteObject","UPtr",this.hFont)
@@ -577,7 +626,7 @@ class ProgressEntities
                 ;create the font
                 ;wip: doesn't work
                 ;If this.H Is Not Number
-                    ;throw Exception("Invalid font size: " . this.Size . ".")
+                    ;throw Exception("Invalid font size: " . this.H . ".")
                 ;If this.Weight Is Not Integer
                     ;throw Exception("Invalid font weight: " . this.Weight . ".")
                 this.hFont := DllCall("CreateFont"
@@ -631,7 +680,6 @@ class ProgressEntities
 
             ;update entity dimensions
             this.W := Width / this.ScaleX
-            this.H := (PositionY - this.ScreenY) / this.ScaleY
             this.ScreenW := Width
             this.ScreenH := Height
 
@@ -648,7 +696,7 @@ class ProgressEntities
 
         __Set(Key,Value)
         {
-            If ((Key = "Size" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
+            If ((Key = "H" || Key = "Weight" || Key = "Italic" || Key = "Underline" || Key = "Strikeout" || Key = "Typeface")
                 && this[Key] != Value)
                 ObjInsert(this[""],"FontModified",1)
             ObjInsert(this[""],Key,Value)
@@ -669,8 +717,11 @@ class ProgressEntities
             base.__New()
             this.SpeedX := 0
             this.SpeedY := 0
+            this.ForceX := 0
+            this.ForceY := 0
             this.Density := 1
             this.Restitution := 0.7
+            this.Friction := 1
             this.Physical := 1
             this.Dynamic := 0
         }
@@ -702,7 +753,7 @@ class ProgressEntities
                     If Result
                         Return, Result
                     IntersectX := Abs(IntersectX), IntersectY := Abs(IntersectY)
-                    If (IntersectY >= IntersectX) ;collision along top or bottom side
+                    If (IntersectX >= IntersectY) ;collision along top or bottom side
                         this.IntersectX += IntersectX, Entity.IntersectX += IntersectX ;wip: this just gets reset back to 0 when the entity is stepped itself
                     Else
                         this.IntersectY += IntersectY, Entity.IntersectY += IntersectY

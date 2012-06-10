@@ -99,7 +99,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 1.7
+            this.H := 1.7
             this.Color := 0x444444
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -114,7 +114,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 0.4
+            this.H := 0.4
             this.Color := 0x666666
             this.Weight := 100
             this.Typeface := "Georgia"
@@ -139,7 +139,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 0.5
+            this.H := 0.5
             this.Color := 0x666666
             this.Weight := 300
             this.Typeface := "Georgia"
@@ -154,7 +154,7 @@ class Credits extends ProgressEntities.Container
             base.__New()
             this.X := 5
             this.Y := PositionY
-            this.Size := 1.1
+            this.H := 1.1
             this.Color := 0x444444
             this.Weight := 100
             this.Typeface := "Georgia"
