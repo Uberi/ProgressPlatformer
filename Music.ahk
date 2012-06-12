@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;wip: support different instruments for layers by storing it with every note and changing it when necessary
 
-;/*
+/*
 #Persistent
 
 n := new NotePlayer
@@ -59,7 +59,7 @@ class NotePlayer
 
         this.Offset := 0
         this.Timeline := []
-        this.Playing := 0
+        this.Playing := False
     }
 
     Instrument(Sound)
@@ -141,7 +141,7 @@ class NotePlayer
         If this.Sequence.MaxIndex()
         {
             this.ActiveNotes := []
-            this.Playing := 1
+            this.Playing := True
             this.Index := 1
 
             ;set up a timer to execute the action set
@@ -155,7 +155,7 @@ class NotePlayer
     Stop()
     {
         If !this.Playing
-            Return
+            Return, this
 
         ;clean up timers
         If !DllCall("KillTimer","UPtr",0,"UPtr",this.hTimer)
@@ -164,7 +164,8 @@ class NotePlayer
         ;turn off any active notes
         For Index In this.ActiveNotes
             this.Device.NoteOff(Index,100)
-        this.Playing := 0
+        this.Playing := False
+        Return, this
     }
 
     Reset()
@@ -173,6 +174,7 @@ class NotePlayer
         this.Offset := 0
         this.Timeline := []
         this.Sequence := []
+        Return, this
     }
 
     SequenceCallback(x,y,z)
@@ -218,7 +220,7 @@ class NotePlayer
             ;turn off any active notes
             For Index In NotePlayer.ActiveNotes
                 NotePlayer.Device.NoteOff(Index,100)
-            NotePlayer.Playing := 0
+            NotePlayer.Playing := False
         }
     }
 
