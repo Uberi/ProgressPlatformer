@@ -73,6 +73,8 @@ class NotePlayer
 
     Delay(Length)
     {
+        If (this.Offset + Length) < 0
+            throw Exception("Invalid offset: " . (this.Offset + Length))
         this.Offset += Length
         Return, this
     }

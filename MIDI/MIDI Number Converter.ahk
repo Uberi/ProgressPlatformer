@@ -409,7 +409,7 @@ If InStr(Tune,"NotePlayer") ;input is code
 
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
-        If RegExMatch(A_LoopField,"iS)^\s*\w+((?:\.Note\(\s*\d+\s*(?:,\s*\d+\s*){1,3}\))*)\.Delay\(\s*(\d+)\s*\)",Field)
+        If RegExMatch(A_LoopField,"iS)^\s*\w+((?:\.Note\(\s*\d+\s*(?:,\s*\d+\s*){1,3}\))*)\.Delay\(\s*(-?\d+(?:\.\d+)?)\s*\)",Field)
         {
             Field1 := SubStr(Field1,2) ;remove first dot
             Loop, Parse, Field1, . ;process each note
@@ -438,7 +438,7 @@ Else
 
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
-        If RegExMatch(A_LoopField,"iS)^\s*(\d+)\s*(.*)$",Field)
+        If RegExMatch(A_LoopField,"iS)^\s*(-?\d+(?:\.\d+)?)\s*(.*)$",Field)
         {
             ;process chord
             StringReplace, Field2, Field2, %A_Tab%, %A_Space%, All ;replace tabs with spaces
@@ -469,7 +469,7 @@ If InStr(Tune,"NotePlayer") ;input is code
     Result := ""
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
-        If RegExMatch(A_LoopField,"iS)^\s*\w+((?:\.Note\(\s*\d+\s*(?:,\s*\d+\s*){1,3}\))*)\.Delay\(\s*(\d+)\s*\)",Field)
+        If RegExMatch(A_LoopField,"iS)^\s*\w+((?:\.Note\(\s*\d+\s*(?:,\s*\d+\s*){1,3}\))*)\.Delay\(\s*(-?\d+(?:\.\d+)?)\s*\)",Field)
         {
             Result .= Field2 ;insert the duration
             Field1 := SubStr(Field1,2) ;remove first dot
@@ -496,7 +496,7 @@ Else
     Result := "Notes := new NotePlayer`nNotes.Instrument(" . (Instrument - 1) . ") `;" . Name . "`n"
     Loop, Parse, Tune, `n, %A_Space%%A_Tab%
     {
-        If RegExMatch(A_LoopField,"iS)^\s*(#|\d+)\s*(.*)$",Field)
+        If RegExMatch(A_LoopField,"iS)^\s*(#|-?\d+(?:\.\d+)?)\s*(.*)$",Field)
         {
             If (Field1 = "#") ;comment
                 Result .= ";" . Field2 . "`n"
