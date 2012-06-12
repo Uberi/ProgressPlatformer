@@ -28,11 +28,11 @@ class ProgressEngine
         this.FrameRate := 60
 
         this.hWindow := hWindow
-        this.hDC := DllCall("GetDC","UPtr",hWindow)
+        this.hDC := DllCall("GetDC","UPtr",hWindow,"UPtr")
         If !this.hDC
             throw Exception("Could not obtain window device context.")
 
-        this.hMemoryDC := DllCall("CreateCompatibleDC","UPtr",this.hDC)
+        this.hMemoryDC := DllCall("CreateCompatibleDC","UPtr",this.hDC,"UPtr")
         If !this.hMemoryDC
             throw Exception("Could not create memory device context.")
 
