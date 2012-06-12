@@ -19,6 +19,35 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+;wip: support different instruments for layers by storing it with every note and changing it when necessary
+
+;/*
+#Persistent
+
+n := new NotePlayer
+n.Instrument(9)
+n.Repeat := True
+
+MusicStart := n.Offset
+
+n.Note(48,1000).Delay(1000)
+n.Note(47,1000).Delay(1000)
+n.Note(48,1000).Delay(1000)
+n.Note(45,1000).Delay(1000)
+
+n.Offset := MusicStart
+
+n.Note(55,500).Delay(500)
+n.Note(55,500).Delay(500)
+n.Note(56,500).Delay(500)
+n.Note(55,500).Delay(500)
+
+n.Start()
+Return
+
+Esc::ExitApp
+*/
+
 class NotePlayer
 {
     __New()
@@ -28,37 +57,36 @@ class NotePlayer
 
         this.pCallback := RegisterCallback(this.SequenceCallback,"F","",&this)
 
-        this.Actions := []
+        this.Offset := 0
+        this.Timeline := []
         this.Playing := 0
     }
 
     Instrument(Sound)
     {
-        Action := Object()
-        Action.Type := "Instrument"
-        Action.Sound := Sound
-        this.Actions.Insert(Action)
+        Offset := Round(this.Offset)
+        If !this.Timeline.HasKey(Offset)
+            this.Timeline[Offset] := []
+        this.Timeline[Offset].Insert(Object("Type","Instrument","Sound",Sound))
         Return, this
     }
 
     Delay(Length)
     {
-        Action := Object()
-        Action.Type := "Delay"
-        Action.Length := Length
-        this.Actions.Insert(Action)
+        this.Offset += Length
         Return, this
     }
 
     Note(Index,Length,DownVelocity = 60,UpVelocity = 60)
     {
-        Action := Object()
-        Action.Type := "Note"
-        Action.Index := Index
-        Action.Length := Length
-        Action.DownVelocity := DownVelocity
-        Action.UpVelocity := UpVelocity
-        this.Actions.Insert(Action)
+        Offset := Round(this.Offset)
+        If !this.Timeline.HasKey(Offset)
+            this.Timeline[Offset] := []
+        this.Timeline[Offset].Insert(Object("Type","NoteOn","Index",Index,"Velocity",DownVelocity))
+        EndOffset := Round(this.Offset + Length)
+        If !this.Timeline.HasKey(EndOffset)
+            this.Timeline[EndOffset] := []
+        this.Timeline[EndOffset].Insert(Object("Type","NoteOff","Index",Index,"Velocity",UpVelocity))
         Return, this
     }
 
@@ -93,42 +121,22 @@ class NotePlayer
         If this.Playing ;note player is already playing
             Return, this
 
-        ;sort the notes into groups by their time offsets
-        Timeline := [], Offset := 0
-        For Index, Action In this.Actions
-        {
-            If Action.Type = "Instrument"
-            {
-                If !ObjHasKey(Timeline,Offset)
-                    Timeline[Offset] := []
-                Timeline[Offset].Insert(Object("Type","Instrument","Sound",Action.Sound))
-            }
-            Else If Action.Type = "Delay"
-                Offset += Action.Length
-            Else ;If Action.Type = "Note"
-            {
-                If !ObjHasKey(Timeline,Offset)
-                    Timeline[Offset] := []
-                Timeline[Offset].Insert(Object("Type","NoteOn","Index",Action.Index,"Velocity",Action.DownVelocity))
-                Temp1 := Offset + Action.Length
-                If !ObjHasKey(Timeline,Temp1)
-                    Timeline[Temp1] := []
-                Timeline[Temp1].Insert(Object("Type","NoteOff","Index",Action.Index,"Velocity",Action.UpVelocity))
-            }
-        }
-        If !ObjHasKey(Timeline,Offset) ;insert the ending delay
-            Timeline[Offset] := []
+        ;insert the ending delay if necessary
+        If !this.Timeline.HasKey(this.Offset)
+            this.Timeline[this.Offset] := []
 
         ;convert the timeline into a set of actions
         this.Sequence := [], PreviousOffset := 0
-        For Offset, Actions In Timeline
+        For Offset, Actions In this.Timeline
         {
-            Actions.Insert(1,Offset - PreviousOffset), PreviousOffset := Offset
-            this.Sequence.Insert(Actions)
+            CurrentActions := ObjClone(Actions)
+            CurrentActions.Insert(1,Offset - PreviousOffset)
+            PreviousOffset := Offset
+            this.Sequence.Insert(CurrentActions)
         }
 
         ;activate the first set of actions if it is present
-        If ObjMaxIndex(this.Sequence)
+        If this.Sequence.MaxIndex()
         {
             this.ActiveNotes := []
             this.Playing := 1
@@ -160,7 +168,8 @@ class NotePlayer
     Reset()
     {
         this.Stop()
-        this.Actions := []
+        this.Offset := 0
+        this.Timeline := []
         this.Sequence := []
     }
 
