@@ -21,7 +21,7 @@ Reference
 
 ### ProgressEngine.FrameRate
 
-The target framerate to run the engine at, when started using ProgressEngine.Start.
+The target framerate to run the engine at, when started using ProgressEngine.Start. Set this value to 0 to avoid framerate limiting altogether.
 
 ### ProgressEngine.Layers
 
