@@ -60,8 +60,13 @@ Loop
     If Result = 1 ;reached goal
         Break
     Else If Result = 4 ;game paused
-        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+        MessageScreen(Game,"- Remember -","space doesn't need to be spammed"), StartLevel := 0
     Else
         LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
+/*
+Slain by enemy		- Remember -		they aren't your friends
+Out of bounds		- Remember -		to stay inside a flosting island
+kill block		- Remember -		Black hurts. White is your friend.
+*/
 }
 Game.Layers := []

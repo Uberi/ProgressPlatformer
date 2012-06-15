@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-MessageScreen(Game,"Level 2","Don``t hate the game just yet. Wait a few more levels.")
+MessageScreen(Game,"Level 2","Don't hate the game just yet. Wait a few more levels.")
 
 LayerX := 0, LayerY := 0
 StartLevel := 1
@@ -62,8 +62,12 @@ Loop
     If Result = 1 ;reached goal
         Break
     Else If Result = 4 ;game paused
-        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+        MessageScreen(Game,"- Don't hate -","Press space to resume"), StartLevel := 0
     Else
         LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
+/*
+Enemy	- Don't hate -		They are just doing thier job
+Bounds	- Don't hate -		confined areas of play
+*/
 }
 Game.Layers := []

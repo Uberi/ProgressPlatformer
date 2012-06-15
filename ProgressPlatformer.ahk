@@ -19,6 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+;wip: use exception throwing for game loop breaking
 ;wip: sleeping for physical entities
 ;wip: text size unit doesn't support containers
 ;wip: total asynchronocity or parallelism (tasklets)
@@ -55,12 +56,16 @@ Game.Hue := 4, Game.Saturation := 0.0
 
 Game.Saturation := 0.1
 
-;#Include Music/Red.ahk
+#Include Music/Red.ahk
 
 #Include Levels/Level 1.ahk
 #Include Levels/Level 2.ahk
 #Include Levels/Level 3.ahk
 #Include Levels/Level 4.ahk
+#Include Levels/Level 5.ahk
+#Include Levels/Level 6.ahk
+#Include Levels/Level 7.ahk
+#Include Levels/Level 8.ahk
 
 Notes.Stop()
 Notes.Device.__Delete() ;wip
@@ -151,33 +156,56 @@ class GameEntities
         }
     }
 
-    class Platform extends ProgressEntities.StaticRectangle
+    class Bounce extends ProgressEntities.StaticRectangle
     {
-        __New(X,Y,W,H,Horizontal,Start,Length,Speed)
+        __New(X,Y,W,H,Speed)
         {
             base.__New()
             this.X := X
             this.Y := Y
             this.W := W
             this.H := H
-            this.Start := Start
-            If Horizontal ;horizontal platform
-                this.RangeX := Start, this.RangeY := Y, this.RangeW := Length, this.RangeH := 0
-            Else ;vertical platform
-                this.RangeX := X, this.RangeY := Start, this.RangeW := 0, this.RangeH := Length
+            this.Color := ColorTint(0x333333)
             this.Speed := Speed
-            this.Direction := 1
+        }
+    }
+
+    class Platform extends ProgressEntities.StaticRectangle
+    {
+        __New(StartX,StartY,W,H,EndX,EndY,SpeedX,SpeedY)
+        {
+            base.__New()
+            this.X := X
+            this.Y := Y
+            this.W := W
+            this.H := H
+            this.X1 := StartX
+            this.Y1 := StartY
+            this.X2 := EndX
+            this.Y2 := EndY
+
+            this.DirectionX := 1
+            this.DirectionY := 1
+
+            this.SpeedX := SpeedX
+            this.SpeedY := SpeedY
             this.Color := ColorTint(0x777777)
         }
 
         Step(Delta,Layer,Viewport)
         {
             ;wip: need to push player along direction of platform
-            If (this.X < this.RangeX)
-                this.Direction := 1
-            Else If (this.X > (this.RangeX + this.RangeW))
-                this.Direction := -1
-            this.X += this.Speed * Delta * this.Direction
+            If this.X > this.X2 ;If X is at the end of the range move back
+                this.DirectionX := -1
+            Else If this.X < this.X1 ;And forth
+                this.DirectionX := 1
+            If this.Y > this.Y2
+                this.DirectionY := -1
+            Else If this.Y < this.Y1
+                this.DirectionY := 1
+
+            this.X += (Abs(this.X2 - this.X1) * this.SpeedX) * this.DirectionX * Delta
+            this.Y += (Abs(this.Y2-this.Y1) * this.SpeedY) * this.DirectionY * Delta
         }
     }
 
@@ -300,9 +328,9 @@ class GameEntities
 
         Collide(Delta,Entity,Layer,IntersectX,IntersectY)
         {
-            If (Entity.__Class = "GameEntities.Enemy") ;player collided with an enemy
+            If Entity.__Class = "GameEntities.Enemy" ;player collided with an enemy
             {
-                If (Abs(IntersectY) < Abs(IntersectX) && this.Y < Entity.Y)
+                If Abs(IntersectY) < Abs(IntersectX) && this.Y < Entity.Y
                 {
                     ;remove the enemy ;wip: not very efficient
                     For Index, LayerEntity In Layer.Entities
@@ -318,10 +346,32 @@ class GameEntities
                 Else
                     this.Health -= 150 * Delta
             }
-            If (Abs(IntersectX) >= Abs(IntersectY))
+            Else If Entity.__Class = "GameEntities.Bounce" ;player collided with bounce block
+            {
+                If Abs(IntersectY) > Abs(IntersectX)
+                {
+                    If this.Y < Entity.Y ;player above bounce block
+                        this.SpeedY := Entity.Speed
+                    Else ;player below bounce block
+                        this.SpeedY := -Entity.Speed
+                }
+                Else If this.X < Entity.X ;player left of bounce block
+                    this.SpeedX := -Entity.Speed
+                Else ;player right of bounce block
+                    this.SpeedX := Entity.Speed
+            }
+            Else If Entity.__Class = "GameEntities.Platform"
+            {
+                If Abs(IntersectX) > Abs(IntersectY) ;player collided with top or bottom
+                    this.X += ((Entity.X2 - Entity.X1) * Entity.SpeedX) * Delta * Entity.DirX
+                Else ;player collided with sides
+                    this.Y += ((Entity.Y2 - Entity.Y1) * Entity.SpeedY) * Delta * Entity.DirY
+            }
+            If (Abs(IntersectX) >= Abs(IntersectY)) ;player contacted horizontal surface
                 this.LastContact := A_TickCount
-            Else
+            Else ;player contacted vertical surface
                 this.CanClimb := 1
+
             base.Collide(Delta,Entity,Layer,IntersectX,IntersectY)
         }
     }

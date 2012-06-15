@@ -59,8 +59,13 @@ Loop
     If Result = 1 ;reached goal
         Break
     Else If Result = 4 ;game paused
-        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+        MessageScreen(Game,"- I know -","You want to rage quit"), StartLevel := 0
     Else
         LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
+/*
+Enemy		- I know -	It's immpossible
+Bound		- I know -	Your hand slipped
+KillBlock	- I know -	You want to sue me
+*/
 }
 Game.Layers := []

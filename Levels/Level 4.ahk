@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-MessageScreen(Game,"Level 4","The glitched platforms is a programmed challenge. We are not fixing it.")
+MessageScreen(Game,"Level 4","The vast outdoors")
 
 LayerX := 0, LayerY := 0
 StartLevel := 1
@@ -52,8 +52,12 @@ Loop
     If Result = 1 ;reached goal
         Break
     Else If Result = 4 ;game paused
-        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+        MessageScreen(Game,"- Allergic to -","Playing Achromatic"), StartLevel := 0
     Else
         LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
+/*
+ Death by enemy		- Allergic to -		Enemies
+ OUt of bounds		- Allergic to -		Near-sightedness
+*/
 }
 Game.Layers := []

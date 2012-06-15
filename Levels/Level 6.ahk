@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-MessageScreen(Game,"Level 6","Stuck in prison")
+MessageScreen(Game,"Level 6","Downstairs")
 
 LayerX := 0, LayerY := 0
 StartLevel := 1
@@ -36,20 +36,40 @@ Loop
 
         Game.Layers[2].X := LayerX, Game.Layers[2].Y := LayerY
         Entities := Game.Layers[2].Entities
-        Entities.Insert(new GameEntities.Block(1,9,8,0.5))
-        Entities.Insert(new GameEntities.Goal(7,8.2,0.5,0.8))
-        Entities.Insert(new GameEntities.Player(4.5,8.556,0.333,0.444,0,0))
-        Entities.Insert(new GameEntities.Enemy(6,8.556,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Block(3,1,6,0.2))
+        Entities.Insert(new GameEntities.Block(3,1.2,0.2,1.8))
+        Entities.Insert(new GameEntities.Block(3,3,2,0.2))
+        Entities.Insert(new GameEntities.Block(8.8,1.2,0.2,2.4))
 
-        Entities.Insert(new GameEntities.Box(4.5,4.066,0.333,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(4.5,4.466,0.333,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(4.5,5.066,0.333,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(4.5,5.466,0.333,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(4.5,6.066,0.333,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(4.5,6.466,0.333,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(4.5,7.066,0.333,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(4.5,7.466,0.333,0.5,0,0))
-        Entities.Insert(new GameEntities.Box(4.5,8.066,0.333,0.5,0,0))
+        Entities.Insert(new GameEntities.Block(4.5,3.1,0.5,1.4))
+        Entities.Insert(new GameEntities.Block(6,3.5,3.5,0.2))
+        Entities.Insert(new GameEntities.Block(4,3.8,0.5,1.7))
+        Entities.Insert(new GameEntities.Block(4.5,5,0.5,0.5))
+        Entities.Insert(new GameEntities.Block(5,5,0.5,1.5))
+
+        Entities.Insert(new GameEntities.Block(7.3,3.6,0.2,6.4))
+        Entities.Insert(new GameEntities.Block(9.3,3.6,0.2,4.4))
+        Entities.Insert(new GameEntities.Block(8,4.5,0.5,4.2))
+        Entities.Insert(new GameEntities.Block(4.5,6,0.5,1.5))
+        Entities.Insert(new GameEntities.Block(5,7,1,0.5))
+        Entities.Insert(new GameEntities.Block(5.5,7.5,0.5,0.5))
+        Entities.Insert(new GameEntities.Block(5,8,1,0.5))
+
+        Entities.Insert(new GameEntities.Block(8,8.5,2,0.2))
+        Entities.Insert(new GameEntities.Block(3.5,10,5.5,0.2))
+        Entities.Insert(new GameEntities.Block(9.5,9.5,0.3,0.2)) ; bottom right corner block
+
+        Entities.Insert(new GameEntities.Enemy(4,3.5,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(4.5,5.5,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(5,7.5,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(3.5,2,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(4.5,4.5,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(5,6.5,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(5,1,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(8,4,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Enemy(4,9.5,0.333,0.444,0,0))
+        Entities.Insert(new GameEntities.Goal(8,4,0.5,0.8))
+        Entities.Insert(new GameEntities.Player(7,3,0.333,0.444,0,0))
         
         Game.Layers[3].Entities.Insert(new GameEntities.HealthBar(Game.Layers[2]))
     }
@@ -58,8 +78,12 @@ Loop
     If Result = 1 ;reached goal
         Break
     Else If Result = 4 ;game paused
-        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+        MessageScreen(Game,"- You have to be -","Press space to resume"), StartLevel := 0
     Else
         LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
+/*
+Enemy	- You have to be -	Frustrated
+Bound	- You have to be -	Really Unfourtunate
+*/
 }
 Game.Layers := []

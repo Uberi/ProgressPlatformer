@@ -59,8 +59,12 @@ Loop
     If Result = 1 ;reached goal
         Break
     Else If Result = 4 ;game paused
-        MessageScreen(Game,"Game paused","Press space to resume"), StartLevel := 0
+        MessageScreen(Game,"- You are experiencing -","A space-time paradox"), StartLevel := 0
     Else
         LayerX := Game.Layers[2].X, LayerY := Game.Layers[2].Y
+/*
+Enemy	- You are experiencing -	pair annihilation
+Bounds	- You are experiencing -	What happens when you think outside the box
+*/
 }
 Game.Layers := []
