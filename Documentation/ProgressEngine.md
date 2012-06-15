@@ -16,6 +16,10 @@ Tutorial
 --------
 See the [ProgressEngine tutorial](Tutorial.md) for a step-by-step tutorial for building a game with ProgressEngine.
 
+Coordinates
+-----------
+The ProgressEngine coordinate system is Cartesian, with the origin at the top left corner of the viewport and (10, 10) at the bottom right. X and Y axis values between 0 and 10 will appear inside the viewport; values not in this range will be outside of the viewport. This coordinate system is independent of the window scaling and does not correspond to any physical units.
+
 Reference
 ---------
 
