@@ -270,8 +270,8 @@ class GameEntities
         Step(Delta,Layer,Viewport)
         {
             global Gravity
-            static MoveSpeed := 10
-            static JumpSpeed := MoveSpeed * 0.3
+            static FullMoveSpeed := 10
+            static JumpSpeed := FullMoveSpeed * 0.3
 
             Left := GetKeyState("Left","P")
             Right := GetKeyState("Right","P")
@@ -281,10 +281,13 @@ class GameEntities
             If Crouch
             {
                 this.H := this.FullH * 0.75
-                MoveSpeed *= 0.5
+                MoveSpeed := FullMoveSpeed * 0.5
             }
             Else
+            {
                 this.H := this.FullH
+                MoveSpeed := FullMoveSpeed
+            }
 
             If Left
                 this.SpeedX -= MoveSpeed * Delta ;move left
