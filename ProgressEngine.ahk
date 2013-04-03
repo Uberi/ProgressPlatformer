@@ -737,7 +737,7 @@ class ProgressEntities
 
         Step(Delta,Layer,Viewport)
         {
-            Friction := 0.5
+            Friction := 0.05
 
             this.X += this.SpeedX * Delta, this.Y -= this.SpeedY * Delta ;process momentum
 
