@@ -175,8 +175,8 @@ class GameEntities
         __New(StartX,StartY,W,H,EndX,EndY,SpeedX,SpeedY)
         {
             base.__New()
-            this.X := X
-            this.Y := Y
+            this.X := StartX
+            this.Y := StartY
             this.W := W
             this.H := H
             this.X1 := StartX
