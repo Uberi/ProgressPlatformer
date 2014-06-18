@@ -72,6 +72,21 @@ class Credits extends ProgressEntities.Container
         Return, base.Step(Delta,Layer,Viewport)
     }
 
+    Draw(hDC,Layer,Viewport)
+    {
+        ;iterate through each layer
+        For Index, CurrentLayer In this.Layers
+        {
+            ;check for layer visibility
+            If !CurrentLayer.Visible
+                Continue
+
+            ;iterate through each entity in the layer
+            For Key, Entity In CurrentLayer.Entities
+                Entity.Draw(hDC,CurrentLayer,Viewport) ;draw the entity
+        }
+    }
+
     class EndHeading extends ProgressEntities.Text
     {
         __New(Text,PositionY)
