@@ -175,8 +175,8 @@ class GameEntities
         __New(StartX,StartY,W,H,EndX,EndY,SpeedX,SpeedY)
         {
             base.__New()
-            this.X := X
-            this.Y := Y
+            this.X := StartX
+            this.Y := StartY
             this.W := W
             this.H := H
             this.X1 := StartX
@@ -366,9 +366,9 @@ class GameEntities
             Else If Entity.__Class = "GameEntities.Platform"
             {
                 If Abs(IntersectX) > Abs(IntersectY) ;player collided with top or bottom
-                    this.X += ((Entity.X2 - Entity.X1) * Entity.SpeedX) * Delta * Entity.DirX
+                    this.X += ((Entity.X2 - Entity.X1) * Entity.SpeedX) * Delta * Entity.DirectionX
                 Else ;player collided with sides
-                    this.Y += ((Entity.Y2 - Entity.Y1) * Entity.SpeedY) * Delta * Entity.DirY
+                    this.Y += ((Entity.Y2 - Entity.Y1) * Entity.SpeedY) * Delta * Entity.DirectionY
             }
             If (Abs(IntersectX) >= Abs(IntersectY)) ;player contacted horizontal surface
                 this.LastContact := A_TickCount

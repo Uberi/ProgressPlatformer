@@ -19,7 +19,7 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include Music/Yellow.ahk
+#includeAgain Music/Yellow.ahk
 
 Game.Layers[1] := new ProgressEngine.Layer
 Game.Layers[2] := new ProgressEngine.Layer
@@ -70,6 +70,21 @@ class Credits extends ProgressEntities.Container
             ;this.Y -= 0.7 * Delta
             this.Y -= 1.5 * Delta
         Return, base.Step(Delta,Layer,Viewport)
+    }
+
+    Draw(hDC,Layer,Viewport)
+    {
+        ;iterate through each layer
+        For Index, CurrentLayer In this.Layers
+        {
+            ;check for layer visibility
+            If !CurrentLayer.Visible
+                Continue
+
+            ;iterate through each entity in the layer
+            For Key, Entity In CurrentLayer.Entities
+                Entity.Draw(hDC,CurrentLayer,Viewport) ;draw the entity
+        }
     }
 
     class EndHeading extends ProgressEntities.Text
